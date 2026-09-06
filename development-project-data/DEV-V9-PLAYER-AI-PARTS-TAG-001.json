@@ -10,7 +10,7 @@
     "name": "Player AI パーツTag基盤・段階接続",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-09-06T04:48:38.145Z"
+    "updated_at": "2026-09-06T05:31:03.786Z"
   },
   "project_context": {
     "purpose": "Playerがゲーム内で実際に使用するPlayer AIパーツについて、必要な意味語彙をTag Masterとして段階的に設計・登録し、そのデータをCurrent AI Editor / Validator / Compiler / Runtime / Formal Export / Game Dataへ実際に接続できるか検証する。接続不能・責務不整合・ハードコード依存が判明した箇所だけを根拠付きで改修し、最終的なPlayer AI全面改修を、先に決めたUI都合ではなく実際に必要なAIパーツを成立させるための構造改修として行う。",
@@ -19,8 +19,8 @@
   "current_focus": {
     "architecture_id": "ARCH-AITAG-ROOT",
     "work_box_id": "BOX-AITAG-003",
-    "theme": "Player行動 Target / Condition Category→Candidate / Action Source Update完成・Human Apply待ち",
-    "goal": "GKS-B877 / GA-B486.223 Source UpdateはFull/Accept/Applied/ZIP再展開Gate PASS。Human Apply後にFresh Currentを確認して本Phaseを最終完了する。"
+    "theme": "Player共通Tag参照契約確定 / Search・StateCheck実装修正待ち",
+    "goal": "GKS-B877 / GA-B486.223をCurrentとして、Search/StateCheck/Actionの条件Category→Tag参照を共通化する。次工程はTASK-AITAG-029。Source変更前にexact path impactを確認し、正当なProtected変更は変更前/変更後を報告してHuman承認を得る。"
   },
   "project_rules": [
     {
@@ -106,13 +106,13 @@
     }
   ],
   "source_baseline": {
-    "studio_build": "GKS-B875",
-    "game_build": "GA-B486.221",
-    "source_label": "guild-adventure-studio-sub(20260905-125134).zip",
-    "source_role": "Human-provided Fresh Current after Player State Check Category→Tag Source Update; current source and implementation baseline",
-    "recorded_at": "2026-09-05T21:54:33+09:00",
-    "source_zip_sha256": "6635438c382c827f49f897712168219415de6e8ab6480e4e49951a452b73627c",
-    "package_manifest_sha256": "50e76820357b8d2cbb4c9269acdab7a58def31e2a540fcef76f58b8a2d55311a"
+    "studio_build": "GKS-B877",
+    "game_build": "GA-B486.223",
+    "source_label": "guild-adventure-studio-sub(20260906-044909).zip",
+    "source_role": "Human-provided Fresh Current after Player Action Target/Condition Category→Candidate/Action Source Update; current source and implementation baseline",
+    "recorded_at": "2026-09-06T13:49:00+09:00",
+    "source_zip_sha256": "d63c78caac87f5b732c20c1037f5616cfd2c699ac1b2698c004914b7c923f8b1",
+    "package_manifest_sha256": "cb4a504b7393c0883daee9e2eeb62100cdc34316f8ec368af94f6d46a6e5bf59"
   },
   "lifecycle": {
     "status": "Active",
@@ -216,8 +216,8 @@
         "TASK-AITAG-027"
       ],
       "result": "Applied",
-      "evidence": "EVD-AITAG-039_PLAYER_ACTION_FINAL_SOURCE_UPDATE_PASS.json; artifact_id=GKS-B877-52f773a994f7; Source Full 26/26; Update Quick 13/13; Accept 13/13 with Applied Full 26/26; ZIP reextract exact and Applied Full 26/26.",
-      "recorded_at": "2026-09-06T13:20:15+09:00"
+      "evidence": "EVD-AITAG-040_FRESH-CURRENT-GKS-B877-PLAYER-ACTION-PASS.json; Fresh Current exact persistent/source match; Quick 12/12; Full 27/27; Active Test Gate 164 skipped=0; package manifest 680; Critical Runtime 52; warnings=0; timeouts=0.",
+      "recorded_at": "2026-09-06T13:49:00+09:00"
     }
   ],
   "discussions": [],
@@ -405,14 +405,15 @@
     {
       "id": "DEC-AITAG-016",
       "title": "Player状態確認は探索と同じCategory→Tag思想でAuthoringする",
-      "status": "Approved",
+      "status": "Superseded",
       "text": "Player状態確認はAIC/Predicate/subject_scopeを先に選択させず、まずFormal Tag Categoryを選び、次にそのCategory所属Tagを1件選択し、選択Tagが要求する場合だけ追加Parameterを設定する。Categoryをref_category_idとして受けるactive Condition MasterとStateCheckで使用可能なsubject_scopeをFormal Dataから一意に自動解決し、内部PredicateはALL・1 clause・negate=falseとする。一意に解決できないCategoryはFail ClosedでPlayer候補へ出さない。",
       "rationale": "Playerが内部AI構造ではなくゲーム上の意味で『何の状態を確認するか』を操作し、探索と状態確認でCategory→Tag→Conditionという同一Data authorityを共有するため。",
       "source_discussion_ids": [],
       "approved_by": "Human",
       "approved_at": "2026-09-05T20:54:00+09:00",
       "created_at": "2026-09-05T20:54:00+09:00",
-      "updated_at": "2026-09-05T21:54:33+09:00"
+      "updated_at": "2026-09-06T14:15:00+09:00",
+      "superseded_by": "DEC-AITAG-020"
     },
     {
       "id": "DEC-AITAG-017",
@@ -451,6 +452,18 @@
       "approved_at": "2026-09-06T13:20:15+09:00",
       "created_at": "2026-09-06T13:20:15+09:00",
       "updated_at": "2026-09-06T13:20:15+09:00"
+    },
+    {
+      "id": "DEC-AITAG-020",
+      "title": "Player探索・状態確認・行動条件は共通Tag Category→Tag参照契約を使う",
+      "status": "Approved",
+      "text": "Playerの探索絞り込み、状態確認、行動条件は、いずれもFormal Tag Categoryを先に選び、そのCategory所属の利用可能Tag候補から1件選択し、必要Parameterだけ入力する。Player候補Categoryをactive ai_conditions Masterのref_category_idで制限しない。条件Tagの内部評価は共通Tag resolverで解決する。対象はFormal Tagのruntime_semanticをRuntime target scopeへ解決するが、具体的TAG/TGC IDや名称はProductionへ固定しない。有効Target Tag群が複数Categoryへ分散する場合はAuthority不整合としてFail Closedする。",
+      "rationale": "Playerが行う操作を『Category→候補』へ統一し、Formal Tag/Categoryを参照Authorityとするため。Condition MasterのCategory制約をPlayer候補Authorityにすると、既存Tag Categoryが存在しても状態管理しか表示されないため。",
+      "approved_by": "Human",
+      "approved_at": "2026-09-06T14:15:00+09:00",
+      "created_at": "2026-09-06T14:15:00+09:00",
+      "updated_at": "2026-09-06T14:15:00+09:00",
+      "source_discussion_ids": []
     }
   ],
   "specifications": [
@@ -682,7 +695,7 @@
     {
       "id": "SPEC-AITAG-010",
       "title": "Player Search Single-Condition Authoring Contract",
-      "status": "Verified",
+      "status": "Superseded",
       "summary": "Player探索UIをCategory→候補1件の単一条件Authoringへ固定し、内部Predicate/Result Slotを非表示化する。",
       "body": "# Entry\n- 探索タブ押下後、Search Masterが一意なら直接探索設定を開く。\n\n# Player入力\n1. 対象Tagを1件選択。\n2. 絞り込みCategoryを1件選択。\n3. そのCategory所属Tag候補を1件選択。\n4. HP/MP等、選択Tagの契約が要求する場合だけ追加Parameterを表示。\n\n# 単一条件\n- Player Searchはpredicate.logic=ALL固定。\n- clauses.length=1固定。\n- ANY / NOT / 条件追加・並び替えはPlayerで禁止。\n\n# HP/MP\n- UI: HP/MP [割合|現在値] [比較] [値] [% when ratio]。\n- RATIOはPlayer 0～100%入力を内部0～1へ変換。例 30% → 0.3。\n\n# Internal\n- Predicate Master、result_slot_id、検索結果格納先はPlayerへ表示しない。\n- Result SlotはSearch配置/削除に合わせてSystemが自動管理する。\n- Runtime/Compilerの既存意味契約は変更しない。",
       "decision_refs": [
@@ -700,12 +713,13 @@
       "approved_by": "Human",
       "approved_at": "2026-09-05T11:22:00+09:00",
       "created_at": "2026-09-05T11:22:00+09:00",
-      "updated_at": "2026-09-05T14:22:00+09:00"
+      "updated_at": "2026-09-06T14:15:00+09:00",
+      "superseded_by": "SPEC-AITAG-014"
     },
     {
       "id": "SPEC-AITAG-011",
       "title": "Player State Check Category→Tag Authoring Contract",
-      "status": "Verified",
+      "status": "Superseded",
       "summary": "Player状態確認をFormal Category→Tag→必要Parameterの単一条件Authoringへ固定する。",
       "body": "# Player入力\n1. 状態確認タブから直接設定へ進む。\n2. Formal Tag Categoryを1件選択する。\n3. そのCategory所属Tagを1件選択する。\n4. HP/MP等、選択Tagが要求する場合だけ追加Parameterを表示する。\n\n# Internal binding\n- 選択Categoryをref_category_idとして受けるactive Condition MasterをDataから一意解決する。\n- StateCheckで利用可能なsubject_scopeもFormal supported_subject_kindとの共通部分から一意解決する。\n- predicate.logic=ALL / clauses.length=1 / negate=falseを内部生成する。\n- Category IDはProgramへ保存しない。具体的AIC/TAG/TGC対応をProduction Sourceへ固定しない。\n- 一意に解決できないCategoryはFail ClosedでPlayer候補へ出さない。\n\n# Player非表示\n- AIC Master / Predicate / ALL/ANY / NOT / 複数条件 / SELF/BATTLE / 各種IDを表示しない。\n\n# HP/MP\n- UIは [割合|現在値] [比較] [値]。RATIOは0～100%表示を内部0～1へ変換する。\n- 生存/死亡では比較Parameterを持たない。",
       "decision_refs": [
@@ -725,7 +739,8 @@
       "approved_by": "Human",
       "approved_at": "2026-09-05T20:54:00+09:00",
       "created_at": "2026-09-05T20:54:00+09:00",
-      "updated_at": "2026-09-05T21:54:33+09:00"
+      "updated_at": "2026-09-06T14:15:00+09:00",
+      "superseded_by": "SPEC-AITAG-014"
     },
     {
       "id": "SPEC-AITAG-012",
@@ -778,6 +793,31 @@
       "approved_at": "2026-09-06T13:20:15+09:00",
       "created_at": "2026-09-06T13:20:15+09:00",
       "updated_at": "2026-09-06T13:20:15+09:00"
+    },
+    {
+      "id": "SPEC-AITAG-014",
+      "title": "Unified Player Target / Condition Tag Reference Contract",
+      "status": "Approved",
+      "summary": "探索・状態確認・行動で、対象と条件のPlayer参照経路をFormal Tag/Tag Categoryへ統一する。",
+      "body": "# 共通対象参照\n- Candidate sourceはFormal tags + tag_categories。\n- Target Tagは既存Category所属かつRuntimeが理解するtarget runtime_semanticを持つTag。\n- 有効Target Tag群は1つのFormal Categoryへ一意に属する必要がある。0または複数CategoryならFail Closed。\n- PlayerはTag名称を選択し、Programにはtarget_tag_idを保存。\n- Compilerがtarget_tag_id→Tag.runtime_semantic→Runtime target scopeへ変換。\n- 固定してよいのはRuntimeが処理に必要なsystem semantic（SELF/ALLY/OTHER_ALLY/ENEMY等）の意味だけ。TGC/TAG ID・名称・ID対応は固定禁止。\n\n# 共通条件候補\n- Candidate sourceはFormal tag_categories→所属tags。ai_conditions.ref_category_idをCategory候補条件に使わない。\n- Target Categoryは条件Categoryから除外。\n- runtime_semantic=ALIVE/DEADはSTATE_BOOLEAN。\n- runtime_semantic=HP/MPはSTATE_NUMERIC。\n- runtime_semanticが空で、既存Formal Category所属のTagはTag identityをactive effect Tagとして評価する。\n- 未対応の非空runtime_semanticはFail Closed。\n- 具体的Category/Tag IDによる意味分岐は禁止。\n\n# Player Search\n- 対象→絞り込みCategory→候補→必要Parameter。\n- Authoringはtarget_tag_idと直接Tag condition binding（tag_id+params）を保存。result_slot_idはSystem内部管理。\n- STATE_NUMERICはCURRENT/RATIO + operator + value。\n- Battle Runtimeは対象scopeから現在Unit集合を取得し、その瞬間のHP/MP/effect/aliveで各Unitを評価してFOUND/NOT_FOUNDを決定。\n\n# Player State Check\n- Category→候補→必要Parameter。Playerにsubject_scope/AIC/Predicateを見せない。\n- Authoringは直接Tag condition binding（tag_id+params）を保存。\n- Runtime subjectはPlayer actor SELFをSystem内部で使用。\n- STATE_NUMERICはCURRENT/RATIO + operator + value。Effect Tag/ALIVE/DEADはその瞬間の状態をBoolean評価してYES/NO。\n\n# Player Action\n- 対象→条件Category→候補→必要Parameter→アクション。\n- 既存target_tag_id / target_condition(tag_id+params)を維持。\n- STATE_NUMERICはCURRENT/RATIO + MIN/MAX。Effect Tag/ALIVE/DEADは候補集合Filter。\n- 0件=不成立、1件=確定、複数=対象決定用AI_DECISION RNG。Action/Skill内部RNGへ介入しない。\n\n# AI作成時 / 戦闘時\n- AI作成時に保存するのはFormal Tag ID、Action参照、比較方式・値等の設定値だけ。\n- 現在Unit IDs、現在HP/MP、現在effect、条件評価結果、Random結果、実target IDは保存しない。\n- 戦闘時にCurrent Battle Stateから毎回取得・計算する。\n\n# Player / Developer分離\n- Player Search/StateCheckは直接Tag condition bindingを正本とし、Condition MasterをPlayer参照入口にしない。\n- Studio Developerの汎用Predicate契約は別Authoring契約として維持し、この変更で削除しない。\n- Player Editorは旧Predicate形を新形式へ黙って推測変換しない。再設定が必要な場合は明示する。",
+      "decision_refs": [
+        "DEC-AITAG-015",
+        "DEC-AITAG-019",
+        "DEC-AITAG-020"
+      ],
+      "depends_on": [
+        "SPEC-AITAG-013"
+      ],
+      "acceptance_criteria": "Current Formal DataでSearch/StateCheck/Actionの条件Categoryが共通resolverから生成され、能力変化・継続ダメ・状態異常・防御効果・状態管理がCurrent dataどおり候補化されること。対象はCurrent dataの対象Tag群だけが一意Categoryから候補化され、具体的TAG/TGC ID固定がないこと。Search/StateCheckはai_conditions.ref_category_idによってCategoryを欠落させないこと。AI作成時参照値と戦闘時実値が分離され、既存Action、Search Result Slot、Studio Developer Predicateの契約を壊さないこと。",
+      "system_node_id": "SYS-AITAG-AUTHORING",
+      "contract_ids": [],
+      "source_candidate_id": "GKS-B877 / GA-B486.223",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "Human",
+      "approved_at": "2026-09-06T14:15:00+09:00",
+      "created_at": "2026-09-06T14:15:00+09:00",
+      "updated_at": "2026-09-06T14:15:00+09:00"
     }
   ],
   "specification_candidates": [],
@@ -1487,6 +1527,46 @@
       },
       "created_at": "2026-09-06T13:20:15+09:00",
       "updated_at": "2026-09-06T13:20:15+09:00"
+    },
+    {
+      "id": "TASK-AITAG-028",
+      "box_id": "BOX-AITAG-003",
+      "title": "探索・状態確認・行動の共通Tag参照契約を確定",
+      "status": "Done",
+      "execution_order": 28,
+      "depends_on": [
+        "TASK-AITAG-027"
+      ],
+      "acceptance_criteria": "B877 CurrentでSearch/StateCheckのCategory欠落原因とTargetのsemantic allowlist接続を監査し、Formal Category→TagをPlayer Authorityとする共通参照契約、AI作成時参照値、Compiler値、戦闘時実値、許可されるsystem semantic固定と禁止されるTAG/TGC固定を確定する。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-09-06T14:15:00+09:00"
+      },
+      "created_at": "2026-09-06T14:15:00+09:00",
+      "updated_at": "2026-09-06T14:15:00+09:00"
+    },
+    {
+      "id": "TASK-AITAG-029",
+      "box_id": "BOX-AITAG-003",
+      "title": "Player Search / StateCheckを共通Tag参照へ修正",
+      "status": "Todo",
+      "execution_order": 29,
+      "depends_on": [
+        "TASK-AITAG-028"
+      ],
+      "acceptance_criteria": "Search/StateCheckのPlayer条件候補をai_conditions.ref_category_idから切り離し、共通Formal Category→Tag resolverへ移行する。Current Dataで5条件Categoryを表示し、対象も一意Formal Target CategoryからData-drivenに候補化する。既存Actionと同じAI作成時/戦闘時値分離を維持し、具体的TAG/TGC IDをProductionへ固定しない。Protected Testの正当な仕様変更は変更前/変更後内容をHumanへ報告し、承認後のみ変更する。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-09-06T14:15:00+09:00",
+      "updated_at": "2026-09-06T14:15:00+09:00"
     }
   ],
   "checks": [
@@ -2507,6 +2587,14 @@
     {
       "at": "2026-09-06T13:20:15+09:00",
       "message": "Player行動を既存Formal参照先だけで「対象→条件Category→候補→必要Parameter→アクション」として実装。新AAC/Game Dataは作成せず、AI作成時は参照値のみ保存、戦闘時に現在値評価。候補0件不成立/1件確定/複数は対象決定用AI_DECISION Random。Action/Skill内部RNGは維持。正当なProtected Test変更5件は変更前/後を報告してHuman承認後反映。4 Schemaを含むProtected 9件exact approval verified。GKS-B876チェックポイントは非適用で再利用せず、Final GKS-B877 / GA-B486.223を作成。Full/Accept/Applied/ZIP再展開Gate PASS。Human Apply待ち。"
+    },
+    {
+      "at": "2026-09-06T13:49:00+09:00",
+      "message": "Human提供Fresh Current guild-adventure-studio-sub(20260906-044909).zipを確認。GKS-B877 / GA-B486.223、最終Source Update persistent 681/681 exact、最終適用シミュレーション780/780 exact、Protected 9件approved updated hash exact。Source ZIP binding 780、Quick 12/12、Full 27/27、Active Test Gate 164 skipped=0、package manifest 680、Critical Runtime 52、warnings/timeouts 0。TASK-AITAG-027をFresh CurrentでApplied完了確認。RULE-AITAG-009に従い次Phaseへ自動着手しない。"
+    },
+    {
+      "at": "2026-09-06T14:15:00+09:00",
+      "message": "B877 Fresh Current監査で、Search/StateCheckがai_conditions.ref_category_idをPlayer Category候補Authorityとしているため状態管理しか表示されないことを確認。ActionはFormal Category→Tagを直接参照して5条件Categoryを表示。Targetは具体TAG/TGC ID固定ではないがSELF/ALLY/OTHER_ALLY/ENEMY system semantic allowlistで候補化していた。Human指示により、Search/StateCheck/Actionを共通Formal Category→Tag resolverへ統一し、Targetは有効target semantic Tag群が一意Formal Categoryに属することを要求する契約へ確定。Runtime system semantic固定は許可、具体TAG/TGC ID・名称・対応固定は禁止。"
     }
   ]
 }
