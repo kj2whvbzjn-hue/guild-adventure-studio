@@ -10,7 +10,7 @@
     "name": "Player AI パーツTag基盤・段階接続",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-09-06T00:15:00.783Z"
+    "updated_at": "2026-09-06T04:48:38.145Z"
   },
   "project_context": {
     "purpose": "Playerがゲーム内で実際に使用するPlayer AIパーツについて、必要な意味語彙をTag Masterとして段階的に設計・登録し、そのデータをCurrent AI Editor / Validator / Compiler / Runtime / Formal Export / Game Dataへ実際に接続できるか検証する。接続不能・責務不整合・ハードコード依存が判明した箇所だけを根拠付きで改修し、最終的なPlayer AI全面改修を、先に決めたUI都合ではなく実際に必要なAIパーツを成立させるための構造改修として行う。",
@@ -19,8 +19,8 @@
   "current_focus": {
     "architecture_id": "ARCH-AITAG-ROOT",
     "work_box_id": "BOX-AITAG-003",
-    "theme": "Player行動 Target / Condition / Action Formal契約確定",
-    "goal": "Player行動Authoringを『対象・条件・アクション』の3入力として固定する。AI作成時にはFormal参照値と設定値だけを保存し、戦闘Unit・現在HP・状態・候補集合・Random結果などの実値は保存しない。戦闘時に対象集合を生成し、選択Actionの合法候補と交差した後、Candidate ConditionでUNIT_SET→UNIT_SET評価し、0件=不成立、1件=確定、2件以上=AI_DECISION RNGで1件決定する。次工程はData Firstでai_action_conditions Formal Master契約と必要Master DataをHuman Gateへ出す。"
+    "theme": "Player行動 Target / Condition Category→Candidate / Action Source Update完成・Human Apply待ち",
+    "goal": "GKS-B877 / GA-B486.223 Source UpdateはFull/Accept/Applied/ZIP再展開Gate PASS。Human Apply後にFresh Currentを確認して本Phaseを最終完了する。"
   },
   "project_rules": [
     {
@@ -204,6 +204,20 @@
       "result": "Applied",
       "evidence": "GKS-B875 / GA-B486.221 Player State Check Category→Tag Source Update applied. Fresh Current guild-adventure-studio-sub(20260905-125134).zip confirms Source Update persistent 681 files exact-match, protected tests exact SHA-256 game-ai-editor-phase3a=81d1a512...c2fd95c and ai-v2-game-player-authoring-binding-r10-p8=54a952a5...fe8cf6f. Targeted 8 test families PASS, source ZIP binding 780, package manifest 680, Critical Runtime 52, Quick 12/12, Full 27/27, warnings=0, timeouts=0.",
       "recorded_at": "2026-09-05T21:54:33+09:00"
+    },
+    {
+      "id": "IMPL-AITAG-PLAYER-ACTION-GKS-B877-001",
+      "studio_build": "GKS-B877",
+      "game_build": "GA-B486.223",
+      "work_box_ids": [
+        "BOX-AITAG-003"
+      ],
+      "task_ids": [
+        "TASK-AITAG-027"
+      ],
+      "result": "Applied",
+      "evidence": "EVD-AITAG-039_PLAYER_ACTION_FINAL_SOURCE_UPDATE_PASS.json; artifact_id=GKS-B877-52f773a994f7; Source Full 26/26; Update Quick 13/13; Accept 13/13 with Applied Full 26/26; ZIP reextract exact and Applied Full 26/26.",
+      "recorded_at": "2026-09-06T13:20:15+09:00"
     }
   ],
   "discussions": [],
@@ -415,14 +429,28 @@
     {
       "id": "DEC-AITAG-018",
       "title": "Player行動条件はUNIT_SET→UNIT_SET Formal契約としてBoolean Predicateから分離する",
-      "status": "Approved",
+      "status": "Superseded",
       "text": "Player行動の『条件』は既存ai_conditionsの1 subject→boolean契約へ統合しない。新規Formal Master dataset ai_action_conditions（AAC-*）を設け、全Masterの共通Runtime契約をUNIT_SET→UNIT_SETとする。個別Evaluatorの内部で既存Predicateを再利用することは許可するが、PlayerにはFilter/Rank/Predicate等の内部分類を表示しない。",
       "rationale": "単体真偽条件だけでなく候補集合全体を比較する条件を同一Player『条件』として扱いつつ、既存状態確認PredicateのYES/NO契約を壊さないため。",
       "source_discussion_ids": [],
       "approved_by": "Human",
       "approved_at": "2026-09-06T09:03:00+09:00",
       "created_at": "2026-09-06T09:03:00+09:00",
-      "updated_at": "2026-09-06T09:03:00+09:00"
+      "updated_at": "2026-09-06T13:20:15+09:00",
+      "superseded_by": "DEC-AITAG-019",
+      "superseded_reason": "Human later required use of existing Formal reference destinations; no new ai_action_conditions/AAC master family is created."
+    },
+    {
+      "id": "DEC-AITAG-019",
+      "title": "Player行動条件は既存Formal参照先をCategory→候補として利用する",
+      "status": "Approved",
+      "text": "Player行動の条件は新しいAAC Master体系を作らず、既存Formal Tag Category→Tag候補をPlayerに提示し、選択したCategory/Tag/必要Parameterから既存Condition/Target評価契約へ内部解決する。Playerには内部Master、Predicate、Target Selector、Result Slotを表示しない。",
+      "rationale": "Playerがしたいことは「対象の中からどの条件で相手を選び、何をするか」であり、新しい内部分類を選ばせる必要がないため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-09-06T13:20:15+09:00",
+      "created_at": "2026-09-06T13:20:15+09:00",
+      "updated_at": "2026-09-06T13:20:15+09:00"
     }
   ],
   "specifications": [
@@ -702,7 +730,7 @@
     {
       "id": "SPEC-AITAG-012",
       "title": "Player Action Target / Condition / Action Contract",
-      "status": "Approved",
+      "status": "Superseded",
       "summary": "Player行動を対象参照・Candidate Condition参照・Action参照の3系統に固定し、Authoring参照値とBattle Runtime実値を分離する。",
       "body": "# Player入力\n- 対象: Formal Target Tag候補から選択。\n- 条件: Formal ai_action_conditions候補から1件、または条件なし。必要Parameterだけ追加入力。\n- アクション: available Formal Action Mastersと、そのMasterが要求する有限Formal参照値から具体候補を生成し1件選択。Action種別や具体IDの固定配列をSourceへ持たない。\n\n# AI作成時に保存する値\n- Action Node.target_tag_id: Formal Tag ID。実Unit IDではない。\n- Action Node.candidate_condition: null または {condition_master_id: AAC-*, params:{...}}。\n- Action Node.master_node_id + parameters: 選択ActionのFormal参照値。\n- current HP/MP、状態、候補Unit IDs、Random結果、実target IDは保存禁止。\n\n# Candidate Condition Master\n- dataset: masters.ai_action_conditions\n- export: ai/ai_action_conditions.json\n- ID: AAC-*\n- fields: schema_version / id / name / status / data_version / description / tags / evaluator / parameter_schema / unlock\n- evaluator namespace: action_condition.*\n- 共通Runtime契約: input UNIT_SET → output UNIT_SET。\n- status=activeかつdata_version一致かつunlock成立のみPlayer候補。\n\n# Compile\n- target_tag_idをTag runtime_semanticへ解決しRuntime target_scopeへ変換する。\n- candidate_conditionはAAC Masterを解決し、{condition_master_id,evaluator,params}へ変換する。\n- Actionは従来どおりmaster_node_id/evaluator/parametersをRuntime instructionへ変換する。\n\n# Battle Runtime\n1. Action handlerからその瞬間のaction availability / legal candidatesを解決する。\n2. target_scopeから現在Battle Unit populationを得る。\n3. target population ∩ action legal candidatesを作る。\n4. candidate_conditionがあればその現在候補集合へUNIT_SET→UNIT_SET評価を行う。条件なしはそのまま。\n5. 出力0件=行動不成立、1件=確定、2件以上=AI_DECISION RNGで1件決定。\n6. 決定した実target IDとActionを返す。\n- Candidate Conditionの出力は入力候補のsubsetであることをRuntimeで検証し、外部Unitや重複はFail Closed。\n\n# Search / Result Slot\n- Player行動Authoringの対象/条件入力にresult_slot_idを使用しない。\n- PlayerはSearch Result Slotを選択しない。\n- Search result slotはSearch内部のRuntime一時値/既存Developer契約としてこのPhaseでは削除しない。\n- Player Actionはtarget_source / target_selectorを生成しない。\n\n# AI作成時と戦闘時の値分離\n- Authoring: Formal ID、固定設定値、参照値のみ。\n- Runtime: 現在Unit集合、現在HP/MP、状態、Action合法候補、条件評価結果、Random、実target ID。\n- Runtime実値をProgramへ書き戻さない。",
       "decision_refs": [
@@ -723,7 +751,33 @@
       "approved_by": "Human",
       "approved_at": "2026-09-06T09:03:00+09:00",
       "created_at": "2026-09-06T09:03:00+09:00",
-      "updated_at": "2026-09-06T09:03:00+09:00"
+      "updated_at": "2026-09-06T13:20:15+09:00",
+      "superseded_by": "SPEC-AITAG-013"
+    },
+    {
+      "id": "SPEC-AITAG-013",
+      "title": "Player Action Existing-Reference Authoring Contract",
+      "status": "Verified",
+      "summary": "Player行動を対象→条件Category→候補→必要Parameter→アクションとしてAuthoringし、既存Formal参照先だけで保存/Compile/Runtime接続する。",
+      "body": "# Player入力\n- 対象: Formal対象Tagから1件。\n- 条件: Categoryを選び、そのCategory所属候補から1件、または指定なし。必要Parameterだけ入力。\n- アクション: available Formal ActionとPlayer-context参照から具体候補を生成して1件。\n\n# AI作成時\n- 実Unitや現在HP/状態は保存せず、target_tag_id / target_condition(tag_id+params) / master_node_id+parametersだけを保存。\n\n# Runtime\n- 現在Battle UnitとAction legal candidatesを解決し、選択条件を現在値で評価。0件=不成立、1件=確定、2件以上=対象決定用AI_DECISION RNGで1件。\n- Action/Skill内部RNGには介入しない。\n\n# 非表示\n- Predicate / Condition Master / Target Selector / Result Slot / AIA・ATS・ARS等のIDをPlayerへ表示しない。\n- Player Actionはtarget_source/target_selectorを使わない。Search Result SlotはSearch内部契約として維持。",
+      "decision_refs": [
+        "DEC-AITAG-017",
+        "DEC-AITAG-019"
+      ],
+      "depends_on": [
+        "SPEC-AITAG-010",
+        "SPEC-AITAG-011"
+      ],
+      "acceptance_criteria": "GKS-B877 Candidateで対象→条件Category→候補→アクション、参照値保存、Compile、戦闘時現在値評価、0/1/複数候補処理、既存Search/StateCheck回帰がGate PASSする。",
+      "system_node_id": "SYS-AITAG-AUTHORING",
+      "contract_ids": [],
+      "source_candidate_id": "GKS-B877 / GA-B486.223",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "Human",
+      "approved_at": "2026-09-06T13:20:15+09:00",
+      "created_at": "2026-09-06T13:20:15+09:00",
+      "updated_at": "2026-09-06T13:20:15+09:00"
     }
   ],
   "specification_candidates": [],
@@ -1357,7 +1411,7 @@
       "id": "TASK-AITAG-024",
       "box_id": "BOX-AITAG-003",
       "title": "Player行動Authoring契約をHuman承認する",
-      "status": "Doing",
+      "status": "Done",
       "execution_order": 24,
       "depends_on": [
         "TASK-AITAG-023"
@@ -1366,12 +1420,12 @@
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-09-06T13:20:15+09:00"
       },
       "created_at": "2026-09-05T22:05:00+09:00",
-      "updated_at": "2026-09-05T22:05:00+09:00"
+      "updated_at": "2026-09-06T13:20:15+09:00"
     },
     {
       "id": "TASK-AITAG-025",
@@ -1397,21 +1451,42 @@
       "id": "TASK-AITAG-026",
       "box_id": "BOX-AITAG-003",
       "title": "ai_action_conditions Data First設計と初期Master候補をHuman Gateへ提出",
-      "status": "Doing",
+      "status": "Done",
       "execution_order": 26,
       "depends_on": [
         "TASK-AITAG-025"
       ],
-      "acceptance_criteria": "Playerが実際に必要とする行動条件だけを選定し、AAC Master Data候補をparameter_schema/evaluator/参照先/Authoring保存値/Runtime取得値まで明示してHuman承認へ出す。承認前にGame DataまたはProduction Sourceを変更しない。",
+      "acceptance_criteria": "Superseded: Human directed that existing Formal reference destinations are sufficient. No ai_action_conditions/AAC Game Data was created. The task is closed by DEC-AITAG-019 / SPEC-AITAG-013.",
       "work_type": "",
       "requires_human_approval": true,
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-09-06T13:20:15+09:00"
       },
       "created_at": "2026-09-06T09:03:00+09:00",
-      "updated_at": "2026-09-06T09:03:00+09:00"
+      "updated_at": "2026-09-06T13:20:15+09:00"
+    },
+    {
+      "id": "TASK-AITAG-027",
+      "box_id": "BOX-AITAG-003",
+      "title": "Player行動 対象→条件Category→候補→アクションを既存参照先で実装",
+      "status": "Done",
+      "execution_order": 27,
+      "depends_on": [
+        "TASK-AITAG-025",
+        "TASK-AITAG-026"
+      ],
+      "acceptance_criteria": "新Master/Game Dataを追加せず、対象・条件Category→候補・アクションを既存Formal参照から生成。Authoring参照値とBattle Runtime実値を分離し、既存Gateを維持したまま正当な追加TestのみHuman承認後変更。Full/Applied Gate PASS。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-09-06T13:20:15+09:00"
+      },
+      "created_at": "2026-09-06T13:20:15+09:00",
+      "updated_at": "2026-09-06T13:20:15+09:00"
     }
   ],
   "checks": [
@@ -2246,6 +2321,29 @@
       "blocking": false,
       "created_at": "2026-09-05T22:05:00+09:00",
       "updated_at": "2026-09-05T22:05:00+09:00"
+    },
+    {
+      "id": "CHK-AITAG-038",
+      "title": "B877 Player行動 Source Update最終Gate",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-AITAG-027",
+      "status": "Passed",
+      "result": "Protected exact approval verified; candidate Full 26/26; Update Quick/Accept PASS; Applied Full 26/26; ZIP reextract exact; ZIP Applied Full 26/26; warnings/timeouts 0.",
+      "evidence": "EVD-AITAG-039_PLAYER_ACTION_FINAL_SOURCE_UPDATE_PASS.json",
+      "checked_by": "AI",
+      "checked_at": "2026-09-06T13:20:15+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-06T13:20:15+09:00",
+      "updated_at": "2026-09-06T13:20:15+09:00"
     }
   ],
   "workflow": {
@@ -2405,6 +2503,10 @@
     {
       "at": "2026-09-06T09:03:00+09:00",
       "message": "Human承認によりPlayer行動Authoringを『対象・条件・アクション』へ確定。行動条件は既存Boolean Predicateと分離したmasters.ai_action_conditions / AAC-* / action_condition.*を新Formal契約とし、共通RuntimeはUNIT_SET→UNIT_SET。AuthoringではFormal参照値のみ保存し、戦闘時にtarget populationとAction合法候補を交差、Candidate Conditionを評価し、0件不成立/1件確定/複数AI_DECISION Randomで決定する。Player ActionはSearch Result Slot/target_source/target_selectorを入力として使用しない。TASK-AITAG-025 Done、TASK-AITAG-026 Data First Human Gateへ移行。"
+    },
+    {
+      "at": "2026-09-06T13:20:15+09:00",
+      "message": "Player行動を既存Formal参照先だけで「対象→条件Category→候補→必要Parameter→アクション」として実装。新AAC/Game Dataは作成せず、AI作成時は参照値のみ保存、戦闘時に現在値評価。候補0件不成立/1件確定/複数は対象決定用AI_DECISION Random。Action/Skill内部RNGは維持。正当なProtected Test変更5件は変更前/後を報告してHuman承認後反映。4 Schemaを含むProtected 9件exact approval verified。GKS-B876チェックポイントは非適用で再利用せず、Final GKS-B877 / GA-B486.223を作成。Full/Accept/Applied/ZIP再展開Gate PASS。Human Apply待ち。"
     }
   ]
 }
