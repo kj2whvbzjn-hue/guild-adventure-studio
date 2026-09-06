@@ -1,0 +1,13 @@
+import fs from 'fs';import assert from 'assert';
+const studio=fs.readFileSync('studio/index.html','utf8');
+const gateway=fs.readFileSync('ai-gateway-server/router.php','utf8');
+const exportCore=fs.readFileSync('studio/export-core.js','utf8');
+const game=fs.readFileSync('game/index.html','utf8');
+for(const fn of ['pullFromAuthority','commitAuthorityWorkingCopyAtomic','pushToAuthority','buildAuthorityPushCandidate','verifyAuthorityPostCommit'])assert(studio.includes(`function ${fn}`)||studio.includes(`async function ${fn}`),fn);
+assert(studio.includes("SYSTEM_AUTHORITY_PROJECT_DATA_PATH='project-data.json'"));
+assert(!studio.includes("CANONICAL_PROJECT_URL='../project-data.json'"));
+assert(!gateway.includes("file_get_contents($root.'/project-data.json')"));
+assert(exportCore.includes("'skill/skills.json'")||exportCore.includes('skill/skills.json'),'Formal Export skill path missing');
+assert(game.includes('../Export/')||game.includes('Export/'),'Game entry must reference Formal Export/runtime assets');
+assert(studio.includes('ai-partial-import-adapter.js'),'AI Partial Import adapter not wired');
+console.log('GAME_DATA_AUTHORITY_ROUNDTRIP_CONTRACT_OK');

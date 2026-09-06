@@ -9,7 +9,7 @@
   const VERSION='1.0.0-draft';
   const VOLATILE_DEFAULT=['updated_at','created_at','generated_at'];
   const ID_PREFIXES=Object.freeze({
-    monsters:'MON',tags:'TAG',skills:'SKL',stats:'STA',status_effects:'STS',tablets:'TBL',maps:'MAP',exploration_outcomes:'EXP',adventure_settings:'ADV',jobs:'JOB',equipment:'EQP',passives:'PAS',mods:'MOD',ai_searches:'AIS',ai_conditions:'AIC',ai_target_selectors:'ATS',ai_actions:'AIA',ai_programs:'AIP',ai_program_layouts:'AIL',ai_program_runtime:'AIP',chapters:'CHP',story_sections:'SEC',story_scenes:'SCN',story_dialogues:'DLG'
+    monsters:'MON',tags:'TAG',skills:'SKL',stats:'STA',status_effects:'STS',tablets:'TBL',maps:'MAP',exploration_outcomes:'EXP',reward_tables:'RWD',adventure_settings:'ADV',jobs:'JOB',equipment:'EQP',passives:'PAS',mods:'MOD',ai_searches:'AIS',ai_conditions:'AIC',ai_target_selectors:'ATS',ai_actions:'AIA',ai_programs:'AIP',ai_program_layouts:'AIL',ai_program_runtime:'AIP',chapters:'CHP',story_sections:'SEC',story_scenes:'SCN',story_dialogues:'DLG'
   });
   const ID_RULES=Object.fromEntries(Object.entries(ID_PREFIXES).map(([dataset,prefix])=>[dataset,{prefix,pattern:new RegExp('^'+prefix+'-\\d{4}$'),example:prefix+'-0001'}]));
 
@@ -19,16 +19,19 @@
       {dataset:'skills',paths:['params.skill_ids','params.candidate_skill_ids']},
       {dataset:'jobs',paths:['params.job_id']},
       {dataset:'equipment',paths:['params.equipment_ids']},
-      {dataset:'mods',paths:['params.mod_ids']}
+      {dataset:'mods',paths:['params.mod_ids']},
+      {dataset:'reward_tables',paths:['params.drop_table_id','drop_table_id','reward_table_id']}
     ]},
-    tags:{path:['tags'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['aliases'],dependencies:[]},
+    tags:{path:['tags'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['aliases'],dependencies:[{dataset:'tag_categories',paths:['category_id']} ]},
+    tag_categories:{path:['tag_categories'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:[],dependencies:[]},
     skills:{path:['masters','skills'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags','params.required_tags','useRequirements[].allTags','useRequirements[].anyTags'],dependencies:[{dataset:'tags',paths:['tags','params.required_tags','useRequirements[].allTags','useRequirements[].anyTags']}]},
     stats:{path:['masters','stats'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags'],dependencies:[{dataset:'tags',paths:['tags']}]},
     status_effects:{path:['masters','status_effects'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags'],dependencies:[{dataset:'tags',paths:['tags']}]},
     tablets:{path:['masters','tablets'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags'],dependencies:[{dataset:'tags',paths:['tags']}]},
     maps:{path:['masters','maps'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags'],dependencies:[{dataset:'tags',paths:['tags']}]},
-    exploration_outcomes:{path:['masters','exploration_outcomes'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags','params.environment_tags.any','params.environment_tags.all','params.environment_tags.none'],dependencies:[{dataset:'tags',paths:['tags','params.environment_tags.any','params.environment_tags.all','params.environment_tags.none']}]},
+    exploration_outcomes:{path:['masters','exploration_outcomes'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags','params.environment_tags.any','params.environment_tags.all','params.environment_tags.none'],dependencies:[{dataset:'tags',paths:['tags','params.environment_tags.any','params.environment_tags.all','params.environment_tags.none']},{dataset:'reward_tables',paths:['params.reward_table_id','params.reward_table_ids','reward_table_id']}]},
     adventure_settings:{path:['masters','adventure_settings'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags'],dependencies:[{dataset:'tags',paths:['tags']}]},
+    reward_tables:{path:['masters','reward_tables'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags'],dependencies:[{dataset:'tags',paths:['tags']},{dataset:'equipment',paths:['equipment_id','equipment_ids','entries[].equipment_id']},{dataset:'tablets',paths:['tablet_id','tablet_ids','entries[].tablet_id']}]},
     jobs:{path:['masters','jobs'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags'],dependencies:[{dataset:'tags',paths:['tags']}]},
     equipment:{path:['masters','equipment'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags','mod_ids','params.mod_ids'],dependencies:[{dataset:'tags',paths:['tags']},{dataset:'mods',paths:['mod_ids','params.mod_ids']}]},
     passives:{path:['masters','passives'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags','params.mod_ids','params.effect_ids'],dependencies:[{dataset:'tags',paths:['tags']},{dataset:'mods',paths:['params.mod_ids']}]},
@@ -48,6 +51,15 @@
     ]},
     ai_program_layouts:{path:['ai_program_layouts'],idField:'layout_id',volatile:VOLATILE_DEFAULT,unordered:[],dependencies:[{dataset:'ai_programs',paths:['program_id']}]},
     ai_program_runtime:{path:['ai_program_runtime'],idField:'program_id',volatile:VOLATILE_DEFAULT,unordered:[],dependencies:[{dataset:'ai_programs',paths:['program_id']}]},
+    characters:{path:['characters'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags','goals'],dependencies:[{dataset:'organizations',paths:['organization_id']},{dataset:'tags',paths:['tags']}]},
+    organizations:{path:['organizations'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:[],dependencies:[]},
+    terms:{path:['terms'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:[],dependencies:[]},
+    relationships:{path:['relationships'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:[],dependencies:[{dataset:'characters',paths:['from_character_id','to_character_id']}]},
+    timeline:{path:['timeline'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:[],dependencies:[]},
+    quests:{path:['quests'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['prerequisite_ids','next_quest_ids','required_flags','set_flags','character_ids','tags'],dependencies:[{dataset:'quests',paths:['prerequisite_ids','next_quest_ids']},{dataset:'flags',paths:['required_flags','set_flags']},{dataset:'characters',paths:['character_ids']},{dataset:'tags',paths:['tags']}]},
+    events:{path:['events'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['required_flags','set_flags','tags'],dependencies:[{dataset:'flags',paths:['required_flags','set_flags']},{dataset:'reward_tables',paths:['reward_table_id','reward_table_ids']},{dataset:'tags',paths:['tags']}]},
+    flags:{path:['flags'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:[],dependencies:[]},
+    rules:{path:['rules'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:[],dependencies:[{dataset:'tags',paths:['nodes[].tag_id']}]},
     chapters:{path:['chapters'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:[],dependencies:[]},
     story_sections:{virtual:'story_sections',idField:'id',volatile:VOLATILE_DEFAULT,unordered:[],dependencies:[],contextFields:['chapter_id']},
     story_scenes:{virtual:'story_scenes',idField:'id',volatile:VOLATILE_DEFAULT,unordered:[],dependencies:[],contextFields:['chapter_id','section_id']},
@@ -492,6 +504,7 @@
   const SAFE_TOP_LEVEL_FIELDS={
     monsters:new Set(['id','name','status','tags','params','description','created_at','updated_at']),
     tags:new Set(['id','name','status','category_id','parent_id','description','enabled','aliases','deprecated','replacement_tag_id','recommended_replacement_tag_id','order','created_at','updated_at']),
+    tag_categories:new Set(['id','name','status','description','order','enabled','created_at','updated_at']),
     skills:new Set(FORMAL_SKILL_MASTER_FIELDS),
     jobs:new Set(['id','name','status','tags','params','description','created_at','updated_at','str','vit','agi','dex','int','mnd','luk']),
     equipment:new Set(['id','name','status','tags','params','description','created_at','updated_at','mod_ids','item_level','mod_budget','mod_count','required_str','required_dex','required_int','required_vit','required_mnd','required_agi','attack','accuracy','magic_accuracy','magic_resistance','magic_weapon_bonus','weapon_critical_rate','block_rate','block_damage_cut_rate','hp_bonus','mp_bonus','evasion','armor_category','armor_slot','generation']),
@@ -507,6 +520,16 @@
     chapters:new Set(['id','no','title','theme','summary','purpose','status','design','sections','candidate_revisions','export_control','created_at','updated_at']),
     story_sections:new Set(['id','chapter_id','no','title','summary','purpose','start_state','end_state','key_points','status','design','candidate_revisions','export_control','created_at','updated_at']),
     story_scenes:new Set(['id','chapter_id','section_id','no','title','summary','purpose','status','design','candidate_revisions','export_control','created_at','updated_at']),
+    reward_tables:new Set(['id','name','status','tags','params','description','equipment_id','equipment_ids','tablet_id','tablet_ids','entries','created_at','updated_at']),
+    characters:new Set(['id','name','role','job','race','age','speech','organization_id','first_appearance','join_point','leave_point','awaken_point','goals','event_history','profile','tags','created_at','updated_at']),
+    organizations:new Set(['id','name','type','notes','description','created_at','updated_at']),
+    terms:new Set(['id','name','category','description','created_at','updated_at']),
+    relationships:new Set(['id','from_character_id','to_character_id','type','notes','created_at','updated_at']),
+    timeline:new Set(['id','chapter_no','section_no','target_id','event','auto_generated','source_event_id','recorded_at','created_at','updated_at']),
+    quests:new Set(['id','name','status','description','prerequisite_ids','next_quest_ids','required_flags','set_flags','character_ids','tags','boxes','adventure_duration_seconds','params','created_at','updated_at']),
+    events:new Set(['id','name','status','description','required_flags','set_flags','tags','reward_table_id','reward_table_ids','usage','event_type','group','params','created_at','updated_at']),
+    flags:new Set(['id','name','category','default_value','description','created_at','updated_at']),
+    rules:new Set(['id','name','nodes','description','created_at','updated_at']),
     story_dialogues:new Set(['id','chapter_id','section_id','scene_id','no','status','speaker','text','stage_direction','description','created_at','updated_at'])
   };
   function unknownIncomingFields(dataset,localRow,incomingRow){

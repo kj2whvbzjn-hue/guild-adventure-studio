@@ -1,9 +1,9 @@
 (function(){
   'use strict';
   const selectedByDataset=new Map();
-  let lastEnvelope=null,lastDryRun=null,lastApplyPlan=null,conflictChoices={},lastSourceFilename='',pickerDatasetFilter=null,pickerTitle='部分データ入出力';
-  const DATASET_LABELS={tags:'タグ',stats:'能力値',jobs:'職業',skills:'スキル',equipment:'装備',passives:'パッシブ',mods:'MOD',monsters:'モンスター',status_effects:'状態異常',tablets:'石板',maps:'マップ',exploration_outcomes:'探索結果',adventure_settings:'冒険設定',ai_searches:'AI探索',ai_conditions:'AI状態確認 / Predicate',ai_target_selectors:'AI Target Selector',ai_actions:'AI行動',ai_programs:'AIプログラム',ai_program_layouts:'AIレイアウト',ai_program_runtime:'AI実行形式',chapters:'ストーリー章',story_sections:'ストーリー節',story_scenes:'ストーリーシーン',story_dialogues:'ストーリー台詞'};
-  const ORDER=['monsters','tags','skills','jobs','equipment','passives','mods','stats','status_effects','tablets','maps','exploration_outcomes','adventure_settings','ai_searches','ai_conditions','ai_target_selectors','ai_actions','ai_programs','ai_program_layouts','ai_program_runtime','chapters','story_sections','story_scenes','story_dialogues'];
+  let lastEnvelope=null,lastDryRun=null,lastApplyPlan=null,conflictChoices={},lastSourceFilename='',pickerDatasetFilter=null,pickerTitle='部分データ入出力',lastAiPartialImport=null;
+  const DATASET_LABELS={tag_categories:'タグカテゴリ',tags:'タグ',stats:'能力値',jobs:'職業',skills:'スキル',equipment:'装備',passives:'パッシブ',mods:'MOD',monsters:'モンスター',status_effects:'状態異常',tablets:'石板',maps:'マップ',exploration_outcomes:'探索結果',adventure_settings:'冒険設定',reward_tables:'報酬テーブル',characters:'キャラクター',organizations:'組織',terms:'用語',relationships:'関係',timeline:'時系列',quests:'クエスト',events:'イベント',flags:'フラグ',rules:'ルール',ai_searches:'AI探索',ai_conditions:'AI状態確認 / Predicate',ai_target_selectors:'AI Target Selector',ai_actions:'AI行動',ai_programs:'AIプログラム',ai_program_layouts:'AIレイアウト',ai_program_runtime:'AI実行形式',chapters:'ストーリー章',story_sections:'ストーリー節',story_scenes:'ストーリーシーン',story_dialogues:'ストーリー台詞'};
+  const ORDER=['monsters','tag_categories','tags','skills','jobs','equipment','passives','mods','stats','status_effects','tablets','maps','exploration_outcomes','reward_tables','adventure_settings','characters','organizations','terms','relationships','timeline','quests','events','flags','rules','ai_searches','ai_conditions','ai_target_selectors','ai_actions','ai_programs','ai_program_layouts','ai_program_runtime','chapters','story_sections','story_scenes','story_dialogues'];
 
   function supportedDatasets(){const all=ORDER.filter(k=>GKSDataExchange.REGISTRY[k]);return pickerDatasetFilter?all.filter(k=>pickerDatasetFilter.includes(k)):all;}
   function currentDataset(){return document.getElementById('dxPickerDataset')?.value||supportedDatasets()[0]||'monsters';}
@@ -224,6 +224,46 @@
     writer.addText('README.md','Formal Candidate resource bundle. Battle Packageの resources/candidates/ へ統合して使用します。\nProduct Master/Game Dataへ直接反映するArtifactではありません。\n');
     const project=(data.project?.id||'project').replace(/[^A-Za-z0-9_.-]/g,'_');await writer.download(`${project}_${dataset.toUpperCase()}_FORMAL-CANDIDATES_${ids.length}.zip`);setStatus(`Formal Candidate出力: ${DATASET_LABELS[dataset]||dataset} ${ids.length}件`);
   }catch(e){alert('Formal Candidate出力失敗: '+e.message)}}
+  async function prepareAiPartialImportArtifact(artifact){
+    if(!globalThis.GKSAIPartialImport)throw new Error('AI Partial Import Adapterが読み込まれていません。');
+    const parsed=await GKSAIPartialImport.parseAiPartialImport(artifact,{rootData:data,exchange:GKSDataExchange});
+    const prepared=await GKSAIPartialImport.buildAiMergedCandidate({artifact:parsed,rootData:data,exchange:GKSDataExchange,studioVersion:(typeof DISTRIBUTION_BUILD!=='undefined'?DISTRIBUTION_BUILD:'')});
+    if(typeof buildFullImportGateReport!=='function')throw new Error('Full Import Gateを利用できません。');
+    const globalReport=buildFullImportGateReport(prepared.candidate,{sourceFilename:lastSourceFilename,inputType:'ai_partial_import_merged_candidate',expectedProjectId:String(currentProjectId||data?.project?.id||'')});
+    if(!globalReport.ok)throw new Error(`AI Partial Import merged candidate ERROR ${globalReport.summary?.errors||0}件`);
+    if(GKSDataExchange.stableStringify(prepared.candidate)!==GKSDataExchange.stableStringify(globalReport.candidate))throw new Error('AI_PARTIAL_IMPORT_NORMALIZATION_REQUIRED');
+    const fingerprint=await GKSAIPartialImport.buildAiImportApprovalFingerprint({artifact:parsed,candidate:prepared.candidate,exchange:GKSDataExchange});
+    return {artifact:parsed,prepared,globalReport,fingerprint};
+  }
+  function renderAiPartialImportPreview(state){
+    const status=document.getElementById('dxImportStatus'),panel=document.getElementById('dxApplyPanel');if(!status||!panel)return;
+    const ops=state.artifact.operations||[],creates=ops.filter(x=>x.op==='CREATE').length,updates=ops.filter(x=>x.op==='UPDATE').length;
+    status.innerHTML=`<div><span class="badge ok">AI Partial Import確認完了</span> <span class="small">データ変更 0件</span></div><div class="dx-dryrun-summary"><span class="badge">${escText(DATASET_LABELS[state.artifact.dataset]||state.artifact.dataset)}</span><span class="badge">CREATE ${creates}</span><span class="badge">UPDATE ${updates}</span><span class="badge">ERROR 0</span></div><div class="small">Fingerprint: ${escText(state.fingerprint)}</div>`;
+    panel.innerHTML=`<div><span class="badge ok">反映可能</span> Human承認後だけWorking Copyへ反映します。</div><div class="toolbar"><button class="primary" type="button" onclick="GKSDataExchangeUI.applyAiPartialImport()">AI Partial Importを反映</button></div>`;
+  }
+  async function applyAiPartialImport(){
+    if(!lastAiPartialImport)return alert('AI Partial Importの確認結果がありません。');
+    const before=structuredClone(data),artifact=structuredClone(lastAiPartialImport.artifact),expectedFingerprint=lastAiPartialImport.fingerprint;
+    let txCompleted=false;
+    try{
+      const current=await prepareAiPartialImportArtifact(artifact);
+      if(current.fingerprint!==expectedFingerprint)throw new Error('AI_PARTIAL_IMPORT_APPROVAL_FINGERPRINT_CHANGED');
+      const ops=artifact.operations||[],creates=ops.filter(x=>x.op==='CREATE').length,updates=ops.filter(x=>x.op==='UPDATE').length;
+      if(!confirm(`AI Partial ImportをWorking Copyへ反映しますか？\nDataset: ${artifact.dataset}\nCREATE ${creates} / UPDATE ${updates}\nFingerprint: ${current.fingerprint}`))return;
+      const tx=await GKSDataExchangeTransaction.execute({
+        rootData:data,envelope:current.prepared.envelope,plan:current.prepared.plan,dryRun:current.prepared.dryRun,
+        backup:()=>typeof createBackup==='function'&&createBackup('before-ai-partial-import',{silent:true}),
+        commit:(candidate)=>{data=candidate;return true;},
+        persist:()=>typeof persist==='function'&&persist(`AI Partial Import: ${artifact.dataset} create=${creates} update=${updates}`)!==false,
+        rollback:(original)=>{data=original;return true;}
+      });
+      txCompleted=true;
+      const actualAfterHash=await GKSDataExchangeTransaction.projectHash(data),beforeDatasetHash=await GKSDataExchangeAudit.datasetHash(before,artifact.dataset),afterDatasetHash=await GKSDataExchangeAudit.datasetHash(data,artifact.dataset);
+      const session=GKSDataExchangeAudit.buildSession({transaction:tx,plan:current.prepared.plan,envelope:current.prepared.envelope,beforeData:before,afterHash:actualAfterHash,beforeDatasetHash,afterDatasetHash,sourceFilename:lastSourceFilename,projectId:String(currentProjectId||data?.project?.id||'')});
+      if(!GKSDataExchangeAudit.append(localStorage,auditStorageKey(),session))throw new Error('AI Partial Import Audit保存失敗');
+      lastAiPartialImport=null;lastEnvelope=null;lastDryRun=null;lastApplyPlan=null;renderAuditPanel();render();alert('AI Partial Import反映完了。Authorityは未変更です。Authority Push Gateでのみ正本更新できます。');
+    }catch(e){data=before;if(txCompleted&&typeof persist==='function')persist('AI Partial Import audit failure rollback');alert('AI Partial Import停止: '+e.message);}
+  }
   function inspectImportFile(){
     const input=document.getElementById('dxImportFile'),file=input?.files?.[0],status=document.getElementById('dxImportStatus');
     if(!file){if(status)status.textContent='JSONファイルを選択してください。';return;}
@@ -232,7 +272,9 @@
     if(status)status.textContent='解析中…';
     const reader=new FileReader();
     reader.onload=async()=>{try{
-      lastEnvelope=JSON.parse(reader.result);
+      const parsed=JSON.parse(reader.result);
+      if(parsed?.format===globalThis.GKSAIPartialImport?.FORMAT){lastEnvelope=null;lastDryRun=null;lastApplyPlan=null;lastAiPartialImport=await prepareAiPartialImportArtifact(parsed);renderAiPartialImportPreview(lastAiPartialImport);return;}
+      lastAiPartialImport=null;lastEnvelope=parsed;
       lastDryRun=await GKSDataExchange.dryRunImport({rootData:data,envelope:lastEnvelope});
       renderDryRun(lastDryRun);
       renderImpactPreview(lastDryRun);
@@ -248,5 +290,5 @@
   function refreshAuditHistory(){renderAuditPanel();}
   function onViewRefresh(){renderAuditPanel();}
   if(typeof document!=='undefined')document.addEventListener('DOMContentLoaded',()=>{setTimeout(renderAuditPanel,0);});
-  window.GKSDataExchangeUI={updateImportFilename,openPicker,openStoryPicker,closePicker,changeDataset,renderPicker,toggleItem,handleItemKey,selectVisible,selectAllDataset,clearSelection,exportSelection,exportFormalCandidates,inspectImportFile,renderImpactPreview,exportImpactForGPT,renderAuditPanel,refreshAuditHistory,exportAuditForGPT,undoLatestSession,setConflictChoice,setAllConflictChoices,showApplyPlan,applySafeMerge,onViewRefresh};
+  window.GKSDataExchangeUI={updateImportFilename,openPicker,openStoryPicker,closePicker,changeDataset,renderPicker,toggleItem,handleItemKey,selectVisible,selectAllDataset,clearSelection,exportSelection,exportFormalCandidates,inspectImportFile,renderImpactPreview,exportImpactForGPT,renderAuditPanel,refreshAuditHistory,exportAuditForGPT,undoLatestSession,setConflictChoice,setAllConflictChoices,showApplyPlan,applySafeMerge,applyAiPartialImport,onViewRefresh};
 })( );

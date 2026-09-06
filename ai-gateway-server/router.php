@@ -80,8 +80,7 @@ if ($path==='/ai/status') jsonResponse(['ok'=>true,'gatewayVersion'=>'0.8.0','bu
 if ($path==='/ai/manifest') jsonResponse($manifest);
 if ($path==='/ai/context') {
     if ($snapshot!==null) jsonResponse($snapshot);
-    $project=json_decode((string)@file_get_contents($root.'/project-data.json'),true);
-    jsonResponse(['schemaVersion'=>'1.3.0','gatewayVersion'=>'0.8.0','generatedAt'=>gmdate(DATE_ATOM),'build'=>$manifest['build']??null,'source'=>'project-data.json','project'=>is_array($project)?$project:[]]);
+    jsonResponse(['error'=>'No Studio snapshot has been synchronized.'],409);
 }
 if ($path==='/ai/project') jsonResponse($snapshot['project']??['error'=>'No Studio snapshot has been synchronized.'], $snapshot===null?409:200);
 if ($path==='/ai/validation') jsonResponse($snapshot['validation']??['error'=>'No Studio snapshot has been synchronized.'], $snapshot===null?409:200);

@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "purpose": "Protect Game Data Authority from Source workspace mixing.",
+  "phase": "migration_retained_non_authoritative",
+  "authority": {
+    "system_path": "project-data.json",
+    "source_authority_forbidden": true
+  },
+  "migration": {
+    "physical_presence_allowed": true,
+    "required_class": "authority_migration_residue",
+    "manifest_membership_allowed": false,
+    "studio_upload_allowed": false,
+    "gateway_allowed_file": false
+  },
+  "post_delete": {
+    "physical_presence_allowed": false
+  },
+  "persistent_connection": {
+    "storage_key": "gk_game_data_authority_connection_v1",
+    "allowed_fields": [
+      "owner",
+      "repository"
+    ],
+    "forbidden_fields": [
+      "branch",
+      "path",
+      "project_data_path",
+      "token",
+      "credential"
+    ]
+  },
+  "forbidden_authority_symbol_dependencies": [
+    "ghOwner",
+    "ghRepo",
+    "ghBranch",
+    "ghPath",
+    "ghToken",
+    "syncGameDeployGitHubSettings",
+    "syncDeployGitHubSettings"
+  ],
+  "forbidden_authority_calls": [
+    "getGhRequestConfig",
+    "ghRequest"
+  ],
+  "required_explicit_transport": "ghRequestWithExplicitConfig",
+  "credential_patterns": [
+    "github_pat_[A-Za-z0-9_]{20,}",
+    "gh[pousr]_[A-Za-z0-9]{20,}",
+    "-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----"
+  ],
+  "credential_scan_exclusions": [
+    "regex_definition",
+    "source_identifier",
+    "nonmatching_placeholder"
+  ]
+}

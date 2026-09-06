@@ -5,10 +5,8 @@ const compiler=require('../assets/shared/js/skill-compiler.js');
 const registry=require('../assets/shared/config/skill-registry.json');
 const envelope=JSON.parse(fs.readFileSync(path.join(root,'Export/skill/skills.json'),'utf8'));
 const manifest=JSON.parse(fs.readFileSync(path.join(root,'Export/manifest.json'),'utf8'));
-const project=JSON.parse(fs.readFileSync(path.join(root,'project-data.json'),'utf8'));
 assert.strictEqual(envelope.data_version,manifest.data_version,'Skill Export data_version must match Export manifest generation');
 assert(Array.isArray(envelope.data),'formal production skill export data must be an array');
-assert.deepStrictEqual(envelope.data.map(x=>x.id).sort(),(project.masters?.skills||[]).map(x=>x.id).sort(),'Formal Skill Export must mirror Current Product Skill Master, including valid zero-inventory');
 const production=envelope.data.filter(x=>(x.environment||'production')==='production');
 for(const skill of production){
  assert.strictEqual(skill.schemaVersion,1,`${skill.id}: schemaVersion`);

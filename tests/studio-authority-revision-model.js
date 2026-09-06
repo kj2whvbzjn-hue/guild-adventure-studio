@@ -1,0 +1,12 @@
+'use strict';
+const fs=require('fs'),assert=require('assert');const html=fs.readFileSync('studio/index.html','utf8');
+assert(html.includes("const AUTHORITY_REVISION_KEY_PREFIX='gk_game_data_authority_revision_v1_'"));
+assert(html.includes("[c.owner,c.repo,c.branch].map"),'locator must be Owner/Repo/Branch only');
+assert(!html.includes('locator_fingerprint:') || !/locator_fingerprint[^\n]+path/.test(html));
+assert(html.includes('clearAuthorityRevision(currentProjectId);authorityLoadInvariant=\'\';authorityLoadInvariantError=\'\';'),'Full Import must invalidate binding');
+assert(html.includes('clearAuthorityRevision(id);'),'All Projects replacement must invalidate binding');
+assert(html.includes("function resetProject(){if(confirm('現在のデータを初期化しますか？')){createBackup('before-reset');clearAuthorityRevision(currentProjectId)"));
+assert(html.includes("if(hasAuthorityWorkingCopyBinding(id)){captureAuthorityLoadInvariant();}"));
+assert(html.includes("else{normalizeLoadedProject();authorityLoadInvariant='';authorityLoadInvariantError='';}"));
+assert(html.includes("const legacyCards=authorityManaged?[]:legacyDesignCards();"));
+console.log('STUDIO_AUTHORITY_REVISION_MODEL_OK');

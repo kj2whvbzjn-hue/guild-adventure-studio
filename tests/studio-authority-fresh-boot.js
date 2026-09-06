@@ -1,0 +1,12 @@
+'use strict';
+const fs=require('fs'),assert=require('assert');const html=fs.readFileSync('studio/index.html','utf8');
+assert(!html.includes("CANONICAL_PROJECT_URL='../project-data.json'"));
+assert(!html.includes("window.addEventListener('load',initializeCanonicalProjectData)"));
+assert(html.includes("if(!legacy||typeof legacy!=='object')return;"),'Fresh migrateLegacy must not seed initial');
+assert(html.includes("const hasWorkingCopy=(typeof workingCopyAvailable==='undefined')?true:workingCopyAvailable;"));
+assert(html.includes("if(!hasWorkingCopy&&gameDataDependent.has(name))"));
+assert(html.includes("if(!workingCopyAvailable||!currentProjectId||authorityLoadInvariantError)return;"));
+assert(html.includes("if(hasAuthorityWorkingCopyBinding(id)){captureAuthorityLoadInvariant();}"));
+assert(html.includes("const legacyCards=authorityManaged?[]:legacyDesignCards();"));
+assert(html.includes("activateProjectFromStorage(currentProjectId,{initialBoot:true})"));
+console.log('STUDIO_AUTHORITY_FRESH_BOOT_OK');

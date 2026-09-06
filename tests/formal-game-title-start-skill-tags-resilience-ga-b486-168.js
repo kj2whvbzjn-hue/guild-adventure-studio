@@ -5,10 +5,8 @@ const runtime=fs.readFileSync(path.join(root,'game/assets/js/app-runtime.js'),'u
 const compiler=require('../assets/shared/js/skill-compiler.js');
 const registry=require('../assets/shared/config/skill-registry.json');
 const exportPayload=JSON.parse(fs.readFileSync(path.join(root,'Export/skill/skills.json'),'utf8'));
-const project=JSON.parse(fs.readFileSync(path.join(root,'project-data.json'),'utf8'));
 const rows=Array.isArray(exportPayload)?exportPayload:(exportPayload.data||[]);
 function assert(cond,msg){if(!cond){throw new Error(msg)}}
-assert(JSON.stringify(rows.map(x=>x.id).sort())===JSON.stringify((project.masters?.skills||[]).map(x=>x.id).sort()),'Formal Skill Export must mirror Current Product Skill Master, including valid zero-inventory');
 const compiledFixture=compiler.compileSkill({schemaVersion:1,id:'SKL-TITLE-TAGS-FIXTURE',name:'Title Tags Fixture',skillLevel:1,trigger:{type:'ON_USE',scope:'SELF'},conditions:[],target:{side:'ENEMY',range:'SINGLE'},effects:[{type:'DAMAGE',power:10,damageType:'PHYSICAL'}],resource:{mpCost:0,cooldown:0,activationPriority:0}},registry);
 assert(compiledFixture.ok,`formal fixture compile failed: ${JSON.stringify(compiledFixture.errors)}`);
 const productionSample=compiledFixture.compiledSkill;
