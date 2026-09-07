@@ -252,6 +252,63 @@ def main() -> int:
         if exact_result.returncode != 0 or "SOURCE_UPDATE_APPLIED_STATE_OK" not in exact_result.stdout:
             errors.append("EXACT_MISSING_PERSISTENT_RESTORE_REJECTED " + (exact_result.stdout + exact_result.stderr))
 
+
+        # Approved unlisted-delete repair: a prior failed deployment may leave a
+        # physical file that the current package manifest no longer lists. The
+        # applied-state gate may accept only an explicitly approved deletion of
+        # that exact extra path; arbitrary baseline drift remains rejected.
+        extra_base = base / "extra-unlisted-baseline"
+        extra_update = base / "extra-unlisted-update"
+        shutil.copytree(baseline, extra_base)
+        for rel in ("shared/integrity/delete-policy.json", "tools/integrity/check-delete-manifest.py"):
+            target = extra_base / rel
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(ROOT / rel, target)
+        rebuild_manifest(extra_base)
+        (extra_base / "project-data.json").write_text('{"migration_residue":true}\n', encoding="utf-8")
+
+        make_update(extra_update, extra_base, include_exporter=True)
+        for rel in ("shared/integrity/delete-policy.json", "tools/integrity/check-delete-manifest.py"):
+            target = extra_update / rel
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(ROOT / rel, target)
+        rebuild_manifest(extra_update)
+        (extra_update / "DELETE_MANIFEST.txt").write_text("project-data.json\n", encoding="utf-8")
+        write_json(extra_update / "DELETE_APPROVAL.json", {
+            "schema_version": 1,
+            "approval_scope": "single_update",
+            "approval_actor_type": "human",
+            "approved_by": "fixture-human",
+            "approved_at": "2026-09-07T00:00:00Z",
+            "general_instruction_used_as_approval": False,
+            "deletion_controls_changed": False,
+            "entries": [{
+                "path": "project-data.json",
+                "category": "migration_complete",
+                "reason": "fixture approved stale migration residue removal",
+                "non_delete_alternative": "Keeping the file would preserve the invalid baseline state.",
+                "impact": "The unlisted fixture file is removed from the applied source tree.",
+                "recovery": "Restore the preceding fixture tree.",
+                "protected_delete": True
+            }]
+        })
+        simulated = base / "extra-unlisted-simulated"
+        simulate_applied(extra_update, extra_base, simulated)
+        stale = simulated / "project-data.json"
+        if stale.exists():
+            stale.unlink()
+        meta = json.loads((extra_update / "studio-update.json").read_text(encoding="utf-8"))
+        meta["baseline_source"]["package_manifest_sha256"] = sha256_file(extra_base / "package_manifest.json")
+        meta["baseline_source"]["source_tree_sha256"] = tree_sha(extra_base)
+        meta["target_source"]["package_manifest_sha256"] = sha256_file(simulated / "package_manifest.json")
+        meta["target_source"]["source_tree_sha256"] = tree_sha(simulated)
+        meta["artifact_id"] = f"GKS-B101-{tree_sha(simulated)[:12]}"
+        write_json(extra_update / "studio-update.json", meta)
+        shutil.rmtree(simulated)
+        extra_result = run_checker(extra_update, extra_base)
+        if extra_result.returncode != 0 or "SOURCE_UPDATE_APPLIED_STATE_OK" not in extra_result.stdout:
+            errors.append("APPROVED_UNLISTED_DELETE_REPAIR_REJECTED " + (extra_result.stdout + extra_result.stderr))
+
         tampered_update = base / "missing-persistent-tampered-update"
         shutil.copytree(missing_update, tampered_update)
         (tampered_update / "restore-me.txt").write_text("different bytes\n", encoding="utf-8")
@@ -263,7 +320,7 @@ def main() -> int:
         print("SOURCE_UPDATE_APPLICATION_REGRESSION_FAIL")
         print("\n".join(errors))
         return 1
-    print("SOURCE_UPDATE_APPLICATION_REGRESSION_OK cases=10 nested_export=persistent omitted_file=detected same_build=blocked artifact_id=tree_bound")
+    print("SOURCE_UPDATE_APPLICATION_REGRESSION_OK cases=11 nested_export=persistent omitted_file=detected same_build=blocked artifact_id=tree_bound")
     return 0
 
 

@@ -167,6 +167,63 @@ def baseline_manifest_repairable(context_output: str, manifest_output: str) -> t
     return bool(paths) and paths == sorted(set(man_paths)), paths
 
 
+def baseline_approved_unlisted_delete_repairable(update_root: Path, baseline_root: Path, manifest_output: str) -> tuple[bool, list[str]]:
+    """Allow a fail-closed recovery when the exact baseline contains only
+    physically present files that are unlisted by its package manifest, and the
+    current update explicitly deletes those paths through the normal approved
+    DELETE_MANIFEST / DELETE_APPROVAL policy.
+
+    This does not accept hash drift, missing files, or arbitrary baseline
+    context failures. The target package manifest must also omit every repaired
+    path, so the update can only move the source back toward a valid tree.
+    """
+    unlisted: list[str] = []
+    for raw in manifest_output.splitlines():
+        line = raw.strip()
+        if not line or line == "PACKAGE_MANIFEST_FAIL":
+            continue
+        prefix = "UNLISTED "
+        if not line.startswith(prefix):
+            return False, []
+        unlisted.append(line[len(prefix):])
+    paths = sorted(set(unlisted))
+    if not paths:
+        return False, []
+
+    delete_entries = set(parse_delete_manifest(update_root))
+    if any(rel not in delete_entries for rel in paths):
+        return False, []
+
+    checker = update_root / "tools/integrity/check-delete-manifest.py"
+    if not checker.is_file():
+        checker = baseline_root / "tools/integrity/check-delete-manifest.py"
+    if not checker.is_file():
+        return False, []
+    approval_check = run_checked(
+        [sys.executable, "-S", "-B", str(checker), str(update_root)],
+        update_root,
+        60,
+    )
+    if approval_check.returncode != 0:
+        return False, []
+
+    try:
+        target_manifest = json.loads((update_root / "package_manifest.json").read_text(encoding="utf-8"))
+        target_paths = {str(row.get("path") or "") for row in target_manifest.get("files", []) if isinstance(row, dict)}
+    except Exception:
+        return False, []
+
+    for rel in paths:
+        baseline_path = baseline_root / rel
+        if not baseline_path.is_file():
+            return False, []
+        if (update_root / rel).exists():
+            return False, []
+        if rel in target_paths:
+            return False, []
+    return True, paths
+
+
 def baseline_exact_missing_restore_repairable(update_root: Path, baseline_root: Path, manifest_output: str) -> tuple[bool, list[str]]:
     """Allow repair only when the baseline manifest lists a persistent file that
     is physically missing, and the update restores the exact bytes recorded by
@@ -468,17 +525,24 @@ def main() -> int:
                     report["baseline_repair_mode"] = "nonpersistent_manifest_entries"
                     report["baseline_repair_paths"] = stale_paths
                 else:
-                    exact_restore, restore_paths = baseline_exact_missing_restore_repairable(
+                    approved_delete, delete_paths = baseline_approved_unlisted_delete_repairable(
                         update_root, baseline_root, (baseline_manifest.stdout + baseline_manifest.stderr).strip()
                     )
-                    if baseline_context.returncode == 0 and exact_restore:
-                        report["baseline_repair_mode"] = "exact_missing_persistent_restore"
-                        report["baseline_repair_paths"] = restore_paths
+                    if baseline_context.returncode == 0 and approved_delete:
+                        report["baseline_repair_mode"] = "approved_unlisted_delete"
+                        report["baseline_repair_paths"] = delete_paths
                     else:
-                        if baseline_context.returncode != 0:
-                            errors.append("BASELINE_CONTEXT_INVALID\n" + (baseline_context.stdout + baseline_context.stderr).strip())
-                        if baseline_manifest.returncode != 0:
-                            errors.append("BASELINE_PACKAGE_MANIFEST_INVALID\n" + (baseline_manifest.stdout + baseline_manifest.stderr).strip())
+                        exact_restore, restore_paths = baseline_exact_missing_restore_repairable(
+                            update_root, baseline_root, (baseline_manifest.stdout + baseline_manifest.stderr).strip()
+                        )
+                        if baseline_context.returncode == 0 and exact_restore:
+                            report["baseline_repair_mode"] = "exact_missing_persistent_restore"
+                            report["baseline_repair_paths"] = restore_paths
+                        else:
+                            if baseline_context.returncode != 0:
+                                errors.append("BASELINE_CONTEXT_INVALID\n" + (baseline_context.stdout + baseline_context.stderr).strip())
+                            if baseline_manifest.returncode != 0:
+                                errors.append("BASELINE_PACKAGE_MANIFEST_INVALID\n" + (baseline_manifest.stdout + baseline_manifest.stderr).strip())
 
         if not errors:
             report["baseline"] = validate_baseline_binding(update_root, baseline_root, errors)
