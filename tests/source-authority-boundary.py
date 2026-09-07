@@ -6,5 +6,5 @@ r=subprocess.run([sys.executable,'-S','-B',str(root/'tools/integrity/check-autho
 if r.returncode: print(r.stdout+r.stderr);raise SystemExit(r.returncode)
 manifest=json.loads((root/'package_manifest.json').read_text())
 assert 'project-data.json' not in [x.get('path') for x in manifest.get('files',[])]
-assert not (root/'project-data.json').exists(), 'post-cutover source must not contain project-data'
+assert (root/'project-data.json').is_file(), 'migration phase must physically retain project-data'
 print('SOURCE_AUTHORITY_BOUNDARY_OK')
