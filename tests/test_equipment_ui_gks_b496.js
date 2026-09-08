@@ -12,4 +12,11 @@ assert(js.includes('<h1>装備生成</h1>'),'装備生成画面の見出しが�
 assert(!js.includes('<h1>Equipment Generator</h1>'),'英語の見出しが残っています');
 assert(js.includes('生成して確認')&&js.includes('武器JSONを選択')&&js.includes('完成装備JSONを書き出す'),'装備生成画面の主要操作が日本語化されていません');
 assert(!js.includes('id="eqgBatchCommit"'),'通常UIにマスター直書きの一括保存導線が残っています');
+assert(html.includes("function equipmentMasterEditorPayload(m)"),'装備Master参照用Payloadがありません');
+assert(html.includes("if(category==='equipment')editorPayload=equipmentMasterEditorPayload(m)"),'装備Master編集がparamsだけを表示しています');
+assert(html.includes("masterParams.readOnly=true;masterId.readOnly=true;masterCategory.disabled=true"),'装備本体JSON/ID/分類が参照専用になっていません');
+assert(html.includes("document.getElementById('masterParamsLabel').textContent='装備本体（参照専用JSON）'"),'装備本体の参照専用表示ラベルがありません');
+assert(html.includes("if(c==='equipment'){if(!existing||i<0)return alert('装備はこの画面から新規登録できません。')"),'装備Master直接新規登録の保存経路が閉じていません');
+assert(html.includes("rec={...existing,id:existing.id,name,status:masterStatus.value,tags,description:masterDescription.value||'',updated_at:now()}"),'装備metadata更新が既存レコードを保持していません');
+assert(html.includes("setEquipmentMasterCreateOptionDisabled(true)"),'装備Masterの新規作成選択が無効化されていません');
 console.log('EQUIPMENT_UI_GKS_B496_OK');
