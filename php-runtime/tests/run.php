@@ -75,6 +75,25 @@ function expectError(string $name, string $source, callable $mutate, string $exp
 }
 
 
+function expectSuccess(string $name, string $source, callable $mutate): void {
+    $tmp = sys_get_temp_dir() . '/gk-export-test-' . bin2hex(random_bytes(6));
+    copyTree($source, $tmp);
+    try {
+        $mutate($tmp);
+        (new ExportLoader(['1.0.0']))->load($tmp);
+        report($name, true);
+    } catch (Throwable $e) {
+        report($name, false, $e->getMessage());
+    } finally {
+        if (is_dir($tmp)) {
+            $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($tmp, FilesystemIterator::SKIP_DOTS), RecursiveIteratorIterator::CHILD_FIRST);
+            foreach ($it as $item) { $item->isDir() ? rmdir($item->getPathname()) : unlink($item->getPathname()); }
+            rmdir($tmp);
+        }
+    }
+}
+
+
 function expectLoaderError(string $name, callable $loaderFactory, string $source, string $expectedCode): void {
     try {
         $loader = $loaderFactory();
@@ -93,18 +112,20 @@ try {
     $pkg = (new ExportLoader(['1.0.0']))->load($source);
     report('valid package loads', count($pkg->paths()) === $officialPathCount, 'loaded ' . count($pkg->paths()) . ' files');
     $skillDoc = $pkg->document('skill/skills.json');
-    report('skill Export uses current package envelope metadata',
+    report('skill Export uses valid package identity and per-file provenance metadata',
         ($skillDoc['schema_version'] ?? null) === ($pkg->manifest['schema_version'] ?? null)
         && ($skillDoc['data_version'] ?? null) === ($pkg->manifest['data_version'] ?? null)
-        && ($skillDoc['generated_at'] ?? null) === ($pkg->manifest['generated_at'] ?? null)
-        && ($skillDoc['generated_by'] ?? null) === ($pkg->manifest['generated_by'] ?? null)
+        && is_string($skillDoc['generated_at'] ?? null)
+        && strtotime((string)$skillDoc['generated_at']) !== false
+        && is_string($skillDoc['generated_by'] ?? null)
+        && trim((string)$skillDoc['generated_by']) !== ''
     );
     report('CPF auxiliary payload is excluded from runtime document set',
         is_dir($source . '/cpf') && !in_array('cpf/bootstrap.php', $pkg->paths(), true)
     );
 } catch (Throwable $e) {
     report('valid package loads', false, $e->getMessage());
-    report('skill Export uses current package envelope metadata', false, $e->getMessage());
+    report('skill Export uses valid package identity and per-file provenance metadata', false, $e->getMessage());
     report('CPF auxiliary payload is excluded from runtime document set', false, $e->getMessage());
 }
 
@@ -247,13 +268,13 @@ expectError('document data_version must match manifest', $source, function (stri
     rewriteJsonAndManifest($tmp, 'master/jobs.json', function(array &$doc):void{$doc['data_version']='e2e-9.9.9';});
 }, 'DATA_VERSION_MISMATCH');
 
-expectError('document generated_at must match manifest', $source, function (string $tmp): void {
+expectSuccess('document generated_at may preserve older per-file provenance', $source, function (string $tmp): void {
     rewriteJsonAndManifest($tmp, 'master/jobs.json', function(array &$doc):void{$doc['generated_at']='2026-07-23T22:00:00+09:00';});
-}, 'GENERATED_AT_MISMATCH');
+});
 
-expectError('document generated_by must match manifest', $source, function (string $tmp): void {
+expectSuccess('document generated_by may preserve older per-file provenance', $source, function (string $tmp): void {
     rewriteJsonAndManifest($tmp, 'master/jobs.json', function(array &$doc):void{$doc['generated_by']='GK Studio v0.0.0';});
-}, 'GENERATED_BY_MISMATCH');
+});
 
 
 expectError('manifest must contain exact official paths', $source, function (string $tmp): void {

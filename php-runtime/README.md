@@ -9,7 +9,7 @@ DEC-0002に従い、PHP実ゲームが`Export/`だけをゲームマスターと
 - 必須ファイルの存在を検査する
 - 全ファイルのSHA-256をmanifestと照合する
 - UTF-8・JSON・共通Envelopeを検査する
-- 全Runtime対象JSONは共通Envelopeとしてmanifestと`schema_version` / `data_version` / `generated_at` / `generated_by`の完全一致を検査する
+- 全Runtime対象JSONは共通Envelopeを検査し、`data_version`はmanifestと一致させる。`generated_at` / `generated_by`は各ファイル固有の生成 provenance として有効性のみ検査し、manifestとの一致は要求しない
 - 重複パスとパストラバーサルを拒否する
 - 異常時は`ExportLoadException`を投げ、ゲーム開始を停止する
 - Studio内部データへのフォールバックは実装しない

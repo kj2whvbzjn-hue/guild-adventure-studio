@@ -121,7 +121,7 @@ final class ExportLoader
 
             $document = $this->readJsonObject($absolute, $path);
             $this->validateEnvelope($document, $path);
-            $this->assertMetadataMatchesManifest($manifest, $document, $path);
+            $this->assertDataVersionMatchesManifest($manifest, $document, $path);
             $this->assertDocumentSchemaVersion($manifestSchema, $document, $path);
             $this->validateDataSchema($document['data'], $path);
             $documents[$path] = $document;
@@ -137,25 +137,17 @@ final class ExportLoader
      * @param array<string,mixed> $manifest
      * @param array<string,mixed> $document
      */
-    private function assertMetadataMatchesManifest(array $manifest, array $document, string $path): void
+    private function assertDataVersionMatchesManifest(array $manifest, array $document, string $path): void
     {
-        $checks = [
-            'data_version' => 'DATA_VERSION_MISMATCH',
-            'generated_at' => 'GENERATED_AT_MISMATCH',
-            'generated_by' => 'GENERATED_BY_MISMATCH',
-        ];
-
-        foreach ($checks as $field => $errorCode) {
-            $manifestValue = (string)$manifest[$field];
-            $documentValue = (string)$document[$field];
-            if ($documentValue !== $manifestValue) {
-                throw new ExportLoadException($errorCode, "{$field} differs from manifest: {$path}", [
-                    'path' => $path,
-                    'field' => $field,
-                    'manifest_value' => $manifestValue,
-                    'document_value' => $documentValue,
-                ]);
-            }
+        $manifestValue = (string)$manifest['data_version'];
+        $documentValue = (string)$document['data_version'];
+        if ($documentValue !== $manifestValue) {
+            throw new ExportLoadException('DATA_VERSION_MISMATCH', "data_version differs from manifest: {$path}", [
+                'path' => $path,
+                'field' => 'data_version',
+                'manifest_value' => $manifestValue,
+                'document_value' => $documentValue,
+            ]);
         }
     }
 
