@@ -2,7 +2,10 @@
 const fs=require('fs'),assert=require('assert');const html=fs.readFileSync('studio/index.html','utf8');
 assert(!html.includes("CANONICAL_PROJECT_URL='../project-data.json'"));
 assert(!html.includes("window.addEventListener('load',initializeCanonicalProjectData)"));
-assert(html.includes("if(!legacy||typeof legacy!=='object')return;"),'Fresh migrateLegacy must not seed initial');
+assert(!html.includes('migrateVersionedProjectStorage'),'legacy versioned project discovery must not exist');
+assert(!html.includes('migrateLegacyProject'),'legacy project migration must not exist');
+assert(!html.includes('repairProjectRegistry'),'localStorage registry repair must not exist');
+assert(!html.includes('一覧を再検出'),'registry rediscovery UI must not exist');
 assert(html.includes("const hasWorkingCopy=(typeof workingCopyAvailable==='undefined')?true:workingCopyAvailable;"));
 assert(html.includes("if(!hasWorkingCopy&&gameDataDependent.has(name))"));
 assert(html.includes("if(!workingCopyAvailable||!currentProjectId||authorityLoadInvariantError)return;"));
