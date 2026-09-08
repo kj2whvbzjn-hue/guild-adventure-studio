@@ -1,6 +1,6 @@
 const fs=require('fs');const path=require('path');const vm=require('vm');
 const root=path.resolve(__dirname,'..');let persistCount=0;
-global.window=global;global.data={schema_version:'4.0.0-draft',project:{id:'PRJ-B498'},tags:[{id:'WEAPON_STAFF'}],masters:{equipment:[],mods:[]}};global.persist=()=>{persistCount++;return true};
+global.window=global;global.data={schema_version:'4.0.0-draft',project:{id:'PRJ-B498'},tags:[],masters:{equipment:[],mods:[]}};global.persist=()=>{persistCount++;return true};
 global.document={readyState:'loading',addEventListener:()=>{},querySelector:()=>null,getElementById:()=>null};
 global.fetch=async rel=>{const p=path.resolve(root,'studio',String(rel).replace(/^\.\//,''));return {ok:true,status:200,json:async()=>JSON.parse(fs.readFileSync(p,'utf8'))}};
 vm.runInThisContext(fs.readFileSync(path.join(root,'studio/equipment/equipment-generator.js'),'utf8'),{filename:'equipment-generator.js'});
@@ -8,14 +8,14 @@ vm.runInThisContext(fs.readFileSync(path.join(root,'studio/equipment/equipment-g
  const initial=GKSEquipmentGenerator.getBaseNameSets();if(initial.weapon.active_preset!=='標準武器'||initial.armor.active_preset!=='標準防具')throw new Error('default presets');
  const weaponRows=initial.weapon.presets['標準武器'].concat([{level:12,name:'伝説の'}]);
  GKSEquipmentGenerator.saveBaseNameSet('weapon','伝説武器',weaponRows,{activate:true});
- let w=GKSEquipmentGenerator.generate({kind:'weapon',base_item_type:'片手剣',item_level:12,id:'W12'});if(w.record.name!=='伝説の片手剣')throw new Error('weapon base name');
+ let w=GKSEquipmentGenerator.generate({kind:'weapon',base_item_type:'片手剣',item_level:12,id:'EQP-0001'});if(w.record.name!=='伝説の片手剣')throw new Error('weapon base name');
  const afterWeapon=GKSEquipmentGenerator.getBaseNameSets();if(afterWeapon.armor.active_preset!=='標準防具')throw new Error('weapon/armor preset separation');
  const armorRows=afterWeapon.armor.presets['標準防具'].concat([{level:12,name:'神秘の'}]);
  GKSEquipmentGenerator.saveBaseNameSet('armor','神秘防具',armorRows,{activate:true});
- let a=GKSEquipmentGenerator.generate({kind:'armor',base_item_type:'重装',armor_slot:'鎧',item_level:12,id:'A12'});if(a.record.name!=='神秘の重装鎧')throw new Error('armor base name');
- w=GKSEquipmentGenerator.generate({kind:'weapon',base_item_type:'片手剣',item_level:12,id:'W12B'});if(w.record.name!=='伝説の片手剣')throw new Error('armor edit affected weapon names');
+ let a=GKSEquipmentGenerator.generate({kind:'armor',base_item_type:'重装',armor_slot:'鎧',item_level:12,id:'EQP-0002'});if(a.record.name!=='神秘の重装鎧')throw new Error('armor base name');
+ w=GKSEquipmentGenerator.generate({kind:'weapon',base_item_type:'片手剣',item_level:12,id:'EQP-0003'});if(w.record.name!=='伝説の片手剣')throw new Error('armor edit affected weapon names');
  if(data.equipment_generation.base_name_sets.weapon.active_preset!=='伝説武器'||data.equipment_generation.base_name_sets.armor.active_preset!=='神秘防具'||persistCount<2)throw new Error('base set persistence');
- GKSEquipmentGenerator.generateRequestPayload({requests:[{kind:'weapon',base_item_types:['片手剣'],item_level:{min:12,max:12},id_prefix:'PKG'}]});
+ GKSEquipmentGenerator.generateRequestPayload({schema:'GKS_EQUIPMENT_GENERATION_REQUEST',version:'1.0.0',requests:[{kind:'weapon',base_item_types:['片手剣'],item_level:{min:12,max:12},id_prefix:'PKG'}]});
  const work=GKSEquipmentGenerator.workingPackage();if(work.version!=='1.1.0'||!work.base_name_sets)throw new Error('work package base sets');
  const js=fs.readFileSync(path.join(root,'studio/equipment/equipment-generator.js'),'utf8');
  for(const text of ['武器ベースアイテムセット','防具ベースアイテムセット','＋ 追加','現在の内容をプリセット登録','設定を確定','武器を一括生成','防具を一括生成','調整用JSONを書き出す','完成装備JSONを書き出す'])if(!js.includes(text))throw new Error('UI missing: '+text);

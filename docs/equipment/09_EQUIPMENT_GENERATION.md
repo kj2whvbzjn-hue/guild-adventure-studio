@@ -5,7 +5,7 @@ Equipment完全統合仕様 v1.1 と防具係数仕様に基づく AI → Studio
 - writable: `equipment` のみ
 - Tag / MOD / Stats / Balance Config / Generation Rules は read_only
 - AIは装備カテゴリ、BaseItem候補、iLv/帯、生成数を指定できる
-- AIは `required_*`, `attack`, `accuracy`, `magic_weapon_bonus`, `base_critical_rate`, `hp_bonus`, `mp_bonus`, `evasion` を正規値として直接決定しない
+- AIは `required_*`, `attack`, `accuracy`, `magic_weapon_bonus`, `weapon_critical_rate`, `hp_bonus`, `mp_bonus`, `evasion` を正規値として直接決定しない
 - 正規経路: AI request / 手動入力 → Studio Generator → Generation Rules → Active生成設定 → Validator → Preview → JSON出力 → バランステスト往復 → 完成後に「管理 → 読込」のData Exchangeゲートからマスター登録
 - 存在しないTag/MOD IDを推測生成しない
 
@@ -18,7 +18,7 @@ Generator本体にはバランス数値をハードコードせず、次の値�
 - 武器種別 STR/DEX/INT 要求係数
 - attack / accuracy 倍率
 - magic_weapon_bonus の参照係数方式
-- base_critical_rate
+- weapon_critical_rate
 - 防具カテゴリ VIT/MND/AGI 要求係数
 - 防具部位係数
 
@@ -31,10 +31,9 @@ Balance Configの数値を変更すれば、Generatorコードを変更せず再
 - 要求値: `iLv × カテゴリ係数`
 - HP: `required_vit × 部位係数`
 - MP: `required_mnd × 部位係数`
-- 回避: `required_agi × 部位係数`
+- 回避: 各防具レコードの `evasion = required_agi × evasion growth`。Characterの回避Contributionは装備中の各防具レコードの `evasion` を個別に合計する。部位係数は回避へ使用しない
 
 現在のConfigには資料記載値を初期調整値として登録しているが、最終確定値ではない。
-旧カテゴリ名 `スカウト` は互換入力として `軽装` に正規化する。
 
 
 ## BaseItem Pipeline v1.2 / GKS-B495
@@ -42,9 +41,9 @@ Balance Configの数値を変更すれば、Generatorコードを変更せず再
 単体生成に加えて、同一Generatorを共有する以下の経路を正式接続する。
 
 - 一括試算: `simulateBatch()`。Equipment Masterへ保存しない。
-- 一括生成: `generateBatch()` → Validator → Preview → `commitBatch()`。全件OKの場合のみ保存可能。
+- 一括生成確認: `generateBatch()` → Validator → Preview。GeneratorはEquipment Masterへ直接保存しない。完成装備JSONを書き出し、「管理 → 読込」のData Exchange経路で登録する。
 - AI request: `prepareAiRequest()`。AIはカテゴリ、BaseItem候補、iLv帯、生成数、seed、ID prefixのみ指定可能。
-- AI requestへ `required_*`、`attack`、`accuracy`、`magic_weapon_bonus`、`base_critical_rate`、`hp_bonus`、`mp_bonus`、`evasion` を直接指定した場合はエラー。
+- AI requestへ `required_*`、`attack`、`accuracy`、`magic_weapon_bonus`、`weapon_critical_rate`、`hp_bonus`、`mp_bonus`、`evasion` を直接指定した場合はエラー。
 
 ### Growth拡張点
 
@@ -59,13 +58,12 @@ Balance Configの `growth` を使用する。防具は `hp / mp / evasion` をiL
 
 - 装備生成画面を「生成設定 → JSON/手動入力 → 試算・数値確認 → JSON出力」の4段階に整理する。
 - 生成係数は静的 `equipment-balance-config.json` を初期値とし、プロジェクト内 `equipment_generation.active_config` に保存した設定を以後の生成基準として優先する。
-- 武器種のSTR/DEX/INT、防具カテゴリのVIT/MND/AGI、部位係数、攻撃倍率、命中倍率、基礎クリティカル率はiPhoneから編集可能とする。高度な設定は設定JSONの読込・出力で往復できる。
-- AI一括入力は `GKS_EQUIPMENT_GENERATION_REQUEST` の `requests` 配列を正式入口とし、JSONファイル読込と貼付の両方に対応する。従来の単一requestも互換入力として受け付ける。
+- 武器種のSTR/DEX/INT、防具カテゴリのVIT/MND/AGI、部位係数、攻撃倍率、命中倍率、武器固有Critical率（`weapon_critical_rate`）はiPhoneから編集可能とする。高度な設定は設定JSONの読込・出力で往復できる。
+- AI一括入力は `GKS_EQUIPMENT_GENERATION_REQUEST` の `requests` 配列を正式入口とし、JSONファイル読込と貼付の両方に対応する。入力は `schema: GKS_EQUIPMENT_GENERATION_REQUEST`、`version: 1.0.0`、`requests` 配列を必須とし、単一request・生配列・`generation_requests` は受理しない。
 - AIは正式性能数値を直接決定できない。すべてActive生成設定から再計算する。
 - 確認画面では要求閾値と正式性能をカードで表示し、各装備の計算過程を展開表示できる。
 - `GKS_EQUIPMENT_GENERATION_WORK` は生成要求・使用Config・生成結果をまとめた往復用JSON。AI再編集およびバランステスト工程の受渡しに使用する。
 - 完成装備は既存 `GKS_DATA_EXCHANGE` のequipment Dataset形式で書き出す。装備生成画面からマスターへ直接登録する入口は追加しない。登録は既存の「管理 → 読込」に一本化する。
-- 旧 `commit()` / `commitBatch()` APIは後方互換・既存テスト資産のため保持するが、通常UIには表示しない。
 
 
 ## BaseItem Name Sets / Split Batch UI v1.4 / GKS-B498
@@ -76,7 +74,7 @@ Balance Configの `growth` を使用する。防具は `hp / mp / evasion` をiL
 - `設定を確定` したセットを新規生成の名称基準として使用する。確定セットに追加された最大iLvまで生成上限を自動拡張する。
 - 武器・防具はそれぞれ独立したプリセットを複数登録でき、選択プリセットをActive化できる。一方のプリセット変更は他方へ影響させない。
 - 自動名称は `武器ベース名 + 武器種`、`防具ベース名 + 防具カテゴリ + 部位` で作る。手動名称が明示された場合は手動名称を優先する。
-- AI/JSON一括入力UIは武器と防具を別入口に分ける。各入口では異なるkindのrequest混入を拒否し、混在を防ぐ。内部APIは従来の複数request形式との互換を維持する。
+- AI/JSON一括入力UIは武器と防具を別入口に分ける。各入口では異なるkindのrequest混入を拒否し、混在を防ぐ。入力契約は正式な `GKS_EQUIPMENT_GENERATION_REQUEST` / `1.0.0` / `requests` 配列に統一する。
 - JSON出力の表示名は用途を明確化し、`調整用JSONを書き出す`（バランステスト往復・AI再調整）と `完成装備JSONを書き出す`（管理→読込用）に分ける。
 - `GKS_EQUIPMENT_GENERATION_WORK` v1.1 はActive生成設定に加えて `base_name_sets` を保持する。
 

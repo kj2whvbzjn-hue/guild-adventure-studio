@@ -19,7 +19,6 @@ const DEFAULT_BASE_NAME_SETS=()=>({
 const WEAPON_BASE_NAME_PRESET=Object.freeze({'杖':'杖・ワンド','ワンド':'杖・ワンド','魔導書':'魔導書'});
 const ACCESSORY_SLOT_MAP=Object.freeze({'アミュレット':'amulet','指輪':'ring','ベルト':'belt'});
 const AI_FORBIDDEN_NUMERIC_FIELDS=['required_str','required_dex','required_int','required_vit','required_mnd','required_agi','attack','accuracy','magic_accuracy','magic_weapon_bonus','weapon_critical_rate','block_rate','block_damage_cut_rate','hp_bonus','mp_bonus','evasion','magic_resistance'];
-const BOW_TAG_NAMES=Object.freeze({'弓':'WEAPON_BOW','大弓':'WEAPON_GREATBOW','矢筒':'EQUIP_QUIVER'});
 let rules=null,config=null,defaultConfig=null,baseNameSets=null,preview=null,batchPreview=null,lastRequestPayload=null;
 const clone=v=>JSON.parse(JSON.stringify(v));
 const finite=v=>Number.isFinite(Number(v));
@@ -94,10 +93,6 @@ function activateBaseNamePreset(kind,presetName){
   if(!['weapon','armor','accessory'].includes(kind))throw new Error('ベースアイテムセット区分が不正です。');const name=String(presetName||'');if(!baseNameSets?.[kind]?.presets?.[name])throw new Error('プリセットがありません: '+name);baseNameSets[kind].active_preset=name;syncItemLevelMaxFromBaseSets(false);persistBaseNameSets();return getBaseNameSets();
 }
 
-function normalizeArmorCategory(type){const raw=String(type||'');return String(config?.armor?.category_aliases?.[raw]||raw);}
-function formalTagIdByName(name){const row=(Array.isArray(hostData()?.tags)?hostData().tags:[]).find(t=>String(t?.name||'')===String(name||'')&&/^TAG-\d{4}$/.test(String(t?.id||''))&&t?.deprecated!==true&&t?.enabled!==false);return row?String(row.id):'';}
-function requiredBowTagId(type){const semantic=BOW_TAG_NAMES[String(type||'')];if(!semantic)return'';const id=formalTagIdByName(semantic);if(!id)throw Object.assign(new Error(`必須Tag ${semantic} がCurrent Tag Masterに存在しません。`),{code:'EQUIPMENT_REQUIRED_TAG_MISSING',tag_name:semantic});return id;}
-function withRequiredEquipmentTags(type,tags){const out=[...new Set((Array.isArray(tags)?tags:[]).map(String).map(x=>x.trim()).filter(Boolean))],required=requiredBowTagId(type);if(required&&!out.includes(required))out.push(required);return out;}
 function growthMultiplier(kind,metric,itemLevel){
   const g=config?.growth?.[kind];
   if(!g||g.enabled!==true)return 1;
@@ -119,12 +114,12 @@ function generateWeapon(input){
   const block_rate=isShield?Number(perf.block_rate_base)+Number(perf.block_rate_per_item_level)*(i-1):null,block_damage_cut_rate=isShield?Number(perf.block_damage_cut_rate):null;
   const trace=[`required_str=${i}*${c.str}=${required_str}`,`required_dex=${i}*${c.dex}=${required_dex}`,`required_int=${i}*${c.int}=${required_int}`,`attack=${required_str}*${perf.attack_multiplier}*growth(${gmAttack})=${attack}`,`accuracy=${required_dex}*${perf.accuracy_multiplier}*growth(${gmAccuracy})=${accuracy}`,`magic_accuracy=(${required_int}+${required_dex})*2=${magic_accuracy}`,`magic_weapon_bonus=${required_int}*weapon_str_coefficient(${c.str})*growth(${gmMagic})=${magic_weapon_bonus}`,`weapon_critical_rate=${weapon_critical_rate}`,...(isShield?[`block_rate=${perf.block_rate_base}+${perf.block_rate_per_item_level}*(${i}-1)=${block_rate}`,`block_damage_cut_rate=${block_damage_cut_rate}`]:[])];
   const baseName=formalBaseName('weapon',type,i),defaultName=type==='魔導書'?baseName:`${baseName}${type}`;
-  const out={id:String(input.id||''),name:String(input.name||defaultName),status:'draft',tags:withRequiredEquipmentTags(type,input.tags),params:{},description:String(input.description||''),mod_ids:[],item_level:i,required_str,required_dex,required_int,attack,accuracy,magic_accuracy,magic_weapon_bonus,weapon_critical_rate,...(isShield?{block_rate,block_damage_cut_rate}:{})};
+  const out={id:String(input.id||''),name:String(input.name||defaultName),status:'draft',tags:Array.isArray(input.tags)?clone(input.tags):[],params:{},description:String(input.description||''),mod_ids:[],item_level:i,required_str,required_dex,required_int,attack,accuracy,magic_accuracy,magic_weapon_bonus,weapon_critical_rate,...(isShield?{block_rate,block_damage_cut_rate}:{})};
   out.generation=generationMeta(input,trace);return out;
 }
 function generateArmor(input){
-  const i=Number(input.item_level),rawType=String(input.base_item_type||''),type=normalizeArmorCategory(rawType),slot=String(input.armor_slot||'');
-  const c=config.armor.requirement_coefficients[type];if(!c)throw new Error('未定義の防具カテゴリです: '+rawType);
+  const i=Number(input.item_level),type=String(input.base_item_type||''),slot=String(input.armor_slot||'');
+  const c=config.armor.requirement_coefficients[type];if(!c)throw new Error('未定義の防具カテゴリです: '+type);
   const slotCoefficient=Number(config.armor.slot_coefficients?.[slot]);if(!finite(slotCoefficient))throw new Error('未定義の防具部位です: '+slot);
   const required_vit=i*Number(c.vit),required_mnd=i*Number(c.mnd),required_agi=i*Number(c.agi);
   const hpGrowth=growthMultiplier('armor','hp',i),mpGrowth=growthMultiplier('armor','mp',i),evasionGrowth=growthMultiplier('armor','evasion',i);
@@ -160,12 +155,7 @@ function validate(record,input={}){
   }else{
     const required=kind==='armor'?rules.armor.required_fields:rules.weapon.required_fields,performance=kind==='armor'?rules.armor.performance_fields:rules.weapon.performance_fields;
     for(const f of required){if(!finite(record[f])||Number(record[f])<0)errors.push('要求値が不正: '+f);}for(const f of performance){if(!finite(record[f]))errors.push('正式性能が未確定: '+f);}
-    if(kind==='weapon'){const type=String(input.base_item_type||record.generation?.generation_input?.base_item_type||'');if(type==='盾'){for(const f of rules.weapon.shield_performance_fields||[])if(!finite(record[f])||Number(record[f])<0)errors.push('盾Block性能が不正: '+f);}else for(const f of rules.weapon.shield_performance_fields||[])if(Object.prototype.hasOwnProperty.call(record,f))errors.push('盾以外にBlock性能を設定できません: '+f);const semantic=BOW_TAG_NAMES[type];if(semantic){const formalId=formalTagIdByName(semantic);if(!formalId)errors.push(`必須Tag ${semantic} がCurrent Tag Masterに存在しません。`);else if(!record.tags.includes(formalId))errors.push(`${type}には${formalId} (${semantic}) Tagが必要です。`);}}
-  }
-  if(kind==='weapon'&&String(input.base_item_type)==='杖'){
-    const exists=Array.isArray(hostData()?.tags)&&hostData().tags.some(t=>String(t.id)==='WEAPON_STAFF');
-    if(!exists)errors.push('必須Tag WEAPON_STAFF がTag Masterに存在しません。Tag工程で正式IDを登録してから生成してください。');
-    if(exists&&!record.tags.includes('WEAPON_STAFF'))errors.push('杖にはWEAPON_STAFF Tagが必要です。');
+    if(kind==='weapon'){const type=String(input.base_item_type||record.generation?.generation_input?.base_item_type||'');if(type==='盾'){for(const f of rules.weapon.shield_performance_fields||[])if(!finite(record[f])||Number(record[f])<0)errors.push('盾Block性能が不正: '+f);}else for(const f of rules.weapon.shield_performance_fields||[])if(Object.prototype.hasOwnProperty.call(record,f))errors.push('盾以外にBlock性能を設定できません: '+f);}
   }
   if(!record.generation?.generator_version||!record.generation?.generation_rules_version||!record.generation?.config_id||!record.generation?.config_version||!record.generation?.source_spec_version||!record.generation?.generated_at)errors.push('generation metadataが不足しています。');
   Object.entries(record).forEach(([k,v])=>{if(typeof v==='number'&&!Number.isFinite(v))errors.push('非有限値: '+k)});return {ok:errors.length===0,errors,warnings};
@@ -173,8 +163,6 @@ function validate(record,input={}){
 function generateRecord(input){const i=Number(input.item_level),range=levelRange();if(!Number.isInteger(i)||!finite(range.min)||!finite(range.max)||i<range.min||i>range.max)throw new Error(`アイテムレベルは${range.min}〜${range.max}で指定してください。`);return input.kind==='armor'?generateArmor(input):input.kind==='accessory'?generateAccessory(input):generateWeapon(input);}
 function generate(input){validateConfig();const record=generateRecord(input),validation=validate(record,input);preview={record,validation,input:clone(input)};return clone(preview);}
 function getPreview(){return clone(preview);}function getBatchPreview(){return clone(batchPreview);}
-function writeEquipment(row){const idx=hostData().masters.equipment.findIndex(x=>String(x.id)===String(row.id));if(idx>=0)hostData().masters.equipment[idx]=row;else hostData().masters.equipment.push(row);}
-function commit(){if(!preview)throw new Error('確認データがありません。');if(!preview.validation.ok)throw new Error('検証エラーがあるため保存できません。');if(!hostData()?.masters?.equipment)throw new Error('装備マスターが利用できません。');const row=clone(preview.record);row.updated_at=stamp();if(!row.created_at)row.created_at=row.updated_at;writeEquipment(row);hostPersist('equipment generator commit');preview=null;return clone(row);}
 function idsForBatch(request,count,reservedIds=[]){const used=new Set([...(hostData()?.masters?.equipment||[]).map(x=>String(x?.id||'')),...(reservedIds||[]).map(String)]),out=[];let n=1;while(out.length<count&&n<=9999){const id=`EQP-${String(n).padStart(4,'0')}`;if(!used.has(id)){out.push(id);used.add(id);}n++;}if(out.length!==count)throw new Error('装備IDの自動採番上限（EQP-9999）に達しました。');return out;}
 function normalizeList(v){if(Array.isArray(v))return v.map(String).map(x=>x.trim()).filter(Boolean);return String(v||'').split(',').map(x=>x.trim()).filter(Boolean);}
 function expandBatchInputs(request={},reservedIds=[]){
@@ -193,9 +181,8 @@ function summarize(entries){
   const summaryMetrics={};for(const [k,vals] of Object.entries(metrics)){const total=vals.reduce((a,b)=>a+b,0);summaryMetrics[k]={min:Math.min(...vals),max:Math.max(...vals),average:vals.length?total/vals.length:0};}
   return {count:entries.length,valid:ok,invalid:entries.length-ok,metrics:summaryMetrics};
 }
-function generateBatch(request={},options={}){const inputs=expandBatchInputs(request,options.reservedIds||[]),entries=inputs.map(input=>{if(input.kind==='weapon'&&input.base_item_type==='杖'&&Array.isArray(hostData()?.tags)&&hostData().tags.some(t=>String(t.id)==='WEAPON_STAFF'))input.tags.push('WEAPON_STAFF');const record=generateRecord(input);return {input:clone(input),record,validation:validate(record,input)};});batchPreview={request:clone(request),entries,summary:summarize(entries),generated_at:stamp(),config_id:config.config_id,config_version:config.config_version};return clone(batchPreview);}
+function generateBatch(request={},options={}){const inputs=expandBatchInputs(request,options.reservedIds||[]),entries=inputs.map(input=>{const record=generateRecord(input);return {input:clone(input),record,validation:validate(record,input)};});batchPreview={request:clone(request),entries,summary:summarize(entries),generated_at:stamp(),config_id:config.config_id,config_version:config.config_version};return clone(batchPreview);}
 function simulateBatch(request={}){const result=generateBatch(request);return clone({...result,mode:'simulation',commit_allowed:false});}
-function commitBatch(){if(!batchPreview)throw new Error('一括確認データがありません。');if(batchPreview.entries.some(x=>!x.validation.ok))throw new Error('検証エラーがあるため一括保存できません。');if(!hostData()?.masters?.equipment)throw new Error('装備マスターが利用できません。');const rows=batchPreview.entries.map(x=>{const row=clone(x.record);row.updated_at=stamp();if(!row.created_at)row.created_at=row.updated_at;writeEquipment(row);return row;});hostPersist('equipment generator batch commit');batchPreview=null;return clone(rows);}
 function prepareAiRequest(request={}){
   if(!request||typeof request!=='object'||Array.isArray(request))throw new Error('AI入力はオブジェクト形式で指定してください。');
   const forbidden=AI_FORBIDDEN_NUMERIC_FIELDS.filter(k=>Object.prototype.hasOwnProperty.call(request,k));if(forbidden.length)throw new Error('AI入力では正式な数値項目を直接指定できません: '+forbidden.join(', '));
@@ -221,11 +208,12 @@ function validateAiRequest(request={}){
   return clone(request);
 }
 function normalizeRequestPayload(payload){
-  if(Array.isArray(payload))return payload.map(validateAiRequest);
-  if(!payload||typeof payload!=='object')throw new Error('JSONの形式が不正です。');
-  if(Array.isArray(payload.requests))return payload.requests.map(validateAiRequest);
-  if(Array.isArray(payload.generation_requests))return payload.generation_requests.map(validateAiRequest);
-  return [validateAiRequest(payload)];
+  if(!payload||typeof payload!=='object'||Array.isArray(payload))throw new Error('装備生成JSONは GKS_EQUIPMENT_GENERATION_REQUEST オブジェクトで指定してください。');
+  if(payload.schema!=='GKS_EQUIPMENT_GENERATION_REQUEST')throw new Error('装備生成JSONのschemaが不正です。');
+  if(payload.version!=='1.0.0')throw new Error('装備生成JSONのversionは1.0.0で指定してください。');
+  if(!Array.isArray(payload.requests)||!payload.requests.length)throw new Error('装備生成JSONには1件以上のrequests配列が必要です。');
+  const unknown=Object.keys(payload).filter(k=>!['schema','version','requests'].includes(k));if(unknown.length)throw new Error('装備生成JSONに許可されていない項目があります: '+unknown.join(', '));
+  return payload.requests.map(validateAiRequest);
 }
 function generateRequestPayload(payload){
   validateConfig();const requests=normalizeRequestPayload(payload),entries=[],reservedIds=[];
@@ -299,7 +287,7 @@ function renderPanel(){
   q('eqgFinalExport').addEventListener('click',async()=>{try{const env=await managementEnvelope();downloadJson(`Equipment_Final_${Date.now()}.json`,env);q('eqgExportStatus').innerHTML='<b>完成装備JSONを書き出しました。</b><br>登録は「管理 → 読込」から行ってください。';}catch(e){q('eqgExportStatus').textContent='完成装備JSON出力エラー: '+e.message;}});
 }
 
-const api={GENERATOR_VERSION,initialize,generate,validate,getPreview,commit,expandBatchInputs,generateBatch,simulateBatch,getBatchPreview,commitBatch,prepareAiRequest,setConfigForTest,getConfig,saveActiveConfig,resetActiveConfig,normalizeRequestPayload,generateRequestPayload,requestTemplate,workingPackage,managementEnvelope,getBaseNameSets,saveBaseNameSet,activateBaseNamePreset};global.GKSEquipmentGenerator=api;
+const api={GENERATOR_VERSION,initialize,generate,validate,getPreview,expandBatchInputs,generateBatch,simulateBatch,getBatchPreview,prepareAiRequest,setConfigForTest,getConfig,saveActiveConfig,resetActiveConfig,normalizeRequestPayload,generateRequestPayload,requestTemplate,workingPackage,managementEnvelope,getBaseNameSets,saveBaseNameSet,activateBaseNamePreset};global.GKSEquipmentGenerator=api;
 function boot(){initialize().then(()=>renderPanel()).catch(e=>{console.error('[EquipmentGenerator]',e);renderPanel();const s=document.getElementById('eqgStatus');if(s)s.textContent='初期化失敗: '+e.message;});}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
 })(window);
