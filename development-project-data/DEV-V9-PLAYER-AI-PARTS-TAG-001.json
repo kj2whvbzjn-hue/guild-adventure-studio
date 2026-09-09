@@ -10,7 +10,7 @@
     "name": "Player AI パーツTag基盤・段階接続",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-09-06T05:31:03.786Z"
+    "updated_at": "2026-09-09T11:08:56.509Z"
   },
   "project_context": {
     "purpose": "Playerがゲーム内で実際に使用するPlayer AIパーツについて、必要な意味語彙をTag Masterとして段階的に設計・登録し、そのデータをCurrent AI Editor / Validator / Compiler / Runtime / Formal Export / Game Dataへ実際に接続できるか検証する。接続不能・責務不整合・ハードコード依存が判明した箇所だけを根拠付きで改修し、最終的なPlayer AI全面改修を、先に決めたUI都合ではなく実際に必要なAIパーツを成立させるための構造改修として行う。",
@@ -19,8 +19,8 @@
   "current_focus": {
     "architecture_id": "ARCH-AITAG-ROOT",
     "work_box_id": "BOX-AITAG-003",
-    "theme": "Player共通Tag参照契約確定 / Search・StateCheck実装修正待ち",
-    "goal": "GKS-B877 / GA-B486.223をCurrentとして、Search/StateCheck/Actionの条件Category→Tag参照を共通化する。次工程はTASK-AITAG-029。Source変更前にexact path impactを確認し、正当なProtected変更は変更前/変更後を報告してHuman承認を得る。"
+    "theme": "TASK-AITAG-029 Source適用済み / Human Approval・実機E2E確認中",
+    "goal": "GKS-B893 / GA-B486.224をCurrentとして、GKS-B878で導入済みのSearch/StateCheck共通Formal Category→Tag参照を実機確認する。TASK-AITAG-029はSource適用済みだがHuman ApprovalはPendingのためDoingを維持し、Protected変更の承認・Playwright実機確認が完了するまでDoneへ進めない。"
   },
   "project_rules": [
     {
@@ -218,6 +218,20 @@
       "result": "Applied",
       "evidence": "EVD-AITAG-040_FRESH-CURRENT-GKS-B877-PLAYER-ACTION-PASS.json; Fresh Current exact persistent/source match; Quick 12/12; Full 27/27; Active Test Gate 164 skipped=0; package manifest 680; Critical Runtime 52; warnings=0; timeouts=0.",
       "recorded_at": "2026-09-06T13:49:00+09:00"
+    },
+    {
+      "id": "IMPL-AITAG-029-GKS-B878-001",
+      "studio_build": "GKS-B878",
+      "game_build": "GA-B486.224",
+      "work_box_ids": [
+        "BOX-AITAG-003"
+      ],
+      "task_ids": [
+        "TASK-AITAG-029"
+      ],
+      "result": "Applied",
+      "evidence": "GKS-B878でPlayer Search/StateCheckの条件保存をtag_conditionへ移行し、shared/ai/ai-program-validator.jsへtargetTagAuthority / resolvePlayerConditionTag / playerConditionTags / playerTagConditionIssuesを導入。Search対象は有効target semantic Tag群が一意Formal Categoryへ属することを要求し、条件候補はai_conditions.ref_category_id依存からFormal Category→Tag参照へ切替。Current sub GKS-B893でも同resolver実装のcarry-forwardを確認。Task Human Approvalは未承認のため完了扱いにはしない。",
+      "recorded_at": "2026-09-09T19:51:46+09:00"
     }
   ],
   "discussions": [],
@@ -1552,7 +1566,7 @@
       "id": "TASK-AITAG-029",
       "box_id": "BOX-AITAG-003",
       "title": "Player Search / StateCheckを共通Tag参照へ修正",
-      "status": "Todo",
+      "status": "Doing",
       "execution_order": 29,
       "depends_on": [
         "TASK-AITAG-028"
@@ -1566,7 +1580,8 @@
         "at": ""
       },
       "created_at": "2026-09-06T14:15:00+09:00",
-      "updated_at": "2026-09-06T14:15:00+09:00"
+      "updated_at": "2026-09-09T19:51:46+09:00",
+      "result_scope": "SOURCE_APPLIED / CURRENT_B893_CARRY_FORWARD / HUMAN_APPROVAL_AND_E2E_PENDING"
     }
   ],
   "checks": [
@@ -2595,6 +2610,10 @@
     {
       "at": "2026-09-06T14:15:00+09:00",
       "message": "B877 Fresh Current監査で、Search/StateCheckがai_conditions.ref_category_idをPlayer Category候補Authorityとしているため状態管理しか表示されないことを確認。ActionはFormal Category→Tagを直接参照して5条件Categoryを表示。Targetは具体TAG/TGC ID固定ではないがSELF/ALLY/OTHER_ALLY/ENEMY system semantic allowlistで候補化していた。Human指示により、Search/StateCheck/Actionを共通Formal Category→Tag resolverへ統一し、Targetは有効target semantic Tag群が一意Formal Categoryに属することを要求する契約へ確定。Runtime system semantic固定は許可、具体TAG/TGC ID・名称・対応固定は禁止。"
+    },
+    {
+      "at": "2026-09-09T19:51:46+09:00",
+      "message": "Development ledger sync: TASK-AITAG-029をTodo→Doingへ同期。GKS-B878 / GA-B486.224で共通Tag参照Source変更がdeploy済みで、Current GKS-B893でもtargetTagAuthority / playerConditionTags / playerTagConditionIssuesのcarry-forwardを確認。Human ApprovalはPendingのまま保持し、Playwright実機確認・必要なProtected承認完了前にはDoneへ進めない。"
     }
   ]
 }
