@@ -5,7 +5,7 @@
     "name": "V9ゲーム再実装・System Structure再整理",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-09-09T15:18:09.464Z"
+    "updated_at": "2026-09-09T20:16:27.287Z"
   },
   "project_context": {
     "purpose": "既存Material・Decision・51 Current SpecificationをSystem Node / Contract / Connectionへ再編し、Flag / Event / Impact / Specification Candidateで再整理工程を実データ管理する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-R19-DETAILED-SPECS",
     "work_box_id": "BOX-R19-DETAILED-SPECS",
-    "theme": "Phase 2 Starter Equipment Current反映確認 / New Game実機確認待ち",
-    "goal": "Fresh Current Source GKS-B895 / GA-B486.226を確認。Export/system/adventure_settings.jsonのADV-0001 starter_roster 6名へ指定初期装備が正式Export済み。Source側starter_equipment Runtime supportもCurrentに存在。Save V4 testおよびCritical conformance 159 checks PASS。次は公開GameでNew Gameを作成し、6名の装備状態と実戦闘をE2E確認する。Human approval fieldおよびPhase2→3 Gateは変更しない。"
+    "theme": "Phase 2 E2E障害修正 / QST-0003 iOS freeze・roster loss保護",
+    "goal": "Human実機E2Eで通常Random BattleとStory Battleは通過したが、QST-0003必敗Battle開始時にiOS画面停止、その後Current Save読込でcharacters/partyIdsが空になったFailureを確認。B895/GA-B486.226をBaselineにB896/GA-B486.227 SOURCE_UPDATEを作成。Quest開始を単一Save commit化し、非Quest owner stateの不変検査とメモリrollback、明示的Backup復旧導線、Formal Adventure Battle tick dispatchの同値batched化を追加。Update適用後に端末Backup救出とQST-0003再E2Eを行う。Phase2→3 GateはBlockedを維持する。"
   },
   "project_rules": [
     {
@@ -660,6 +660,21 @@
       "result": "Partial",
       "evidence": "SOURCE_UPDATE artifact is complete and fully gated, but it is not yet Current Source and the actual starter roster equipment values are Game Data. Current PRJ-GAS-V4 Project JSON was not present in the Fresh Source package, so no Studio Project authority was fabricated. Configuration helper ADV-0001_STARTER_EQUIPMENT_CONFIG.json contains the user-requested six starter equipment sets. After SOURCE_UPDATE + Current Studio Project data application, TASK-R31-012 E2E remains required.",
       "recorded_at": "2026-09-09T22:53:48+09:00"
+    },
+    {
+      "id": "IMPL-REORG-R31-QST-SAVE-RECOVERY-B896-001",
+      "studio_build": "GKS-B896",
+      "game_build": "GA-B486.227",
+      "work_box_ids": [
+        "BOX-R19-DETAILED-SPECS"
+      ],
+      "task_ids": [
+        "TASK-R31-011",
+        "TASK-R31-012"
+      ],
+      "result": "Partial",
+      "evidence": "SOURCE_UPDATE ready, not Current yet. app-runtime: manual Current backup restore path; Quest start immutable owner guard + memory rollback; nested/double autosave removed so Quest start commits once. battle-control: synchronous formal simulation outer 1-tick dispatch replaced by semantically equivalent processTicks(cap). No Game Data changes, no Export/**, no deletion, protected test changes=0. Device recovery and QST-0003 E2E remain pending after Human apply.",
+      "recorded_at": "2026-09-10T04:31:00+09:00"
     }
   ],
   "discussions": [
@@ -25507,15 +25522,15 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:35:00+09:00",
-      "updated_at": "2026-09-09T22:04:05+09:00",
-      "result_scope": "PERSISTENCE_BRIDGES_PRESENT / BOW_QUIVER_FIXED / FULL_PHASE2_RESTORE_PENDING",
-      "blocking_reason": "Inventory/EquipmentおよびSkill/Passive/AI/optional Loadoutの保存基盤は存在し、bow_quiver Save Schema不整合はGKS-B894 / GA-B486.225で解消済み。ただし正式Loadout Active5+Passive5やPhase 2残存機能が未完了のため、Full Phase 2 restore完了扱いにはしない。"
+      "updated_at": "2026-09-10T04:31:00+09:00",
+      "result_scope": "SAVE_RECOVERY_HARDENING_UPDATE_READY / HUMAN_APPLY_AND_DEVICE_RECOVERY_PENDING",
+      "blocking_reason": "GKS-B896 / GA-B486.227 SOURCE_UPDATEはGate PASS。Current適用後、端末の明示Backup復旧とSave/Load再確認が必要。"
     },
     {
       "id": "TASK-R31-012",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Phase 2 Equipment/Skill/AI E2Eを検証する",
-      "status": "Todo",
+      "status": "Doing",
       "execution_order": null,
       "depends_on": [],
       "acceptance_criteria": "",
@@ -25527,9 +25542,9 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:35:00+09:00",
-      "updated_at": "2026-09-09T20:53:39+09:00",
-      "result_scope": "PHASE2_OPEN / FULL_E2E_PENDING",
-      "blocking_reason": ""
+      "updated_at": "2026-09-10T04:31:00+09:00",
+      "result_scope": "PHASE2_E2E_STARTED / QST-0003_IOS_FREEZE_AND_ROSTER_LOSS_REPRODUCED",
+      "blocking_reason": "Human実機でRandom Battle / Story Battleは通過。QST-0003必敗EventでiOS停止後、Continueで冒険者0名・party空を確認。B896修正適用後のQST-0003再E2Eが必要。"
     },
     {
       "id": "TASK-R32-001",
@@ -29683,6 +29698,52 @@
       "blocking": false,
       "created_at": "2026-09-10T00:05:46+09:00",
       "updated_at": "2026-09-10T00:05:46+09:00"
+    },
+    {
+      "id": "CHK-R31-012-QST0003-IOS-LOSS-001",
+      "title": "QST-0003 iOS mandatory-defeat E2E / roster loss failure",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-R31-012",
+      "status": "Failed",
+      "result": "通常Random BattleおよびStory Battleは正常。QST-0003必敗Event選択時に画面の一部が黒化して停止し、再読込後Continueは成功表示するが遠征Partyと冒険者名簿が0名となった。",
+      "evidence": "Human device screenshots 2026-09-10: base expedition panel shows「冒険者を作成してください」and character roster shows「まだ冒険者がいません」after「セーブデータを読み込みました。」 Source audit B895: startSelectedQuestAdventure performs storeAdventureQuestRun(run) where store already autoSaves, followed by a second autoSave; Save Schema accepts characters=[]; Formal Adventure Battle uses synchronous tick simulation.",
+      "checked_by": "Human report + AI source audit",
+      "checked_at": "2026-09-10T04:31:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": true,
+      "created_at": "2026-09-10T04:31:00+09:00",
+      "updated_at": "2026-09-10T04:31:00+09:00"
+    },
+    {
+      "id": "CHK-R31-011-QST-SAVE-RECOVERY-B896-001",
+      "title": "QST start Save/Backup recovery hardening B896 artifact validation",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-R31-011",
+      "status": "Passed",
+      "result": "B896 SOURCE_UPDATE artifact validation passed. Quest開始は1回のSave commitへ収束し、開始前non-Quest owner state guard/rollbackとユーザー明示Backup復旧を追加。Formal Adventure Battleの冗長な1-tick外側dispatchをprocessTicks(cap)へ同値集約。",
+      "evidence": "QUEST_SAVE_RECOVERY_HARDENING_PASS checks=8; game-save-hard-cut-v3 PASS; adventure-story-system PASS; adventure-quest-run-runtime-integration PASS; adventure-simulation-runtime-integration PASS; CRITICAL_CONFORMANCE_R19_OK checks=159; target Quick 12/12 PASS; target Full 27/27 PASS warnings=0 timeouts=0; SOURCE_UPDATE_APPLIED_STATE_OK final_gate=quick copied=24 deleted=0; SOURCE_UPDATE_APPLIED_STATE_OK final_gate=full copied=24 deleted=0; Test Integrity PASS protected_changed=0 build_token_only=11 machine_hash_sync=1 approval=no; update_zip_sha256=227670e804ee028acef3393d5c50298b29ffc2278332f07d93e7d3e50ffbeafa; baseline=GKS-B895/GA-B486.226 target=GKS-B896/GA-B486.227; target_tree=c680192f0ac650205985a20265ec354d6c6d1e3d00725397d37ddc75d09bdf37. This artifact does not resolve CHK-R31-012-QST0003-IOS-LOSS-001 until Human apply + device retest.",
+      "checked_by": "AI",
+      "checked_at": "2026-09-10T04:31:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-10T04:31:00+09:00",
+      "updated_at": "2026-09-10T04:31:00+09:00"
     }
   ],
   "workflow": {
@@ -30410,6 +30471,10 @@
     {
       "at": "2026-09-10T00:05:46+09:00",
       "message": "Fresh Current GKS-B895 / GA-B486.226を受領。ADV-0001 starter_roster 6名のstarter_equipmentが正式Exportへ反映済みであることを確認。Source側Runtime supportもCurrent。Save V4 test PASS、Critical conformance 159 PASS。TASK-R31-012はNew Game/戦闘の公開実機E2E未実施のためTodoのまま。Human approval fieldとPhase2→3 Gateは変更していない。"
+    },
+    {
+      "at": "2026-09-10T04:31:00+09:00",
+      "message": "Human実機でQST-0003必敗EventのiOS停止＋Continue後roster 0名を確認。B895 source auditでQuest開始の二重autoSave、空charactersを許容するCurrent Save schema、同期Formal Adventure Battle経路を確認。B896/GA-B486.227 SOURCE_UPDATEを作成し、明示Backup復旧、Quest owner-state guard/rollback、単一Save commit、tick dispatch同値集約を実装。Applied Full 27/27 PASS。Current未適用のためFailed E2Eは未解決扱い。"
     }
   ],
   "authority": {
