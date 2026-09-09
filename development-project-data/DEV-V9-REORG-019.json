@@ -5,7 +5,7 @@
     "name": "V9ゲーム再実装・System Structure再整理",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-09-09T14:06:19.886Z"
+    "updated_at": "2026-09-09T15:18:09.464Z"
   },
   "project_context": {
     "purpose": "既存Material・Decision・51 Current SpecificationをSystem Node / Contract / Connectionへ再編し、Flag / Event / Impact / Specification Candidateで再整理工程を実データ管理する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-R19-DETAILED-SPECS",
     "work_box_id": "BOX-R19-DETAILED-SPECS",
-    "theme": "Phase 2 Starter Equipment Data-driven対応 / SOURCE_UPDATE完成・Game Data適用待ち",
-    "goal": "Current GKS-B894 / GA-B486.225をBaselineに、New Game starter_roster[*].starter_equipmentを正式Equipment Master/Requirement Runtimeで検証・装備するSOURCE_UPDATEをGKS-B895 / GA-B486.226として完成。指定6名の武器＋頭/鎧/手/足をTargeted Probeで検証済み。アルトは木の大剣(two_hand)、セリアは片手剣+盾、フィンは弓+矢筒(bow_quiver)。実際の6名装備値はGame Dataであり、Current PRJ-GAS-V4 Project JSONがSource ZIPに存在しないためSourceへhardcodeせず、Current Studio Project ADV-0001への設定適用を待つ。TASK-R31-012 Phase 2 E2EはGame Data適用後に実行する。"
+    "theme": "Phase 2 Starter Equipment Current反映確認 / New Game実機確認待ち",
+    "goal": "Fresh Current Source GKS-B895 / GA-B486.226を確認。Export/system/adventure_settings.jsonのADV-0001 starter_roster 6名へ指定初期装備が正式Export済み。Source側starter_equipment Runtime supportもCurrentに存在。Save V4 testおよびCritical conformance 159 checks PASS。次は公開GameでNew Gameを作成し、6名の装備状態と実戦闘をE2E確認する。Human approval fieldおよびPhase2→3 Gateは変更しない。"
   },
   "project_rules": [
     {
@@ -29660,6 +29660,29 @@
       "blocking": false,
       "created_at": "2026-09-09T22:53:48+09:00",
       "updated_at": "2026-09-09T22:53:48+09:00"
+    },
+    {
+      "id": "CHK-R31-STARTER-EQUIPMENT-FRESH-CURRENT-B895-001",
+      "title": "Starter Equipment Fresh Current GKS-B895 verification",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-R31-012",
+      "status": "Passed",
+      "result": "Fresh Current GKS-B895 / GA-B486.226で初期装備Game Dataの正式Export反映を確認。ADV-0001 starter_roster 6名すべてにstarter_equipmentが存在し、指定内容と一致。Runtime supportもCurrent。E2E実機確認は未実施。",
+      "evidence": "source_zip_sha256=fe536afcd5af15124e4efcccd8c0d9081afc7e4e372ac930cb8e3eaab8fbb05a; package-build studio=GKS-B895 game=GA-B486.226; Export/system/adventure_settings.json generated_at=2026-09-09T15:03:09.740Z generated_by='GK Studio vGKS-B895'; starter equipment: アルト EQP-0012/EQP-0155/EQP-0144/EQP-0166/EQP-0177; セリア EQP-0001/EQP-0122/EQP-0155/EQP-0144/EQP-0166/EQP-0177; ロウ EQP-0023/EQP-0199/EQP-0188/EQP-0210/EQP-0221; フィン EQP-0067/EQP-0133/EQP-0199/EQP-0188/EQP-0210/EQP-0221; ミナ EQP-0089/EQP-0243/EQP-0232/EQP-0254/EQP-0265; エル EQP-0100/EQP-0243/EQP-0232/EQP-0254/EQP-0265; node tests/ai-production/game-save-hard-cut-v3.js => AI_GAME_SAVE_SCHEMA_V4_OK; node tests/critical-conformance-r19.js => CRITICAL_CONFORMANCE_R19_OK checks=159.",
+      "checked_by": "AI",
+      "checked_at": "2026-09-10T00:05:46+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-10T00:05:46+09:00",
+      "updated_at": "2026-09-10T00:05:46+09:00"
     }
   ],
   "workflow": {
@@ -30383,6 +30406,10 @@
     {
       "at": "2026-09-09T22:53:48+09:00",
       "message": "Starter Equipment拡張をData Firstで作成。GKS-B894/GA-B486.225→GKS-B895/GA-B486.226 SOURCE_UPDATEとして、starter_roster[*].starter_equipmentをNew Game時にFormal Equipment Master/slot/requirement Runtime経由で装備する実装を追加。指定6名（アルト大剣+重装、セリア片手剣+盾+重装、ロウ短剣+軽装、フィン弓+矢筒+軽装、ミナ杖+ローブ、エルワンド+ローブ）のTargeted Probe PASS。Applied-state Full 27/27 PASS。Actual IDsはSourceへhardcodeしていない。Current PRJ-GAS-V4 Project JSONが未提供のためGame Dataは未適用で、TASK-R31-012 E2Eはその後。既存Task status/approvalは変更していない。"
+    },
+    {
+      "at": "2026-09-10T00:05:46+09:00",
+      "message": "Fresh Current GKS-B895 / GA-B486.226を受領。ADV-0001 starter_roster 6名のstarter_equipmentが正式Exportへ反映済みであることを確認。Source側Runtime supportもCurrent。Save V4 test PASS、Critical conformance 159 PASS。TASK-R31-012はNew Game/戦闘の公開実機E2E未実施のためTodoのまま。Human approval fieldとPhase2→3 Gateは変更していない。"
     }
   ],
   "authority": {
