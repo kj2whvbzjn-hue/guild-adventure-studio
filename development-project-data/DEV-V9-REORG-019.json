@@ -5,7 +5,7 @@
     "name": "V9ゲーム再実装・System Structure再整理",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-09-09T11:43:35.800Z"
+    "updated_at": "2026-09-09T11:57:30.325Z"
   },
   "project_context": {
     "purpose": "既存Material・Decision・51 Current SpecificationをSystem Node / Contract / Connectionへ再編し、Flag / Event / Impact / Specification Candidateで再整理工程を実データ管理する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-R19-DETAILED-SPECS",
     "work_box_id": "BOX-R19-DETAILED-SPECS",
-    "theme": "Phase 1 Save/New Game E2E完了 / Phase 1→2 Gate実行待ち",
-    "goal": "Current GKS-B893 / GA-B486.224の公開GameでTASK-R30-012を独立E2E再実行し、New Game→初回Auto Save→Title→Continue/Load→Base復帰をPASS確認した。歴史的Failed Check CHK-R30-012-PHASE1-E2Eは履歴としてFailedを保持したまま新Passed Checkで解決済み。TASK-R30-012-CORR-001とTASK-R30-012はDone。次はTASK-R39-001 Phase 1→2 Gateのみを実行し、Gate合格前にPhase 2先頭Taskを解放しない。"
+    "theme": "Phase 2 Current実装再同期 / 残差Hard Cut・Loadout・Acquisition整理",
+    "goal": "Current GKS-B893 / GA-B486.224を実装正本としてPhase 2を再監査した結果、Equipment→Battle、Inventory/Equipment操作、Formal Passive Runtime、Skill/AI UI基盤、Phase 2 Save substrateは既に大きく実装済みである。Phase 1→2 Gateは合格として閉じる。一方、Equipment Consumerのlegacy params/params.stats fallbackとequipmentBonus()残存、bow_quiverをCurrent Save Schemaが許可しない不整合、Passive UI/Acquisition/Respec未接続、複数Skill Loadoutの実Runtime/AI候補制限未接続が残る。Phase 2→3 GateはこれらとPhase 2 E2E完了まで解放しない。"
   },
   "project_rules": [
     {
@@ -583,6 +583,54 @@
       "result": "Applied",
       "evidence": "Current public Game independent Playwright E2E PASS on workflow run 34346518744. New Game produced saveVersion=4 / characters=6 / partyIds=6 / gold=500 / selectedQuestId=''. Title Continue returned to Base, recorded success notification, did not expose Recovery UI, and reconciled selectedQuestId to QST-0006 through Current autoSave. Backup preserved the prior first-good save. pageerror=0. This closes the historical P1-CONTINUE-AFTER-FIRST-SAVE blocker without Source or Game Data edits.",
       "recorded_at": "2026-09-09T20:37:39+09:00"
+    },
+    {
+      "id": "IMPL-REORG-R31-EQUIP-BATTLE-CURRENT-B893-001",
+      "studio_build": "GKS-B893",
+      "game_build": "GA-B486.224",
+      "work_box_ids": [
+        "BOX-R19-DETAILED-SPECS"
+      ],
+      "task_ids": [
+        "TASK-R31-002"
+      ],
+      "result": "Applied",
+      "evidence": "Current app-runtime builds Player battle snapshots from Formal Equipment fields (attack/accuracy/magic_accuracy/magic_resistance/magic_weapon_bonus/weapon_critical_rate/block_rate/block_damage_cut_rate) plus independent modifier contributions; battle-control/tag-skill-runtime consume these values and resolve Critical/Block/Magic paths. critical-conformance-r19.js PASS checks=159.",
+      "recorded_at": "2026-09-09T20:53:39+09:00"
+    },
+    {
+      "id": "IMPL-REORG-R31-PASSIVE-SEPARATION-CURRENT-B893-001",
+      "studio_build": "GKS-B893",
+      "game_build": "GA-B486.224",
+      "work_box_ids": [
+        "BOX-R19-DETAILED-SPECS"
+      ],
+      "task_ids": [
+        "TASK-R31-010"
+      ],
+      "result": "Applied",
+      "evidence": "Formal Passive is loaded from Export/master/passives.json into a separate catalog, validated through GKSFormalContribution, selected by passiveIds and transferred to Battle as formalPassiveRuntimeContracts. Skill selection remains a separate skills/equippedSkillId path. task7e-formal-passive-counter-dynamic.js PASS.",
+      "recorded_at": "2026-09-09T20:53:39+09:00"
+    },
+    {
+      "id": "IMPL-REORG-R31-PARTIAL-CURRENT-B893-001",
+      "studio_build": "GKS-B893",
+      "game_build": "GA-B486.224",
+      "work_box_ids": [
+        "BOX-R19-DETAILED-SPECS"
+      ],
+      "task_ids": [
+        "TASK-R31-001",
+        "TASK-R31-003",
+        "TASK-R31-004",
+        "TASK-R31-005",
+        "TASK-R31-007",
+        "TASK-R31-008",
+        "TASK-R31-011"
+      ],
+      "result": "Partial",
+      "evidence": "Current Phase 2 substrate is substantial but not contract-complete: Formal Equipment/Inventory runtime, equip/unequip UI, Passive requirement/runtime, Skill UI, Save bridges and optional skillLoadoutIds persistence exist. Remaining Current gaps are legacy Equipment fallback/equipmentBonus helper, bow_quiver Save schema mismatch, comparison UI, acquisition/respec, Passive UI, and active multi-skill Loadout semantics.",
+      "recorded_at": "2026-09-09T20:53:39+09:00"
     }
   ],
   "discussions": [
@@ -25218,7 +25266,7 @@
       "id": "TASK-R31-001",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Equipment Contribution生成境界を実装する",
-      "status": "Blocked",
+      "status": "Doing",
       "execution_order": null,
       "depends_on": [],
       "acceptance_criteria": "",
@@ -25230,13 +25278,15 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:35:00+09:00",
-      "updated_at": "2026-08-20T22:30:00+09:00"
+      "updated_at": "2026-09-09T20:53:39+09:00",
+      "result_scope": "SUBSTANTIAL_CURRENT_IMPLEMENTATION / HARD_CUT_REMAINDER",
+      "blocking_reason": "Current Game equipment consumer still accepts record.params / params.stats fallback via formalEquipmentNumber(), and active equipmentBonus() helper remains although SPEC-V9-019-EQUIP-004 forbids legacy field fallback / old equipmentBonus()."
     },
     {
       "id": "TASK-R31-002",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Equipment ContributionをBattleへ正式接続する",
-      "status": "Blocked",
+      "status": "Done",
       "execution_order": null,
       "depends_on": [],
       "acceptance_criteria": "",
@@ -25248,13 +25298,15 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:35:00+09:00",
-      "updated_at": "2026-08-20T22:30:00+09:00"
+      "updated_at": "2026-09-09T20:53:39+09:00",
+      "result_scope": "CURRENT_B893_EQUIPMENT_TO_BATTLE_CONNECTED",
+      "blocking_reason": ""
     },
     {
       "id": "TASK-R31-003",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Equipment所有状態とInventory境界を実装する",
-      "status": "Blocked",
+      "status": "Doing",
       "execution_order": null,
       "depends_on": [],
       "acceptance_criteria": "",
@@ -25266,13 +25318,15 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:35:00+09:00",
-      "updated_at": "2026-08-20T22:30:00+09:00"
+      "updated_at": "2026-09-09T20:53:39+09:00",
+      "result_scope": "OWNERSHIP_AND_INVENTORY_RUNTIME_PRESENT / SAVE_SCHEMA_GAP",
+      "blocking_reason": "Inventory/equip/unequip ownership boundary is active and exact persistence bridge exists, but app-runtime accepts weaponStyle=bow_quiver while ai-save-bridge Current schema does not allow bow_quiver, so a legal Bow+Quiver state can be rejected by Save Integrity."
     },
     {
       "id": "TASK-R31-004",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Inventory / Equipment UIの装備・比較表示境界を実装する",
-      "status": "Blocked",
+      "status": "Doing",
       "execution_order": null,
       "depends_on": [],
       "acceptance_criteria": "",
@@ -25284,13 +25338,15 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:35:00+09:00",
-      "updated_at": "2026-08-20T22:30:00+09:00"
+      "updated_at": "2026-09-09T20:53:39+09:00",
+      "result_scope": "EQUIP_UNEQUIP_AND_REASON_UI_PRESENT / COMPARISON_INCOMPLETE",
+      "blocking_reason": "Current UI supports equipment listing, equip/unequip, requirement reasons and slot selection, but before/after comparison boundary required by the Phase 2 specification is not present."
     },
     {
       "id": "TASK-R31-005",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Skill / Passive習得条件のRuntime境界を実装する",
-      "status": "Blocked",
+      "status": "Doing",
       "execution_order": null,
       "depends_on": [],
       "acceptance_criteria": "",
@@ -25302,13 +25358,15 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:35:00+09:00",
-      "updated_at": "2026-08-20T22:30:00+09:00"
+      "updated_at": "2026-09-09T20:53:39+09:00",
+      "result_scope": "PASSIVE_REQUIREMENT_VALIDATION_PRESENT / ACQUISITION_RUNTIME_INCOMPLETE",
+      "blocking_reason": "Formal Passive ability-condition validation exists, but Skill/Passive acquisition cost/conditions and Training Hall acquisition runtime are not implemented. Current Skill UI explicitly states acquisition conditions/cost are deferred."
     },
     {
       "id": "TASK-R31-006",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Skill / Passive Respec境界を実装する",
-      "status": "Blocked",
+      "status": "Todo",
       "execution_order": null,
       "depends_on": [],
       "acceptance_criteria": "",
@@ -25320,13 +25378,15 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:35:00+09:00",
-      "updated_at": "2026-08-20T22:30:00+09:00"
+      "updated_at": "2026-09-09T20:53:39+09:00",
+      "result_scope": "PHASE2_OPEN / RESPEC_RUNTIME_NOT_IMPLEMENTED",
+      "blocking_reason": ""
     },
     {
       "id": "TASK-R31-007",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Skill / Passive UIの表示境界を実装する",
-      "status": "Blocked",
+      "status": "Doing",
       "execution_order": null,
       "depends_on": [],
       "acceptance_criteria": "",
@@ -25338,13 +25398,15 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:35:00+09:00",
-      "updated_at": "2026-08-20T22:30:00+09:00"
+      "updated_at": "2026-09-09T20:53:39+09:00",
+      "result_scope": "SKILL_UI_PRESENT / PASSIVE_UI_MISSING",
+      "blocking_reason": "Skill list/detail/equip UI exists, but no Player-facing Passive list/detail/effective-state UI or Training Hall Passive UI is connected."
     },
     {
       "id": "TASK-R31-008",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Skill Loadout編集とSave境界を実装する",
-      "status": "Blocked",
+      "status": "Doing",
       "execution_order": null,
       "depends_on": [],
       "acceptance_criteria": "",
@@ -25356,13 +25418,15 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:35:00+09:00",
-      "updated_at": "2026-08-20T22:30:00+09:00"
+      "updated_at": "2026-09-09T20:53:39+09:00",
+      "result_scope": "SAVE_SUBSTRATE_PRESENT / MULTI_SKILL_LOADOUT_NOT_ACTIVE",
+      "blocking_reason": "skillLoadoutIds is accepted/preserved as an optional Save field, but Player UI/runtime still uses single equippedSkillId. No multi-skill Loadout edit semantics are active."
     },
     {
       "id": "TASK-R31-009",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Skill LoadoutをAI使用可能Skill集合へ接続する",
-      "status": "Blocked",
+      "status": "Todo",
       "execution_order": null,
       "depends_on": [],
       "acceptance_criteria": "",
@@ -25374,13 +25438,15 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:35:00+09:00",
-      "updated_at": "2026-08-20T22:30:00+09:00"
+      "updated_at": "2026-09-09T20:53:39+09:00",
+      "result_scope": "PHASE2_OPEN / AI_LOADOUT_FILTER_NOT_CONNECTED",
+      "blocking_reason": ""
     },
     {
       "id": "TASK-R31-010",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Passive RuntimeとSkill Loadoutの分離を検証する",
-      "status": "Blocked",
+      "status": "Done",
       "execution_order": null,
       "depends_on": [],
       "acceptance_criteria": "",
@@ -25392,13 +25458,15 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:35:00+09:00",
-      "updated_at": "2026-08-20T22:30:00+09:00"
+      "updated_at": "2026-09-09T20:53:39+09:00",
+      "result_scope": "CURRENT_B893_PASSIVE_RUNTIME_SEPARATED_FROM_SKILL_PATH",
+      "blocking_reason": ""
     },
     {
       "id": "TASK-R31-011",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Phase 2 Save/Load復元を検証する",
-      "status": "Blocked",
+      "status": "Doing",
       "execution_order": null,
       "depends_on": [],
       "acceptance_criteria": "",
@@ -25410,13 +25478,15 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:35:00+09:00",
-      "updated_at": "2026-08-20T22:30:00+09:00"
+      "updated_at": "2026-09-09T20:53:39+09:00",
+      "result_scope": "PERSISTENCE_BRIDGES_PRESENT / FULL_PHASE2_RESTORE_NOT_CLOSABLE",
+      "blocking_reason": "Current exact-preservation bridges cover Inventory/Equipment and Skill/Passive/AI/optional Loadout, but Phase 2 active semantics are incomplete and bow_quiver is rejected by Current Save schema."
     },
     {
       "id": "TASK-R31-012",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Phase 2 Equipment/Skill/AI E2Eを検証する",
-      "status": "Blocked",
+      "status": "Todo",
       "execution_order": null,
       "depends_on": [],
       "acceptance_criteria": "",
@@ -25428,7 +25498,9 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:35:00+09:00",
-      "updated_at": "2026-08-20T22:30:00+09:00"
+      "updated_at": "2026-09-09T20:53:39+09:00",
+      "result_scope": "PHASE2_OPEN / FULL_E2E_PENDING",
+      "blocking_reason": ""
     },
     {
       "id": "TASK-R32-001",
@@ -26964,7 +27036,7 @@
       "id": "TASK-R39-001",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Phase 1→2 Gateを管理する",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 1990,
       "depends_on": [
         "TASK-R30-012"
@@ -26978,8 +27050,9 @@
         "at": ""
       },
       "created_at": "2026-08-20T22:20:00+09:00",
-      "updated_at": "2026-09-09T20:37:39+09:00",
-      "result_scope": "DEPENDENCY_CLEARED / PHASE1_GATE_READY"
+      "updated_at": "2026-09-09T20:53:39+09:00",
+      "result_scope": "PHASE1_GATE_PASS / PHASE2_OPEN",
+      "blocking_reason": ""
     },
     {
       "id": "TASK-R39-002",
@@ -26997,7 +27070,9 @@
         "at": ""
       },
       "created_at": "2026-08-20T22:20:00+09:00",
-      "updated_at": "2026-08-20T22:30:00+09:00"
+      "updated_at": "2026-09-09T20:53:39+09:00",
+      "result_scope": "WAITING_PHASE2_COMPLETION",
+      "blocking_reason": "TASK-R31-001..012の未完了項目とPhase 2 E2E完了待ち。"
     },
     {
       "id": "TASK-R39-003",
@@ -29441,6 +29516,52 @@
       "blocking": false,
       "created_at": "2026-09-09T20:37:39+09:00",
       "updated_at": "2026-09-09T20:37:39+09:00"
+    },
+    {
+      "id": "CHK-R31-CURRENT-B893-PHASE2-AUDIT-001",
+      "title": "Current B893 Phase 2 implementation reconciliation audit",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-R29-002",
+      "status": "Passed",
+      "result": "Phase 2台帳がCurrent実装より大きく遅れていることを確認。R39-001 Phase 1→2 GateをPASSとして閉じ、R31群をCurrent実体へ再同期。Equipment→BattleとPassive Runtime分離は完了扱い、その他は実装量に応じてDoing/Todoへ更新。Phase 2→3 Gateは未解放。",
+      "evidence": "Current Source GKS-B893 / GA-B486.224; source_zip_sha256=d8dc839b27db6471ddce5061593a35620e32e59159ec80eb9e7dd6a689df4658; Export equipment=308 generated_by GKS-B890; skills=0 generated_by GKS-B884; passives=1 (PAS-0001) generated_by GKS-B884; AI developer program/layout/runtime each present from GKS-B884. Current tests PASS: critical-conformance-r19.js => checks=159; task7e-formal-passive-counter-dynamic.js => PASS; ai-v2-game-player-authoring-binding-r10-p8.js => PASS; player-unified-tag-reference-r10-p12.js => PASS; ai-v2-reservation-execution-r10-p5.js => PASS; game-save-hard-cut-v3.js => AI_GAME_SAVE_SCHEMA_V4_OK. Static Current findings: app-runtime formalEquipmentNumber() falls back to params/params.stats; active equipmentBonus() helper remains; inventory equip/unequip path and exact ownership bridge exist; app-runtime allows bow_quiver but ai-save-bridge weaponStyle schema omits bow_quiver; Skill UI explicitly says acquisition conditions/cost are deferred; no Respec implementation found; no Player Passive UI found; skillLoadoutIds appears only in Save schema/bridge while battle uses ownedSkillIds + equippedSkillId; Formal Passive runtime is independently loaded and passed as formalPassiveRuntimeContracts.",
+      "checked_by": "AI",
+      "checked_at": "2026-09-09T20:53:39+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-09T20:53:39+09:00",
+      "updated_at": "2026-09-09T20:53:39+09:00"
+    },
+    {
+      "id": "CHK-R39-001-PHASE1-TO-2-GATE-B893-001",
+      "title": "Phase 1→2 Gate Current B893",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-R39-001",
+      "status": "Passed",
+      "result": "TASK-R30-001〜012はDoneで、Current public Game Phase 1 E2EもCHK-R30-012-PUBLIC-GAME-B893-E2E-001でPassed済み。Phase 2を解放する。",
+      "evidence": "TASK-R30-001..012 status=Done in Current Development Project; CHK-R30-012-PUBLIC-GAME-B893-E2E-001 status=Passed; workflow run 34346518744 conclusion=success; Current Source GKS-B893 / GA-B486.224.",
+      "checked_by": "AI",
+      "checked_at": "2026-09-09T20:53:39+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-09T20:53:39+09:00",
+      "updated_at": "2026-09-09T20:53:39+09:00"
     }
   ],
   "workflow": {
@@ -30144,6 +30265,10 @@
     {
       "at": "2026-09-09T20:37:39+09:00",
       "message": "TASK-R30-012 Phase 1 E2E完了。公開Game GKS-B893 / GA-B486.224をPlaywrightでNew Game→初回Auto Save→Guild→Title→Continue/Load→Baseまで独立実行しPASS。初回Save selectedQuestId=''からContinue時QST-0006へCurrent autoSaveで再選択・永続化され、旧persist未定義Failureは再発せず、Recovery UI非表示、pageerror=0。CHK-R30-012-PHASE1-E2Eは歴史的Failedを保持したままCHK-R30-012-PUBLIC-GAME-B893-E2E-001でResolved。TASK-R30-012-CORR-001 / TASK-R30-012をDone、TASK-R39-001をTodo(Phase 1→2 Gate Ready)へ同期。"
+    },
+    {
+      "at": "2026-09-09T20:53:39+09:00",
+      "message": "Phase 2 Current再監査。GKS-B893 / GA-B486.224ではPhase 2実装が台帳より大幅に進行している。TASK-R39-001をDoneとしてPhase 2を正式解放。R31-002 Equipment→Battle、R31-010 Passive Runtime分離をDoneへ同期。R31-001/003/004/005/007/008/011はCurrent実装ありのDoing、R31-006/009/012はTodoへ同期。主残差はEquipment legacy fallback/equipmentBonus()、bow_quiver Save schema不整合、比較UI、Acquisition/Respec、Passive UI、skillLoadoutIdsの実Runtime/AI候補接続。R39-002 Phase 2→3 GateはBlocked維持。"
     }
   ],
   "authority": {
