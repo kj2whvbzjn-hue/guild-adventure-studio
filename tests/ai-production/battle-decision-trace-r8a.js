@@ -17,7 +17,7 @@ const project={tags:[],masters:{
   ai_target_selectors:[{id:'ATS-LOW',name:'Lowest HP',evaluator:'selector.lowest_hp_ratio',parameter_schema:{type:'object',properties:{},required:[],additionalProperties:false},tags:[],enabled:true}],
   skills:[]
 }};
-const program={schema_version:'2.0.0',data_version:dv,id:'AIP-P4',name:'P4 actor-common',version:1,status:'valid',entry_node_id:'N1',nodes:[{instance_id:'N1',master_node_id:'AIA-ATTACK',master_data_version:dv,node_type:'action',position:{x:0,y:0},parameters:{},target_selector:{selector_id:'ATS-LOW',params:{}}}],edges:[],subroutines:[]};
+const program={schema_version:'2.0.0',data_version:dv,id:'AIP-9105',name:'P4 actor-common',version:1,status:'valid',entry_node_id:'N1',nodes:[{instance_id:'N1',master_node_id:'AIA-ATTACK',master_data_version:dv,node_type:'action',position:{x:0,y:0},parameters:{},target_selector:{selector_id:'ATS-LOW',params:{}}}],edges:[],subroutines:[]};
 (async()=>{
   const runtime=await Compiler.compile(program,project);
   const layout=Layout.createLayout('AIL-0004',program.id,dv,8,8);layout.chips.push({instance_id:'N1',x:0,y:0,rotation:0});

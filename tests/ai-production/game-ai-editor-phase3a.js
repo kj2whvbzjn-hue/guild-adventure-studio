@@ -19,7 +19,7 @@ const catalog={...Loader.normalize([
  {id:'AIA-0001',name:'待機',node_type:'action',status:'active',data_version:V,evaluator:'action.wait',ports:ports([]),parameter_schema:empty}
 ],[],[],tags,tagCategories,[],[],[],[]),schema_version:'2.0.0',data_version:V,warnings:[]};
 assert.strictEqual(UI.definitions(catalog).length,3);assert.strictEqual(UI.definitions(catalog).some(row=>row.node_type==='target'),false);assert.deepStrictEqual(UI.stateCheckBindingsFor(catalog).map(row=>({category_id:row.category_id,definition_id:row.definition.id,subject_scope:row.subject_scope,tag_field:row.tag_field.name,tags:row.tags.map(tag=>tag.id)})),[{category_id:'TGC-STATE',definition_id:'AIC-0001',subject_scope:'SELF',tag_field:'state_tag_id',tags:['TAG-STATE-ALIVE','TAG-STATE-HP']}]);
-const s=UI.createSession(catalog,{program_id:'AIP-DRAFT',layout_id:'AIL-0001',data_version:V,now:'2026-09-03T00:00:00Z'});
+const s=UI.createSession(catalog,{program_id:'AIP-9145',layout_id:'AIL-0001',data_version:V,now:'2026-09-03T00:00:00Z'});
 const search=s.add('AIS-0001',{target_tag_id:'TAG-TGT-ENEMY',predicate:{logic:'ALL',clauses:[{predicate_master_id:'AIC-0001',params:{state_tag_id:'TAG-STATE-HP',value_mode:'RATIO',operator:'<',value:.5},negate:false}]}},1,1);
 const found=s.add('AIA-0001',{},2,1),notFound=s.add('AIA-0001',{},1,2);s.rotate(notFound.instance_id,90);
 assert.strictEqual(s.program().entry_node_id,search.instance_id);assert.strictEqual(s.layout().schema_version,'2.0.0');assert.deepStrictEqual(s.program().edges,[],'Player Session must not require manual Program edges');

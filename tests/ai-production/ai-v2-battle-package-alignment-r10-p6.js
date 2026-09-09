@@ -23,10 +23,10 @@ assert.throws(()=>Envelope.validateAiMasterSnapshotData({...snapshot,target_sele
 assert.throws(()=>Envelope.validateAiMasterSnapshotData({...snapshot,nodes:[{...snapshot.nodes[0],id:'AIT-0001',node_type:'target'}]}),/node_type|未対応/);
 assert.throws(()=>Envelope.validateAiMasterSnapshotData({...snapshot,nodes:[{...snapshot.nodes[0],id:'ATS-0001'}]}),/prefix/);
 
-assert.deepStrictEqual(Envelope.validatePersistentAiBinding({program_id:'AIP-1',layout_id:'AIL-1'}),{program_id:'AIP-1',layout_id:'AIL-1'});
-assert.throws(()=>Envelope.validatePersistentAiBinding({program_id:'AIP-1',layout_id:'AIL-1',master_snapshot_id:'AIMS-1'}),/Persistent binding/);
-assert.deepStrictEqual(Envelope.validateResolvedAiBinding({program_id:'AIP-1',layout_id:'AIL-1',master_snapshot_id:'AIMS-1'}),{program_id:'AIP-1',layout_id:'AIL-1',master_snapshot_id:'AIMS-1'});
-assert.throws(()=>Envelope.validateResolvedAiBinding({program_id:'AIP-1',layout_id:'AIL-1'}),/Resolved binding/);
+assert.deepStrictEqual(Envelope.validatePersistentAiBinding({program_id:'AIP-9113',layout_id:'AIL-9113'}),{program_id:'AIP-9113',layout_id:'AIL-9113'});
+assert.throws(()=>Envelope.validatePersistentAiBinding({program_id:'AIP-9113',layout_id:'AIL-9113',master_snapshot_id:'AIMS-1'}),/Persistent binding/);
+assert.deepStrictEqual(Envelope.validateResolvedAiBinding({program_id:'AIP-9113',layout_id:'AIL-9113',master_snapshot_id:'AIMS-1'}),{program_id:'AIP-9113',layout_id:'AIL-9113',master_snapshot_id:'AIMS-1'});
+assert.throws(()=>Envelope.validateResolvedAiBinding({program_id:'AIP-9113',layout_id:'AIL-9113'}),/Resolved binding/);
 
 const studio=fs.readFileSync(path.join(root,'studio/index.html'),'utf8');
 for(const required of [

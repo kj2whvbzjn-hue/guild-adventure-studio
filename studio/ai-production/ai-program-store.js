@@ -103,7 +103,7 @@
   function assertProgramShape(program, index) {
     const at=typeof index==='number'?`ai_programs[${index}]`:`ai_programs[${index}]`; if (!isObject(program)) throw new Error(`${at} must be an object`); assertAllowedKeys(program, PROGRAM_KEYS, at);
     for (const key of ['schema_version','data_version','id','name','version','status','entry_node_id','nodes','edges','subroutines']) if (!own(program,key)) throw new Error(`${at}.${key} is required`);
-    if (program.schema_version !== SCHEMA_VERSION) throw new Error(`${at}.schema_version must be ${SCHEMA_VERSION}`); assertString(program.data_version, `${at}.data_version`); assertPattern(program.id,/^AIP-[A-Za-z0-9_.-]+$/,`${at}.id`); assertString(program.name, `${at}.name`);
+    if (program.schema_version !== SCHEMA_VERSION) throw new Error(`${at}.schema_version must be ${SCHEMA_VERSION}`); assertString(program.data_version, `${at}.data_version`); assertPattern(program.id,/^AIP-[0-9]{4}$/,`${at}.id`); assertString(program.name, `${at}.name`);
     if (!Number.isInteger(program.version) || program.version < 1) throw new Error(`${at}.version must be a positive integer`); if (!STATUS.has(program.status)) throw new Error(`${at}.status is invalid`);
     assertString(program.entry_node_id, `${at}.entry_node_id`, program.status === 'draft'); if (!Array.isArray(program.nodes) || !Array.isArray(program.edges) || !Array.isArray(program.subroutines)) throw new Error(`${at} graph collections must be arrays`);
     if(own(program,'result_slots')){if(!Array.isArray(program.result_slots))throw new Error(`${at}.result_slots must be an array`);const ids=new Set();program.result_slots.forEach((slot,index)=>{assertResultSlot(slot,`${at}.result_slots[${index}]`);if(ids.has(slot.slot_id))throw new Error(`${at}.result_slots has duplicate slot_id: ${slot.slot_id}`);ids.add(slot.slot_id);});}
@@ -115,7 +115,7 @@
   function assertLayoutShape(layout, index) {
     const at=typeof index==='number'?`ai_program_layouts[${index}]`:`ai_program_layouts[${index}]`; if(!isObject(layout))throw new Error(`${at} must be an object`); assertAllowedKeys(layout,LAYOUT_KEYS,at);
     for(const key of ['schema_version','data_version','layout_id','program_id','width','height','chips','extensions'])if(!own(layout,key))throw new Error(`${at}.${key} is required`);
-    if(layout.schema_version!==SCHEMA_VERSION)throw new Error(`${at}.schema_version must be ${SCHEMA_VERSION}`); assertString(layout.data_version,`${at}.data_version`); assertPattern(layout.layout_id,/^AIL-[0-9]+$/,`${at}.layout_id`); assertPattern(layout.program_id,/^AIP-[A-Za-z0-9_.-]+$/,`${at}.program_id`);
+    if(layout.schema_version!==SCHEMA_VERSION)throw new Error(`${at}.schema_version must be ${SCHEMA_VERSION}`); assertString(layout.data_version,`${at}.data_version`); assertPattern(layout.layout_id,/^AIL-[0-9]{4}$/,`${at}.layout_id`); assertPattern(layout.program_id,/^AIP-[0-9]{4}$/,`${at}.program_id`);
     if(!Number.isInteger(layout.width)||layout.width<1||!Number.isInteger(layout.height)||layout.height<1)throw new Error(`${at} board size is invalid`); if(!Array.isArray(layout.chips)||!Array.isArray(layout.extensions))throw new Error(`${at} layout collections must be arrays`);
     const occupied=new Set(); layout.chips.forEach((chip,i)=>{const cat=`${at}.chips[${i}]`;if(!isObject(chip))throw new Error(`${cat} must be an object`);assertAllowedKeys(chip,CHIP_KEYS,cat);for(const k of ['instance_id','x','y','rotation'])if(!own(chip,k))throw new Error(`${cat}.${k} is required`);assertString(chip.instance_id,`${cat}.instance_id`);if(!Number.isInteger(chip.x)||chip.x<0||!Number.isInteger(chip.y)||chip.y<0||chip.x>=layout.width||chip.y>=layout.height)throw new Error(`${cat} position is invalid`);if(![0,90,180,270].includes(chip.rotation))throw new Error(`${cat}.rotation is invalid`);const key=`${chip.x},${chip.y}`;if(occupied.has(key))throw new Error(`${cat} overlaps another chip`);occupied.add(key);});
     if(layout.extensions.length)throw new Error(`${at}.extensions are not authored by the P7 graph editor`);
@@ -123,7 +123,7 @@
   function assertRuntimeShape(runtime, at='ai_program_runtime') {
     if(!isObject(runtime))throw new Error(`${at} must be an object`); if(runtime.schema_version!==SCHEMA_VERSION)throw new Error(`${at}.schema_version must be ${SCHEMA_VERSION}`);
     for(const key of ['data_version','program_id','program_version','compiler_version','entry_instruction','instructions','source_map','limits','content_hash'])if(!own(runtime,key))throw new Error(`${at}.${key} is required`);
-    assertString(runtime.data_version,`${at}.data_version`); assertPattern(runtime.program_id,/^AIP-[A-Za-z0-9_.-]+$/,`${at}.program_id`); if(!Number.isInteger(runtime.program_version)||runtime.program_version<1)throw new Error(`${at}.program_version is invalid`); if(!Array.isArray(runtime.instructions)||!runtime.instructions.length)throw new Error(`${at}.instructions must not be empty`); if(!isObject(runtime.source_map)||!isObject(runtime.limits))throw new Error(`${at} source_map/limits must be objects`); assertPattern(runtime.content_hash,/^[a-f0-9]{64}$/,`${at}.content_hash`);
+    assertString(runtime.data_version,`${at}.data_version`); assertPattern(runtime.program_id,/^AIP-[0-9]{4}$/,`${at}.program_id`); if(!Number.isInteger(runtime.program_version)||runtime.program_version<1)throw new Error(`${at}.program_version is invalid`); if(!Array.isArray(runtime.instructions)||!runtime.instructions.length)throw new Error(`${at}.instructions must not be empty`); if(!isObject(runtime.source_map)||!isObject(runtime.limits))throw new Error(`${at} source_map/limits must be objects`); assertPattern(runtime.content_hash,/^[a-f0-9]{64}$/,`${at}.content_hash`);
   }
   function normalizeProject(projectData) {
     if (!isObject(projectData)) throw new TypeError('Studio project data must be an object');
@@ -141,8 +141,8 @@
     let max=0; for(const row of Array.isArray(rows)?rows:[]){const m=pattern.exec(String(row?.[key]||''));if(m)max=Math.max(max,Number(m[1]));}
     let number=max+1; if(number%2!==parity)number+=1; return `${prefix}-${String(number).padStart(4,'0')}`;
   }
-  function nextProgramId(projectData) { normalizeProject(projectData); return nextOwnedNumericId(projectData.ai_programs,'id',/^AIP-([0-9]+)$/,'AIP',1); }
-  function nextLayoutId(projectData) { normalizeProject(projectData); return nextOwnedNumericId(projectData.ai_program_layouts,'layout_id',/^AIL-([0-9]+)$/,'AIL',1); }
+  function nextProgramId(projectData) { normalizeProject(projectData); return nextOwnedNumericId(projectData.ai_programs,'id',/^AIP-([0-9]{4})$/,'AIP',1); }
+  function nextLayoutId(projectData) { normalizeProject(projectData); return nextOwnedNumericId(projectData.ai_program_layouts,'layout_id',/^AIL-([0-9]{4})$/,'AIL',1); }
   function upsert(projectData, value) {
     normalizeProject(projectData); assertProgramShape(value, 'input'); const program = Model.normalizeProgram(value); const matches = projectData.ai_programs.reduce((rows, item, index) => { if (item.id === program.id) rows.push(index); return rows; }, []);
     if (matches.length > 1) throw new Error(`Duplicate AI program id: ${program.id}`); if (matches.length === 1) projectData.ai_programs[matches[0]] = program; else projectData.ai_programs.push(program); return program;

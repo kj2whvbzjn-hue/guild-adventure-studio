@@ -8,7 +8,7 @@ const Formation=require('../../assets/shared/js/formation-target-resolver.js');
 const Validator=require('../../shared/ai/ai-program-validator.js');
 
 function runtimeFor(skillId,{selector=false}={}){
-  return {schema_version:'2.0.0',data_version:'R10-P5',program_id:'AIP-P5',program_version:1,entry_instruction:'I1',instructions:[{instruction_id:'I1',op:'ACTION',origin_part_id:'N1',source_node_id:'N1',evaluator:'action.skill',params:{skill_id:skillId},...(selector?{target_selector:{selector_id:'ATS-RANDOM',params:{}}}:{})}],source_map:{I1:{origin_part_id:'N1',source_node_id:'N1'}},limits:{max_steps:1,max_subroutine_depth:0}};
+  return {schema_version:'2.0.0',data_version:'R10-P5',program_id:'AIP-9103',program_version:1,entry_instruction:'I1',instructions:[{instruction_id:'I1',op:'ACTION',origin_part_id:'N1',source_node_id:'N1',evaluator:'action.skill',params:{skill_id:skillId},...(selector?{target_selector:{selector_id:'ATS-RANDOM',params:{}}}:{})}],source_map:{I1:{origin_part_id:'N1',source_node_id:'N1'}},limits:{max_steps:1,max_subroutine_depth:0}};
 }
 const selectors=[{schema_version:'2.0.0',id:'ATS-RANDOM',name:'Random',evaluator:'selector.random',parameter_schema:{type:'object',properties:{},additionalProperties:false},tags:[],enabled:true}];
 const enemies=[

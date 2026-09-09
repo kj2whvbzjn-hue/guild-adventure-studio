@@ -29,7 +29,7 @@ const search=(id,slot)=>({instance_id:id,master_node_id:'AIS-SEARCH',master_data
 const attack=(id,slot)=>({instance_id:id,master_node_id:'AIA-ATTACK',master_data_version:dv,node_type:'action',position:{x:1,y:0},parameters:{},target_selector:{selector_id:'ATS-LOW',params:{}},...(slot?{target_source:{kind:'SEARCH_RESULT',result_slot_id:slot}}:{}),comment:''});
 const wait=(id)=>({instance_id:id,master_node_id:'AIA-WAIT',master_data_version:dv,node_type:'action',position:{x:1,y:1},parameters:{},target_selector:null,comment:''});
 const edge=(id,from,port,to)=>({edge_id:id,from:{node_id:from,port_id:port},transition_kind:'NODE',to:{node_id:to,port_id:'in'}});
-function program(){return {schema_version:'2.0.0',data_version:dv,id:'AIP-P11',name:'slot binding',version:1,status:'draft',entry_node_id:'AIN-0001',result_slots:[{slot_id:'ARS-0001',name:'HP50%以下の敵',value_type:'UNIT_SET'}],nodes:[search('AIN-0001','ARS-0001'),attack('AIN-0002','ARS-0001'),wait('AIN-0003')],edges:[edge('AIE-0001','AIN-0001','found','AIN-0002'),edge('AIE-0002','AIN-0001','not_found','AIN-0003')],subroutines:[],tags:[],description:''};}
+function program(){return {schema_version:'2.0.0',data_version:dv,id:'AIP-9147',name:'slot binding',version:1,status:'draft',entry_node_id:'AIN-0001',result_slots:[{slot_id:'ARS-0001',name:'HP50%以下の敵',value_type:'UNIT_SET'}],nodes:[search('AIN-0001','ARS-0001'),attack('AIN-0002','ARS-0001'),wait('AIN-0003')],edges:[edge('AIE-0001','AIN-0001','found','AIN-0002'),edge('AIE-0002','AIN-0001','not_found','AIN-0003')],subroutines:[],tags:[],description:''};}
 (async()=>{
   const p=program();
   const valid=Validator.validate(p,project);assert(valid.valid,JSON.stringify(valid.issues));

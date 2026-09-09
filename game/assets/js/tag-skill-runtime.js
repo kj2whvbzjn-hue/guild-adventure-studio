@@ -195,6 +195,7 @@ function resolveTaggedTargets(actor,target,definition){
  if(range==='SINGLE'||range==='BACK'){
   const fixed=side==='SELF'&&!isRevive?(target||actor):target;
   if(!fixed)return{ok:false,reason:'対象が無効です',targets:[]};
+  if(range==='SINGLE'&&side==='ENEMY'&&String(fixed.formationPosition||'FRONTLINE')==='BACKLINE')return{ok:false,reason:'SINGLEは敵後衛を対象にできません',targets:[]};
   if(isRevive&&(fixed.alive||Number(fixed.hp)>0))return{ok:false,reason:'INVALID_TARGET: 生存対象は蘇生できません',targets:[]};
   if(!candidates.some(x=>String(x.id)===String(fixed.id)))return{ok:false,reason:'対象契約と選択対象が一致しません',targets:[]};
   candidates=[fixed];

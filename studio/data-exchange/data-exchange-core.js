@@ -20,7 +20,10 @@
       {dataset:'jobs',paths:['params.job_id']},
       {dataset:'equipment',paths:['params.equipment_ids']},
       {dataset:'mods',paths:['params.mod_ids']},
-      {dataset:'reward_tables',paths:['params.drop_table_id','drop_table_id','reward_table_id']}
+      {dataset:'reward_tables',paths:['params.drop_table_id','drop_table_id','reward_table_id']},
+      {dataset:'ai_programs',paths:['formalAiBinding.program_id']},
+      {dataset:'ai_program_layouts',paths:['formalAiBinding.layout_id']},
+      {dataset:'ai_program_runtime',paths:['formalAiBinding.program_id']}
     ]},
     tags:{path:['tags'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['aliases'],dependencies:[{dataset:'tag_categories',paths:['category_id']} ]},
     tag_categories:{path:['tag_categories'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:[],dependencies:[]},
@@ -502,7 +505,7 @@
     };
   }
   const SAFE_TOP_LEVEL_FIELDS={
-    monsters:new Set(['id','name','status','tags','params','description','default_formation_position','formalAiBinding','created_at','updated_at']),
+    monsters:new Set(['id','name','status','tags','params','description','enabled','default_formation_position','formalAiBinding','created_at','updated_at']),
     tags:new Set(['id','name','status','category_id','parent_id','description','enabled','aliases','deprecated','replacement_tag_id','recommended_replacement_tag_id','order','created_at','updated_at']),
     tag_categories:new Set(['id','name','status','description','order','enabled','created_at','updated_at']),
     skills:new Set(FORMAL_SKILL_MASTER_FIELDS),

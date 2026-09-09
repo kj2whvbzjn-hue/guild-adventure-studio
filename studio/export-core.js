@@ -287,6 +287,27 @@
     return {summary,issues};
   }
   function collectAIExportIssues(data,rootDataVersion){const adapter=aiExportAdapter(),issues=adapter?adapter.collectIssues(data,rootDataVersion):[{level:'ERROR',code:'AI_EXPORT_ADAPTER_MISSING',message:'AI Export Adapterを読み込めません。'}];for(const [category,prefix] of [['ai_searches','AIS-'],['ai_conditions','AIC-'],['ai_actions','AIA-']])for(const row of (data?.masters?.[category]||[])){const id=String(row?.id||'');if(!id.startsWith(prefix))issues.push({level:'ERROR',code:'AI_EXPORT_NODE_PREFIX',target:id,message:`AI Node Master ID prefixが不正です: ${id}`});if(String(row?.data_version||'')!==String(rootDataVersion||''))issues.push({level:'ERROR',code:'AI_EXPORT_NODE_ROOT_DATA_VERSION_MISMATCH',target:id,message:`AI Node Master data_versionがFormal Export rootと一致しません: ${id}`});}for(const row of (data?.masters?.ai_target_selectors||[])){const id=String(row?.id||'');if(!id.startsWith('ATS-'))issues.push({level:'ERROR',code:'AI_EXPORT_SELECTOR_PREFIX',target:id,message:`Target Selector ID prefixが不正です: ${id}`});}return issues;}
+  function collectMonsterRuntimeExportIssues(data){
+    const issues=[],monsters=Array.isArray(data?.masters?.monsters)?data.masters.monsters:[],programs=Array.isArray(data?.ai_programs)?data.ai_programs:[],layouts=Array.isArray(data?.ai_program_layouts)?data.ai_program_layouts:[],runtimes=Array.isArray(data?.ai_program_runtime)?data.ai_program_runtime:[];
+    const programById=new Map(programs.map(row=>[String(row?.id||''),row])),layoutById=new Map(layouts.map(row=>[String(row?.layout_id||''),row])),runtimeByProgram=new Map(runtimes.map(row=>[String(row?.program_id||''),row]));
+    monsters.forEach((monster,index)=>{
+      const monsterId=String(monster?.id||`monster[${index}]`),position=String(monster?.default_formation_position||'').toUpperCase();
+      if(!['FRONTLINE','BACKLINE'].includes(position))issues.push({level:'ERROR',code:'MONSTER_DEFAULT_FORMATION_REQUIRED',target:monsterId,message:`Monster ${monsterId} はdefault_formation_positionを明示する必要があります。`});
+      if(monster?.params&&typeof monster.params==='object'&&Object.prototype.hasOwnProperty.call(monster.params,'formalAiBinding'))issues.push({level:'ERROR',code:'MONSTER_AI_BINDING_AUTHORITY_INVALID',target:monsterId,message:`Monster ${monsterId} のformalAiBindingはMonster Master直下だけをAuthorityとします。`});
+      const binding=monster?.formalAiBinding;
+      if(!binding||typeof binding!=='object'||Array.isArray(binding)){issues.push({level:'ERROR',code:'MONSTER_AI_BINDING_REQUIRED',target:monsterId,message:`Monster ${monsterId} にformalAiBindingが必要です。`});return;}
+      const keys=Object.keys(binding).sort();if(keys.length!==2||keys[0]!=='layout_id'||keys[1]!=='program_id'){issues.push({level:'ERROR',code:'MONSTER_AI_BINDING_INVALID',target:monsterId,message:`Monster ${monsterId} のformalAiBindingはprogram_id / layout_idだけを保持できます。`});return;}
+      const programId=String(binding.program_id||''),layoutId=String(binding.layout_id||'');
+      if(!/^AIP-\d{4}$/.test(programId)||!/^AIL-\d{4}$/.test(layoutId)){issues.push({level:'ERROR',code:'MONSTER_AI_BINDING_ID_INVALID',target:monsterId,message:`Monster ${monsterId} のformalAiBinding ID形式が不正です。`});return;}
+      if(Number(programId.slice(4))%2!==1||Number(layoutId.slice(4))%2!==1){issues.push({level:'ERROR',code:'MONSTER_AI_BINDING_DEVELOPER_NAMESPACE_REQUIRED',target:monsterId,message:`Monster ${monsterId} は開発者AIの奇数AIP/AIL namespaceを参照する必要があります。`});return;}
+      const program=programById.get(programId),layout=layoutById.get(layoutId),runtime=runtimeByProgram.get(programId);
+      if(!program){issues.push({level:'ERROR',code:'MONSTER_AI_PROGRAM_MISSING',target:monsterId,message:`Monster ${monsterId} のAI Program参照がありません: ${programId}`});return;}
+      if(!layout||String(layout.program_id||'')!==programId){issues.push({level:'ERROR',code:'MONSTER_AI_LAYOUT_MISSING',target:monsterId,message:`Monster ${monsterId} のAI Layout参照がProgramと解決できません: ${layoutId}`});return;}
+      if(!runtime){issues.push({level:'ERROR',code:'MONSTER_AI_RUNTIME_MISSING',target:monsterId,message:`Monster ${monsterId} のcompiled AI Runtimeがありません: ${programId}`});return;}
+      if(program.status!=='valid'||String(layout.data_version||'')!==String(program.data_version||'')||String(runtime.data_version||'')!==String(program.data_version||'')||Number(runtime.program_version)!==Number(program.version))issues.push({level:'ERROR',code:'MONSTER_AI_BINDING_UNRESOLVED',target:monsterId,message:`Monster ${monsterId} のProgram / Layout / RuntimeがCurrent契約として一致しません。`});
+    });
+    return issues;
+  }
   function buildData(data){
     const chapters=[],sections=[],scenes=[];
     (data.chapters||[]).forEach(chapter=>{
@@ -333,5 +354,5 @@
     files['manifest.json']=JSON.stringify(manifest,null,2)+'\n';
     return {payloads,files,manifest};
   }
-  return {SCHEMA_VERSION,AI_SCHEMA_VERSION,AI_V2_EXPORT_PATHS,EXPORT_PATHS,QUEST_BOX_ZONE_KEYS,clean,scenarioTextHash,collectScenarioExportIssues,collectQuestContractIssues,collectEventContractIssues,collectQuestEventContractIssues,collectFormalStoryModelIssues,p5StoryQuestRuntimeAssessment,p6StoryQuestRuntimeAssessment,p7StoryQuestRuntimeAssessment,formalStoryQuestAssessment,summarizeFormalStoryQuests,collectFormalQuestExportIssues,collectAIExportIssues,buildData,envelope,envelopeForPath,sha256Hex,buildPackage};
+  return {SCHEMA_VERSION,AI_SCHEMA_VERSION,AI_V2_EXPORT_PATHS,EXPORT_PATHS,QUEST_BOX_ZONE_KEYS,clean,scenarioTextHash,collectScenarioExportIssues,collectQuestContractIssues,collectEventContractIssues,collectQuestEventContractIssues,collectFormalStoryModelIssues,p5StoryQuestRuntimeAssessment,p6StoryQuestRuntimeAssessment,p7StoryQuestRuntimeAssessment,formalStoryQuestAssessment,summarizeFormalStoryQuests,collectFormalQuestExportIssues,collectAIExportIssues,collectMonsterRuntimeExportIssues,buildData,envelope,envelopeForPath,sha256Hex,buildPackage};
 });

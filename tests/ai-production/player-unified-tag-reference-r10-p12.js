@@ -41,7 +41,7 @@ const base=(id)=>({schema_version:'2.0.0',data_version:dv,id,name:id,version:1,s
   const targets=Validator.searchTargetTags(project);assert.deepStrictEqual(targets.map(row=>row.id),['TAG-0020','TAG-0021','TAG-0022','TAG-0023']);assert.strictEqual(new Set(targets.map(row=>row.category_id)).size,1);
   const ambiguous=JSON.parse(JSON.stringify(project));ambiguous.tag_categories.push({id:'TGC-9999',name:'誤配置'});ambiguous.tags.find(row=>row.id==='TAG-0023').category_id='TGC-9999';assert.deepStrictEqual(Validator.searchTargetTags(ambiguous),[],'Target tags split across categories must fail closed');
 
-  const search=base('AIP-P12-SEARCH');search.entry_node_id='S';search.nodes=[
+  const search=base('AIP-9141');search.entry_node_id='S';search.nodes=[
     node('S','AIS-0001','search',{target_tag_id:'TAG-0023',tag_condition:{tag_id:'TAG-0026',params:{value_mode:'RATIO',operator:'<=',value:.3}}}),
     node('T','AIA-0003','action',{}),node('F','AIA-0003','action',{})
   ];search.edges=[edge('E1','S','found','T'),edge('E2','S','not_found','F')];
@@ -54,7 +54,7 @@ const base=(id)=>({schema_version:'2.0.0',data_version:dv,id,name:id,version:1,s
   ]});
   const searchTrace=searchResult.trace.events.find(row=>row.event_type==='search');assert.deepStrictEqual(searchTrace.details.candidate_ids,['ENEMY-LOW'],'Search must evaluate current battle HP, not an authoring-time value');
 
-  const state=base('AIP-P12-STATE');state.entry_node_id='C';state.nodes=[
+  const state=base('AIP-9143');state.entry_node_id='C';state.nodes=[
     node('C','AIC-0004','condition',{tag_condition:{tag_id:'TAG-0008',params:{}}}),
     node('T','AIA-0003','action',{}),node('F','AIA-0003','action',{})
   ];state.edges=[edge('E3','C','true','T'),edge('E4','C','false','F')];

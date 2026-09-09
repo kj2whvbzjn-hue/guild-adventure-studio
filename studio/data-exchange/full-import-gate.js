@@ -138,10 +138,33 @@
     }
     return out;
   }
+  function monsterRuntimeContractIssues(rootData){
+    const out=[],monsters=Array.isArray(rootData?.masters?.monsters)?rootData.masters.monsters:[],programs=Array.isArray(rootData?.ai_programs)?rootData.ai_programs:[],layouts=Array.isArray(rootData?.ai_program_layouts)?rootData.ai_program_layouts:[],runtimes=Array.isArray(rootData?.ai_program_runtime)?rootData.ai_program_runtime:[];
+    const programById=new Map(programs.filter(isObject).map(row=>[String(row.id||''),row])),layoutById=new Map(layouts.filter(isObject).map(row=>[String(row.layout_id||''),row])),runtimeByProgram=new Map(runtimes.filter(isObject).map(row=>[String(row.program_id||''),row]));
+    monsters.forEach((monster,index)=>{
+      if(!isObject(monster))return;
+      const path=`masters.monsters[${index}]`,position=String(monster.default_formation_position||'').toUpperCase();
+      if(!['FRONTLINE','BACKLINE'].includes(position))out.push(issue('monster_default_formation_required',`${path}.default_formation_position`,`${path} のdefault_formation_positionはFRONTLINE / BACKLINEの明示が必要です。`));
+      if(isObject(monster.params)&&Object.prototype.hasOwnProperty.call(monster.params,'formalAiBinding'))out.push(issue('monster_ai_binding_authority',`${path}.params.formalAiBinding`,`${path} のformalAiBindingはMonster Master直下だけをAuthorityとします。`));
+      const binding=monster.formalAiBinding;
+      if(!isObject(binding)){out.push(issue('monster_ai_binding_required',`${path}.formalAiBinding`,`${path} にformalAiBindingが必要です。`));return;}
+      const keys=Object.keys(binding).sort();if(keys.length!==2||keys[0]!=='layout_id'||keys[1]!=='program_id'){out.push(issue('monster_ai_binding_invalid',`${path}.formalAiBinding`,`${path}.formalAiBindingはprogram_id / layout_idだけを保持できます。`));return;}
+      const programId=String(binding.program_id||''),layoutId=String(binding.layout_id||'');
+      if(!/^AIP-\d{4}$/.test(programId)){out.push(issue('monster_ai_program_id_invalid',`${path}.formalAiBinding.program_id`,`${path} のprogram_idはAIP- + 4桁数字形式である必要があります。`));return;}
+      if(!/^AIL-\d{4}$/.test(layoutId)){out.push(issue('monster_ai_layout_id_invalid',`${path}.formalAiBinding.layout_id`,`${path} のlayout_idはAIL- + 4桁数字形式である必要があります。`));return;}
+      if(Number(programId.slice(4))%2!==1||Number(layoutId.slice(4))%2!==1){out.push(issue('monster_ai_developer_namespace_required',`${path}.formalAiBinding`,`${path} は開発者AIの奇数AIP/AIL namespaceを参照する必要があります。`));return;}
+      const program=programById.get(programId),layout=layoutById.get(layoutId),runtime=runtimeByProgram.get(programId);
+      if(!program){out.push(issue('broken_reference',`${path}.formalAiBinding.program_id`,`${path} のAI Program参照がありません: ${programId}`));return;}
+      if(!layout||String(layout.program_id||'')!==programId){out.push(issue('broken_reference',`${path}.formalAiBinding.layout_id`,`${path} のAI Layout参照がProgramと解決できません: ${layoutId}`));return;}
+      if(!runtime){out.push(issue('broken_reference',`${path}.formalAiBinding.program_id`,`${path} のcompiled AI Runtimeがありません: ${programId}`));return;}
+      if(program.status!=='valid'||String(layout.data_version||'')!==String(program.data_version||'')||String(runtime.data_version||'')!==String(program.data_version||'')||Number(runtime.program_version)!==Number(program.version))out.push(issue('monster_ai_binding_unresolved',`${path}.formalAiBinding`,`${path} のProgram / Layout / RuntimeがCurrent契約として一致しません。`));
+    });
+    return out;
+  }
   function validateBase(rootData){
     const shape=projectShapeIssues(rootData);
     if(shape.length)return {ok:false,version:VERSION,issues:shape,summary:summarize(shape)};
-    const issues=[...recordTypeIssues(masterEntries(rootData),'master'),...recordTypeIssues(gameEntries(rootData),'game'),...idIssues(rootData),...requiredFieldIssues(rootData)];
+    const issues=[...recordTypeIssues(masterEntries(rootData),'master'),...recordTypeIssues(gameEntries(rootData),'game'),...idIssues(rootData),...requiredFieldIssues(rootData),...monsterRuntimeContractIssues(rootData)];
     return {ok:!issues.some(x=>x.severity==='error'),version:VERSION,issues,summary:summarize(issues)};
   }
   function summarize(issues){
@@ -161,5 +184,5 @@
       validation_report:clone(report),input_data:clone(input)
     };
   }
-  return {VERSION,MASTER_PREFIXES,GAME_PREFIXES,projectShapeIssues,masterEntries,gameEntries,idIssues,requiredFieldIssues,validateBase,summarize,aiFixPackage};
+  return {VERSION,MASTER_PREFIXES,GAME_PREFIXES,projectShapeIssues,masterEntries,gameEntries,idIssues,requiredFieldIssues,monsterRuntimeContractIssues,validateBase,summarize,aiFixPackage};
 });

@@ -136,8 +136,30 @@ try {
     rewriteJsonAndManifest($repositoryFixture, 'scenario/chapters.json', function(array &$doc): void {
         $doc['data'] = [['id' => 'CH001', 'name' => '平原の章']];
     });
-    rewriteJsonAndManifest($repositoryFixture, 'monster/monsters.json', function(array &$doc): void {
-        $doc['data'] = [['id' => 'MON001', 'name' => 'スライム', 'formalAiBinding' => ['program_id' => 'AIP-0001', 'layout_id' => 'AIL-0001']]];
+    $programDoc = json_decode((string)file_get_contents($repositoryFixture . '/ai/ai_programs.json'), true, 512, JSON_THROW_ON_ERROR);
+    $layoutDoc = json_decode((string)file_get_contents($repositoryFixture . '/ai/ai_program_layouts.json'), true, 512, JSON_THROW_ON_ERROR);
+    $runtimeDoc = json_decode((string)file_get_contents($repositoryFixture . '/ai/ai_program_runtime.json'), true, 512, JSON_THROW_ON_ERROR);
+    $programIds = array_fill_keys(array_values(array_filter(array_map(static fn(array $row): ?string => is_string($row['id'] ?? null) ? $row['id'] : null, $programDoc['data'] ?? []))), true);
+    $runtimeProgramIds = array_fill_keys(array_values(array_filter(array_map(static fn(array $row): ?string => is_string($row['program_id'] ?? null) ? $row['program_id'] : null, $runtimeDoc['data'] ?? []))), true);
+    $formalAiBinding = null;
+    foreach (($layoutDoc['data'] ?? []) as $layout) {
+        $programId = is_string($layout['program_id'] ?? null) ? $layout['program_id'] : '';
+        $layoutId = is_string($layout['layout_id'] ?? null) ? $layout['layout_id'] : '';
+        if ($programId !== '' && $layoutId !== '' && isset($programIds[$programId], $runtimeProgramIds[$programId])) {
+            $formalAiBinding = ['program_id' => $programId, 'layout_id' => $layoutId];
+            break;
+        }
+    }
+    if ($formalAiBinding === null) {
+        throw new RuntimeException('repository fixture requires a resolvable Formal AI Program/Layout/Runtime binding');
+    }
+    rewriteJsonAndManifest($repositoryFixture, 'monster/monsters.json', function(array &$doc) use ($formalAiBinding): void {
+        $doc['data'] = [[
+            'id' => 'MON001',
+            'name' => 'スライム',
+            'default_formation_position' => 'FRONTLINE',
+            'formalAiBinding' => $formalAiBinding,
+        ]];
     });
     rewriteJsonAndManifest($repositoryFixture, 'system/game_settings.json', function(array &$doc): void {
         $doc['data'] = ['party_size' => 6];

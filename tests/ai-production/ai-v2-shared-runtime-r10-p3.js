@@ -37,7 +37,7 @@ const clause=(id,params={})=>({predicate_master_id:id,params,negate:false});
 const pred=(logic,clauses)=>({logic,clauses});
 const node=(id,master,type,parameters,target_selector)=>({instance_id:id,master_node_id:master,master_data_version:dv,node_type:type,position:{x:0,y:0},parameters,...(target_selector!==undefined?{target_selector}:{})});
 const edge=(id,from,port,to)=>({edge_id:id,from:{node_id:from,port_id:port},transition_kind:'NODE',to:{node_id:to,port_id:'in'}});
-function baseProgram(){return {schema_version:'2.0.0',data_version:dv,id:'AIP-P3',name:'P3',version:1,status:'valid',entry_node_id:'N1',nodes:[],edges:[],subroutines:[]};}
+function baseProgram(){return {schema_version:'2.0.0',data_version:dv,id:'AIP-9123',name:'P3',version:1,status:'valid',entry_node_id:'N1',nodes:[],edges:[],subroutines:[]};}
 function predicateHandler(ev,p,subject,kind,ctx){
   if(ev==='condition.hp_ratio_compare') return subject.hp/subject.max_hp < p.value;
   if(ev==='condition.dead') return subject.alive===false;
@@ -48,8 +48,8 @@ function predicateHandler(ev,p,subject,kind,ctx){
 }
 (async()=>{
   assert.strictEqual(P.SCHEMA_VERSION,'2.0.0');
-  assert.strictEqual(P.normalizeProgram({id:'AIP-X'}).schema_version,'2.0.0');
-  assert.strictEqual(P.normalizeProgram({id:'AIP-X'}).data_version,'','data_version must not be guessed from schema version');
+  assert.strictEqual(P.normalizeProgram({id:'AIP-9125'}).schema_version,'2.0.0');
+  assert.strictEqual(P.normalizeProgram({id:'AIP-9125'}).data_version,'','data_version must not be guessed from schema version');
   assert.deepStrictEqual(X.BASE_PORT_SIDES.search,{in:'west',found:'east',not_found:'south'});
   assert.strictEqual(Object.hasOwn(X.BASE_PORT_SIDES,'target'),false);
 
@@ -81,16 +81,16 @@ function predicateHandler(ev,p,subject,kind,ctx){
   const searchEvent=tr.events.find((row)=>row.event_type==='search');assert.deepStrictEqual(searchEvent.details.candidate_ids,['U2','U3','U4']);
   assert.strictEqual(tr.events.some((row)=>row.event_type==='action'&&row.details.target_id==='U2'),false,'Search candidate must not propagate as Action target context');
 
-  const pr=baseProgram();pr.id='AIP-RND';pr.entry_node_id='A';pr.nodes=[node('A','AIA-SKILL','action',{skill_id:'SKL-BACK'},{selector_id:'ATS-RANDOM',params:{}})];
+  const pr=baseProgram();pr.id='AIP-9127';pr.entry_node_id='A';pr.nodes=[node('A','AIA-SKILL','action',{skill_id:'SKL-BACK'},{selector_id:'ATS-RANDOM',params:{}})];
   const rr=await C.compile(pr,project);let calls=0;
   const randomTrace=E.execute(rr,context,{action:(ev,pa,ctx)=>({action_id:'skill:SKL-BACK',target_contract:{side:'ENEMY',range:'BACK'},legal_candidates:[ctx.units[3],ctx.units[2]]}),ai_decision_rng:()=>{calls+=1;return .75;}});
   assert.strictEqual(calls,1);assert.strictEqual(randomTrace.outcome.target_id,'U4');assert(randomTrace.events.some((row)=>row.event_type==='rng'&&row.rng_stream==='AI_DECISION'));
-  const forbidden=baseProgram();forbidden.id='AIP-F';forbidden.entry_node_id='A';forbidden.nodes=[node('A','AIA-SKILL','action',{skill_id:'SKL-RANDOM'},{selector_id:'ATS-RANDOM',params:{}})];
+  const forbidden=baseProgram();forbidden.id='AIP-9129';forbidden.entry_node_id='A';forbidden.nodes=[node('A','AIA-SKILL','action',{skill_id:'SKL-RANDOM'},{selector_id:'ATS-RANDOM',params:{}})];
   const fv=V.validate(forbidden,project);assert.strictEqual(fv.valid,false);assert(fv.issues.some((row)=>row.code==='AI_SELECTOR_FORBIDDEN'));
 
-  const pa=baseProgram();pa.id='AIP-PLAYER-ACTION';pa.entry_node_id='A';pa.nodes=[{...node('A','AIA-ATTACK','action',{}),target_tag_id:'TAG-TGT-ENEMY',target_condition:{tag_id:'TAG-HP',params:{value_mode:'CURRENT',order:'MIN'}},target_selector:null,target_source:null}];const pav=V.validate(pa,project);assert(pav.valid,JSON.stringify(pav.issues));const par=await C.compile(pa,project);assert.strictEqual(par.instructions[0].target_scope,'ENEMY');assert.deepStrictEqual(par.instructions[0].target_condition,{kind:'STATE_EXTREME',order:'MIN',state_semantic:'HP',value_mode:'CURRENT'});let playerRng=0;const playerContext={battle_id:'BP',actor_id:'U1',units:[{id:'U1',side:'A',alive:true,hp:100,max_hp:100},{id:'U2',side:'B',alive:true,hp:60,max_hp:100},{id:'U3',side:'B',alive:true,hp:20,max_hp:100},{id:'U4',side:'B',alive:true,hp:20,max_hp:100}]};const playerTrace=E.execute(par,playerContext,{predicate:predicateHandler,action:(ev,pa,ctx)=>({action_id:'attack',target_contract:{side:'ENEMY',range:'SINGLE'},legal_candidates:ctx.units.filter(row=>row.side==='B')}),ai_decision_rng:()=>{playerRng+=1;return .75;}});assert.strictEqual(playerTrace.outcome.target_id,'U4');assert.strictEqual(playerRng,1);assert(playerTrace.events.some(row=>row.event_type==='rng'&&row.rng_stream==='AI_DECISION'));const effectProgram=structuredClone(pa);effectProgram.id='AIP-PLAYER-EFFECT';effectProgram.nodes[0].target_condition={tag_id:'TAG-POISON',params:{}};const effectRuntime=await C.compile(effectProgram,project);const effectContext=structuredClone(playerContext);effectContext.units[2].effect_tag_ids=['TAG-POISON'];let effectRng=0;const effectTrace=E.execute(effectRuntime,effectContext,{predicate:predicateHandler,action:(ev,pa,ctx)=>({action_id:'attack',target_contract:{side:'ENEMY',range:'SINGLE'},legal_candidates:ctx.units.filter(row=>row.side==='B')}),ai_decision_rng:()=>{effectRng+=1;return .5;}});assert.strictEqual(effectTrace.outcome.target_id,'U3');assert.strictEqual(effectRng,0,'one remaining candidate must not consume RNG');const noneContext=structuredClone(effectContext);noneContext.units[2].effect_tag_ids=[];const noneTrace=E.execute(effectRuntime,noneContext,{predicate:predicateHandler,action:(ev,pa,ctx)=>({action_id:'attack',target_contract:{side:'ENEMY',range:'SINGLE'},legal_candidates:ctx.units.filter(row=>row.side==='B')}),ai_decision_rng:()=>0});assert.strictEqual(noneTrace.outcome.status,'failed');assert.strictEqual(noneTrace.outcome.reason,'legal_target_not_found');
+  const pa=baseProgram();pa.id='AIP-9131';pa.entry_node_id='A';pa.nodes=[{...node('A','AIA-ATTACK','action',{}),target_tag_id:'TAG-TGT-ENEMY',target_condition:{tag_id:'TAG-HP',params:{value_mode:'CURRENT',order:'MIN'}},target_selector:null,target_source:null}];const pav=V.validate(pa,project);assert(pav.valid,JSON.stringify(pav.issues));const par=await C.compile(pa,project);assert.strictEqual(par.instructions[0].target_scope,'ENEMY');assert.deepStrictEqual(par.instructions[0].target_condition,{kind:'STATE_EXTREME',order:'MIN',state_semantic:'HP',value_mode:'CURRENT'});let playerRng=0;const playerContext={battle_id:'BP',actor_id:'U1',units:[{id:'U1',side:'A',alive:true,hp:100,max_hp:100},{id:'U2',side:'B',alive:true,hp:60,max_hp:100},{id:'U3',side:'B',alive:true,hp:20,max_hp:100},{id:'U4',side:'B',alive:true,hp:20,max_hp:100}]};const playerTrace=E.execute(par,playerContext,{predicate:predicateHandler,action:(ev,pa,ctx)=>({action_id:'attack',target_contract:{side:'ENEMY',range:'SINGLE'},legal_candidates:ctx.units.filter(row=>row.side==='B')}),ai_decision_rng:()=>{playerRng+=1;return .75;}});assert.strictEqual(playerTrace.outcome.target_id,'U4');assert.strictEqual(playerRng,1);assert(playerTrace.events.some(row=>row.event_type==='rng'&&row.rng_stream==='AI_DECISION'));const effectProgram=structuredClone(pa);effectProgram.id='AIP-9133';effectProgram.nodes[0].target_condition={tag_id:'TAG-POISON',params:{}};const effectRuntime=await C.compile(effectProgram,project);const effectContext=structuredClone(playerContext);effectContext.units[2].effect_tag_ids=['TAG-POISON'];let effectRng=0;const effectTrace=E.execute(effectRuntime,effectContext,{predicate:predicateHandler,action:(ev,pa,ctx)=>({action_id:'attack',target_contract:{side:'ENEMY',range:'SINGLE'},legal_candidates:ctx.units.filter(row=>row.side==='B')}),ai_decision_rng:()=>{effectRng+=1;return .5;}});assert.strictEqual(effectTrace.outcome.target_id,'U3');assert.strictEqual(effectRng,0,'one remaining candidate must not consume RNG');const noneContext=structuredClone(effectContext);noneContext.units[2].effect_tag_ids=[];const noneTrace=E.execute(effectRuntime,noneContext,{predicate:predicateHandler,action:(ev,pa,ctx)=>({action_id:'attack',target_contract:{side:'ENEMY',range:'SINGLE'},legal_candidates:ctx.units.filter(row=>row.side==='B')}),ai_decision_rng:()=>0});assert.strictEqual(noneTrace.outcome.status,'failed');assert.strictEqual(noneTrace.outcome.reason,'legal_target_not_found');
 
-  const ps=baseProgram();ps.id='AIP-STATE';ps.entry_node_id='S1';ps.nodes=[
+  const ps=baseProgram();ps.id='AIP-9135';ps.entry_node_id='S1';ps.nodes=[
     node('S1','AIC-HP','condition',{subject_scope:'SELF',predicate:pred('ALL',[clause('AIC-HP',{operator:'<',value:.5})])}),
     node('S2','AIC-BATTLE','condition',{subject_scope:'BATTLE',predicate:pred('ALL',[clause('AIC-BATTLE',{count:3})])}),
     node('S3','AIA-WAIT','action',{}),node('S4','AIA-WAIT','action',{}),node('S5','AIA-WAIT','action',{})
@@ -100,10 +100,10 @@ function predicateHandler(ev,p,subject,kind,ctx){
   const sr=await C.compile(ps,project);const stateContext={...context,units:structuredClone(context.units)};stateContext.units[0].hp=40;let stateRng=0;
   const stateTrace=E.execute(sr,stateContext,{predicate:predicateHandler,action:()=>({wait:true}),ai_decision_rng:()=>{stateRng+=1;return 0;}});assert.strictEqual(stateTrace.outcome.status,'wait');assert.strictEqual(stateRng,0);assert.strictEqual(stateTrace.events.filter((row)=>row.event_type==='condition').length,2);
 
-  const merge=baseProgram();merge.id='AIP-MERGE';merge.nodes=[node('N1','AIS-EXISTS','search',{target_tag_id:'TAG-TGT-SELF',predicate:pred('ALL',[clause('AIC-HP',{operator:'<',value:1})])}),node('N2','AIA-WAIT','action',{})];merge.edges=[edge('EM1','N1','found','N2'),edge('EM2','N1','not_found','N2')];
+  const merge=baseProgram();merge.id='AIP-9137';merge.nodes=[node('N1','AIS-EXISTS','search',{target_tag_id:'TAG-TGT-SELF',predicate:pred('ALL',[clause('AIC-HP',{operator:'<',value:1})])}),node('N2','AIA-WAIT','action',{})];merge.edges=[edge('EM1','N1','found','N2'),edge('EM2','N1','not_found','N2')];
   assert.strictEqual(V.validate(merge,project).valid,true,'multiple incoming transitions may converge on the same input; only output ambiguity is forbidden');
 
-  const sub=baseProgram();sub.id='AIP-SUB';sub.entry_node_id='Q1';sub.nodes=[
+  const sub=baseProgram();sub.id='AIP-9139';sub.entry_node_id='Q1';sub.nodes=[
     node('Q1','AIS-EXISTS','search',{target_tag_id:'TAG-TGT-SELF',predicate:pred('ALL',[clause('AIC-HP',{operator:'<',value:1})])}),
     node('Q2','AIC-HP','condition',{subject_scope:'SELF',predicate:pred('ALL',[clause('AIC-HP',{operator:'<',value:1})])}),
     node('Q3','AIA-WAIT','action',{}),node('Q4','AIA-WAIT','action',{})
