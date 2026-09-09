@@ -5,7 +5,7 @@
     "name": "V9ゲーム再実装・System Structure再整理",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-09-09T13:03:33.218Z"
+    "updated_at": "2026-09-09T14:06:19.886Z"
   },
   "project_context": {
     "purpose": "既存Material・Decision・51 Current SpecificationをSystem Node / Contract / Connectionへ再編し、Flag / Event / Impact / Specification Candidateで再整理工程を実データ管理する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-R19-DETAILED-SPECS",
     "work_box_id": "BOX-R19-DETAILED-SPECS",
-    "theme": "Phase 2: bow_quiver Save Schema実装漏れ修正 / Studio適用待ち",
-    "goal": "Current B893/B486.224で確認したbow_quiver Save Schema実装漏れに対し、正式SOURCE_UPDATE GKS-B894 / GA-B486.225を作成・Full Gate PASS済み。TASK-R31-003はHumanによるStudio適用確認までDoingを維持する。Skill LoadoutについてはHuman clarificationによりskill-loadout-runtime.jsはデモ版、正式目標はActive 5 + Passive 5としてR31-008へ同期し、今回のSource Updateでは変更しない。"
+    "theme": "Phase 2 Starter Equipment Data-driven対応 / SOURCE_UPDATE完成・Game Data適用待ち",
+    "goal": "Current GKS-B894 / GA-B486.225をBaselineに、New Game starter_roster[*].starter_equipmentを正式Equipment Master/Requirement Runtimeで検証・装備するSOURCE_UPDATEをGKS-B895 / GA-B486.226として完成。指定6名の武器＋頭/鎧/手/足をTargeted Probeで検証済み。アルトは木の大剣(two_hand)、セリアは片手剣+盾、フィンは弓+矢筒(bow_quiver)。実際の6名装備値はGame Dataであり、Current PRJ-GAS-V4 Project JSONがSource ZIPに存在しないためSourceへhardcodeせず、Current Studio Project ADV-0001への設定適用を待つ。TASK-R31-012 Phase 2 E2EはGame Data適用後に実行する。"
   },
   "project_rules": [
     {
@@ -645,6 +645,21 @@
       "result": "Partial",
       "evidence": "SOURCE_UPDATE artifact ready, not Human-applied yet. game/assets/js/ai-save-bridge.js weaponStyle enum now includes bow_quiver and error contract lists bow_quiver. Build markers advanced to GKS-B894 / GA-B486.225; critical-runtime manifest and package_manifest rebuilt. Applied-state Full Gate 27/27 PASS. Human Studio apply/fresh-source confirmation remains pending.",
       "recorded_at": "2026-09-09T21:36:17+09:00"
+    },
+    {
+      "id": "IMPL-REORG-R31-STARTER-EQUIPMENT-B895-001",
+      "studio_build": "GKS-B895",
+      "game_build": "GA-B486.226",
+      "work_box_ids": [
+        "BOX-R19-DETAILED-SPECS"
+      ],
+      "task_ids": [
+        "TASK-R31-003",
+        "TASK-R31-012"
+      ],
+      "result": "Partial",
+      "evidence": "SOURCE_UPDATE artifact is complete and fully gated, but it is not yet Current Source and the actual starter roster equipment values are Game Data. Current PRJ-GAS-V4 Project JSON was not present in the Fresh Source package, so no Studio Project authority was fabricated. Configuration helper ADV-0001_STARTER_EQUIPMENT_CONFIG.json contains the user-requested six starter equipment sets. After SOURCE_UPDATE + Current Studio Project data application, TASK-R31-012 E2E remains required.",
+      "recorded_at": "2026-09-09T22:53:48+09:00"
     }
   ],
   "discussions": [
@@ -25320,7 +25335,7 @@
       "id": "TASK-R31-003",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Equipment所有状態とInventory境界を実装する",
-      "status": "Doing",
+      "status": "Done",
       "execution_order": null,
       "depends_on": [],
       "acceptance_criteria": "",
@@ -25332,9 +25347,9 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:35:00+09:00",
-      "updated_at": "2026-09-09T21:36:17+09:00",
-      "result_scope": "SOURCE_UPDATE_READY_GKS-B894_GA-B486.225 / HUMAN_APPLY_PENDING",
-      "blocking_reason": "bow_quiver Save Schema修正Update ArtifactはFull Gate PASS済み。StudioからGitHubへHuman適用しFresh SourceでCurrent化確認するまで完了扱いにしない。"
+      "updated_at": "2026-09-09T22:04:05+09:00",
+      "result_scope": "FRESH_CURRENT_B894_VERIFIED / BOW_QUIVER_SAVE_SCHEMA_APPLIED",
+      "blocking_reason": ""
     },
     {
       "id": "TASK-R31-004",
@@ -25492,9 +25507,9 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:35:00+09:00",
-      "updated_at": "2026-09-09T20:53:39+09:00",
-      "result_scope": "PERSISTENCE_BRIDGES_PRESENT / FULL_PHASE2_RESTORE_NOT_CLOSABLE",
-      "blocking_reason": "Current exact-preservation bridges cover Inventory/Equipment and Skill/Passive/AI/optional Loadout, but Phase 2 active semantics are incomplete and bow_quiver is rejected by Current Save schema."
+      "updated_at": "2026-09-09T22:04:05+09:00",
+      "result_scope": "PERSISTENCE_BRIDGES_PRESENT / BOW_QUIVER_FIXED / FULL_PHASE2_RESTORE_PENDING",
+      "blocking_reason": "Inventory/EquipmentおよびSkill/Passive/AI/optional Loadoutの保存基盤は存在し、bow_quiver Save Schema不整合はGKS-B894 / GA-B486.225で解消済み。ただし正式Loadout Active5+Passive5やPhase 2残存機能が未完了のため、Full Phase 2 restore完了扱いにはしない。"
     },
     {
       "id": "TASK-R31-012",
@@ -29599,6 +29614,52 @@
       "blocking": false,
       "created_at": "2026-09-09T21:36:17+09:00",
       "updated_at": "2026-09-09T21:36:17+09:00"
+    },
+    {
+      "id": "CHK-R31-003-BOW-QUIVER-FRESH-CURRENT-B894-001",
+      "title": "bow_quiver Save Schema Fresh Current verification",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-R31-003",
+      "status": "Passed",
+      "result": "Fresh Current SourceでGKS-B894 / GA-B486.225を確認。ai-save-bridge.jsのweaponStyle許可値にbow_quiverが含まれ、TASK-R31-003のStudio適用待ち条件は解消した。",
+      "evidence": "source_zip_sha256=1e13ad74f3ba562c4e6c01c10ecc2036b0d60a4db759de6e561aa94399b535c3; package-build studio=GKS-B894 game=GA-B486.225; game/assets/js/ai-save-bridge.js contains ['single','dual_wield','two_hand','weapon_shield','bow_quiver']; package_manifest file_count=694 verified with 0 hash/size errors; tests/ai-production/game-save-hard-cut-v3.js => AI_GAME_SAVE_SCHEMA_V4_OK; tests/critical-conformance-r19.js => CRITICAL_CONFORMANCE_R19_OK checks=159.",
+      "checked_by": "AI",
+      "checked_at": "2026-09-09T22:04:05+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-09T22:04:05+09:00",
+      "updated_at": "2026-09-09T22:04:05+09:00"
+    },
+    {
+      "id": "CHK-R31-STARTER-EQUIPMENT-SOURCE-UPDATE-B895-001",
+      "title": "Data-driven Starter Equipment SOURCE_UPDATE GKS-B895 validation",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-R31-003",
+      "status": "Passed",
+      "result": "SOURCE_UPDATE artifact ready. starter_roster[*].starter_equipmentをGameコードへID hardcodeせず、Formal Equipment Master・slot・requirement・weapon combinationをfail-closedで検証してNew Game初期装備へ適用する。指定6名LoadoutのTargeted Probe PASS。Sparse updateのapplied-state Full 27/27 PASS、warnings=0、timeouts=0。",
+      "evidence": "baseline_source=GKS-B894/GA-B486.225; baseline_source_zip_sha256=1e13ad74f3ba562c4e6c01c10ecc2036b0d60a4db759de6e561aa94399b535c3; baseline_package_manifest_sha256=5431ef5263fb67cc979089458f9e6d2d8f7be36e504fd17763c3d0c2e3ae5a62; baseline_source_tree_sha256=466d0804b663842bef470ced6f9cd1a08998f888d3c80e95943fb7cd3a1848cd; target=GKS-B895/GA-B486.226; target_package_manifest_sha256=27081e826a7a07a398e1467640f19294841029cbcaa17255b9f989808142dc77; target_source_tree_sha256=5b06f9ef6c94bfaedc89fa021e0f43208b87ef004a3c0543a1dbd837c1ff1113; source_update_zip_sha256=9919b7c435673a18fa978d4bf57cccfe1bc03bca0d1d65434967b572dfa935da; SOURCE_UPDATE_APPLIED_STATE_OK final_gate=accept selected=full copied=23 deleted=0; APPLIED_INSPECTION_PASS profile=full passed=27 failed=0 warnings=0 timeouts=0; accept evidence_set_sha256=6cf9b6fc3dca27b594b7260c0f29f27cf1c5116dabc67ad7f5c3e5b20d598c1d; STARTER_EQUIPMENT_TARGETED_PROBE_OK roster=6 styles=two_hand,weapon_shield,single,bow_quiver,single,single; negative bow-only configuration rejected fail-closed. No Export/** included, DELETE_MANIFEST '# no deletion', protected changes are build-token-only plus machine-derived critical-runtime hash sync.",
+      "checked_by": "AI",
+      "checked_at": "2026-09-09T22:53:48+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-09T22:53:48+09:00",
+      "updated_at": "2026-09-09T22:53:48+09:00"
     }
   ],
   "workflow": {
@@ -30314,6 +30375,14 @@
     {
       "at": "2026-09-09T21:36:17+09:00",
       "message": "bow_quiver Save Schema omission corrected as direct SOURCE_UPDATE artifact GKS-B894 / GA-B486.225. Baseline B893 rejects bow_quiver; target accepts it. Applied-state Accept escalated to Full and passed 27/27 with Test Integrity PASS, no Export change, no deletion. TASK-R31-003 remains Doing until Human Studio apply and fresh-source confirmation."
+    },
+    {
+      "at": "2026-09-09T22:04:05+09:00",
+      "message": "Fresh Source GKS-B894 / GA-B486.225を受領・検証。bow_quiver Save Schema修正がCurrentへ統合済みで、ai-save-bridge weaponStyle enumにbow_quiverを確認。Package Manifest 694件整合、Save V4 test PASS、Critical conformance 159 PASS。TASK-R31-003をDoing→Doneへ同期。Human approval fieldは未変更。R31-011からbow_quiver blockerのみ除去し、正式Loadout Active5+Passive5等のPhase 2残差は継続。"
+    },
+    {
+      "at": "2026-09-09T22:53:48+09:00",
+      "message": "Starter Equipment拡張をData Firstで作成。GKS-B894/GA-B486.225→GKS-B895/GA-B486.226 SOURCE_UPDATEとして、starter_roster[*].starter_equipmentをNew Game時にFormal Equipment Master/slot/requirement Runtime経由で装備する実装を追加。指定6名（アルト大剣+重装、セリア片手剣+盾+重装、ロウ短剣+軽装、フィン弓+矢筒+軽装、ミナ杖+ローブ、エルワンド+ローブ）のTargeted Probe PASS。Applied-state Full 27/27 PASS。Actual IDsはSourceへhardcodeしていない。Current PRJ-GAS-V4 Project JSONが未提供のためGame Dataは未適用で、TASK-R31-012 E2Eはその後。既存Task status/approvalは変更していない。"
     }
   ],
   "authority": {
