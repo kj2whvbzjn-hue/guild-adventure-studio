@@ -333,7 +333,7 @@ function simulateFormalAdventureBattle({party,formation,monsters,seed=1,maxTicks
   battle={tick:0,actions:0,units:[...allies,...enemies],log:[],timer:null,running:false,runToken:0,lastFrameAt:0,tickAccumulator:0,result:null,pendingResult:null,ending:false,reward:null,rewardApplied:false,validationMode:false,validationCaptureEvents:true,validationEvents:[],validationMeta:null};
   initializeBattleTieRolls(seed);recordValidationEvent('battle_started',{seed,source:'adventure_questrun'});if(typeof dispatchCurrentBattleStartPassiveReactives==='function')dispatchCurrentBattleStartPassiveReactives();
   const cap=Math.max(1,Math.floor(Number(maxTicks)||200000));
-  while(!battle.result&&!battle.pendingResult&&battle.tick<cap)processTicks(1);
+  processTicks(cap);
   if(!battle.result){const error=new Error(`Formal Adventure Battle exceeded maxTicks: ${cap}`);error.code='FORMAL_ADVENTURE_BATTLE_TICK_LIMIT';throw error;}
   const result=GKAdventureBattleCore.buildBattleResult({battle,context:battleLaunchContext});result.reward={};return result;
  }finally{battle=previousBattle;battleLaunchContext=previousContext;formalAdventureSimulationDepth=Math.max(0,formalAdventureSimulationDepth-1);}

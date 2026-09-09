@@ -1,7 +1,7 @@
 const fs=require('fs'),assert=require('assert'),vm=require('vm');
 const build=JSON.parse(fs.readFileSync('package-build.json','utf8'));
-assert.strictEqual(build.game_build,'GA-B486.226');
-assert.strictEqual(build.studio_build,'GKS-B895');
+assert.strictEqual(build.game_build,'GA-B486.227');
+assert.strictEqual(build.studio_build,'GKS-B896');
 const html=fs.readFileSync('studio/index.html','utf8');
 const skill=fs.readFileSync('studio/skill/skill-generator.js','utf8');
 assert.ok(html.includes("runLauncherAction('skill-generator')"),'launcher skill-generator button missing');
