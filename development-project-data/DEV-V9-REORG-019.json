@@ -5,7 +5,7 @@
     "name": "V9ゲーム再実装・System Structure再整理",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-09-09T11:57:30.325Z"
+    "updated_at": "2026-09-09T13:03:33.218Z"
   },
   "project_context": {
     "purpose": "既存Material・Decision・51 Current SpecificationをSystem Node / Contract / Connectionへ再編し、Flag / Event / Impact / Specification Candidateで再整理工程を実データ管理する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-R19-DETAILED-SPECS",
     "work_box_id": "BOX-R19-DETAILED-SPECS",
-    "theme": "Phase 2 Current実装再同期 / 残差Hard Cut・Loadout・Acquisition整理",
-    "goal": "Current GKS-B893 / GA-B486.224を実装正本としてPhase 2を再監査した結果、Equipment→Battle、Inventory/Equipment操作、Formal Passive Runtime、Skill/AI UI基盤、Phase 2 Save substrateは既に大きく実装済みである。Phase 1→2 Gateは合格として閉じる。一方、Equipment Consumerのlegacy params/params.stats fallbackとequipmentBonus()残存、bow_quiverをCurrent Save Schemaが許可しない不整合、Passive UI/Acquisition/Respec未接続、複数Skill Loadoutの実Runtime/AI候補制限未接続が残る。Phase 2→3 GateはこれらとPhase 2 E2E完了まで解放しない。"
+    "theme": "Phase 2: bow_quiver Save Schema実装漏れ修正 / Studio適用待ち",
+    "goal": "Current B893/B486.224で確認したbow_quiver Save Schema実装漏れに対し、正式SOURCE_UPDATE GKS-B894 / GA-B486.225を作成・Full Gate PASS済み。TASK-R31-003はHumanによるStudio適用確認までDoingを維持する。Skill LoadoutについてはHuman clarificationによりskill-loadout-runtime.jsはデモ版、正式目標はActive 5 + Passive 5としてR31-008へ同期し、今回のSource Updateでは変更しない。"
   },
   "project_rules": [
     {
@@ -631,6 +631,20 @@
       "result": "Partial",
       "evidence": "Current Phase 2 substrate is substantial but not contract-complete: Formal Equipment/Inventory runtime, equip/unequip UI, Passive requirement/runtime, Skill UI, Save bridges and optional skillLoadoutIds persistence exist. Remaining Current gaps are legacy Equipment fallback/equipmentBonus helper, bow_quiver Save schema mismatch, comparison UI, acquisition/respec, Passive UI, and active multi-skill Loadout semantics.",
       "recorded_at": "2026-09-09T20:53:39+09:00"
+    },
+    {
+      "id": "IMPL-REORG-R31-003-BOW-QUIVER-B894-001",
+      "studio_build": "GKS-B894",
+      "game_build": "GA-B486.225",
+      "work_box_ids": [
+        "BOX-R19-DETAILED-SPECS"
+      ],
+      "task_ids": [
+        "TASK-R31-003"
+      ],
+      "result": "Partial",
+      "evidence": "SOURCE_UPDATE artifact ready, not Human-applied yet. game/assets/js/ai-save-bridge.js weaponStyle enum now includes bow_quiver and error contract lists bow_quiver. Build markers advanced to GKS-B894 / GA-B486.225; critical-runtime manifest and package_manifest rebuilt. Applied-state Full Gate 27/27 PASS. Human Studio apply/fresh-source confirmation remains pending.",
+      "recorded_at": "2026-09-09T21:36:17+09:00"
     }
   ],
   "discussions": [
@@ -25318,9 +25332,9 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:35:00+09:00",
-      "updated_at": "2026-09-09T20:53:39+09:00",
-      "result_scope": "OWNERSHIP_AND_INVENTORY_RUNTIME_PRESENT / SAVE_SCHEMA_GAP",
-      "blocking_reason": "Inventory/equip/unequip ownership boundary is active and exact persistence bridge exists, but app-runtime accepts weaponStyle=bow_quiver while ai-save-bridge Current schema does not allow bow_quiver, so a legal Bow+Quiver state can be rejected by Save Integrity."
+      "updated_at": "2026-09-09T21:36:17+09:00",
+      "result_scope": "SOURCE_UPDATE_READY_GKS-B894_GA-B486.225 / HUMAN_APPLY_PENDING",
+      "blocking_reason": "bow_quiver Save Schema修正Update ArtifactはFull Gate PASS済み。StudioからGitHubへHuman適用しFresh SourceでCurrent化確認するまで完了扱いにしない。"
     },
     {
       "id": "TASK-R31-004",
@@ -25418,9 +25432,9 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:35:00+09:00",
-      "updated_at": "2026-09-09T20:53:39+09:00",
-      "result_scope": "SAVE_SUBSTRATE_PRESENT / MULTI_SKILL_LOADOUT_NOT_ACTIVE",
-      "blocking_reason": "skillLoadoutIds is accepted/preserved as an optional Save field, but Player UI/runtime still uses single equippedSkillId. No multi-skill Loadout edit semantics are active."
+      "updated_at": "2026-09-09T21:36:17+09:00",
+      "result_scope": "DEMO_RUNTIME_IDENTIFIED / FORMAL_TARGET_ACTIVE5_PASSIVE5 / IMPLEMENTATION_PENDING",
+      "blocking_reason": "Human clarification: current skill-loadout-runtime.jsはデモ版。本来のLoadoutはActive Skill最大5 + Passive最大5。Current単一equippedSkillId/Save substrateから正式5+5 Runtime/UI/Save契約へ置換・接続が必要。"
     },
     {
       "id": "TASK-R31-009",
@@ -29562,6 +29576,29 @@
       "blocking": false,
       "created_at": "2026-09-09T20:53:39+09:00",
       "updated_at": "2026-09-09T20:53:39+09:00"
+    },
+    {
+      "id": "CHK-R31-003-BOW-QUIVER-SOURCE-UPDATE-B894-001",
+      "title": "bow_quiver Save Schema SOURCE_UPDATE GKS-B894 verification",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-R31-003",
+      "status": "Passed",
+      "result": "SOURCE_UPDATE artifact prepared and applied-state Full Gate passed. Baseline B893 rejects bow_quiver; target B894/B486.225 accepts bow_quiver while existing Save V4 regression remains PASS.",
+      "evidence": "artifact=GKS-B894_GA-B486.225_BOW_QUIVER_SAVE_SCHEMA_STUDIO_UPDATE.zip; artifact_sha256=66f0bd9909c9f73750afd11943b00401c3e26c694b8c1cee6f868babbe0f3666; baseline game/studio=GA-B486.224/GKS-B893; baseline package_manifest_sha256=3b16077d9407ecf85b6214bd39f3695c7b5fed1bf31a771a510c755a7ccc6d76; baseline source_tree_sha256=ef232b2e0d65806a175117f10ef68392f1aeac575499e248b3fddc8abe7dedf9; target game/studio=GA-B486.225/GKS-B894; target package_manifest_sha256=5431ef5263fb67cc979089458f9e6d2d8f7be36e504fd17763c3d0c2e3ae5a62; target source_tree_sha256=d2deab97eb40b59f8cbd1d0867a698adc28a2098fe4980c789958c3463d6376e; artifact_id=GKS-B894-d2deab97eb40; applied-state accept selected=full PASS 27/27 warnings=0 timeouts=0; test_integrity=PASS protected_changes=0; delete_manifest entries=0; Export changes=0; baseline probe=BOW_QUIVER_SAVE_SCHEMA_REJECT; target probe=BOW_QUIVER_SAVE_SCHEMA_ACCEPT; existing tests/ai-production/game-save-hard-cut-v3.js PASS.",
+      "checked_by": "AI",
+      "checked_at": "2026-09-09T21:36:17+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-09T21:36:17+09:00",
+      "updated_at": "2026-09-09T21:36:17+09:00"
     }
   ],
   "workflow": {
@@ -30269,6 +30306,14 @@
     {
       "at": "2026-09-09T20:53:39+09:00",
       "message": "Phase 2 Current再監査。GKS-B893 / GA-B486.224ではPhase 2実装が台帳より大幅に進行している。TASK-R39-001をDoneとしてPhase 2を正式解放。R31-002 Equipment→Battle、R31-010 Passive Runtime分離をDoneへ同期。R31-001/003/004/005/007/008/011はCurrent実装ありのDoing、R31-006/009/012はTodoへ同期。主残差はEquipment legacy fallback/equipmentBonus()、bow_quiver Save schema不整合、比較UI、Acquisition/Respec、Passive UI、skillLoadoutIdsの実Runtime/AI候補接続。R39-002 Phase 2→3 GateはBlocked維持。"
+    },
+    {
+      "at": "2026-09-09T21:36:17+09:00",
+      "message": "Human clarification synchronized: skill-loadout-runtime.js is a demo implementation. Formal target is Active Skill up to 5 + Passive up to 5. R31-008 remains Doing; no Loadout Source change is included in the bow_quiver fix."
+    },
+    {
+      "at": "2026-09-09T21:36:17+09:00",
+      "message": "bow_quiver Save Schema omission corrected as direct SOURCE_UPDATE artifact GKS-B894 / GA-B486.225. Baseline B893 rejects bow_quiver; target accepts it. Applied-state Accept escalated to Full and passed 27/27 with Test Integrity PASS, no Export change, no deletion. TASK-R31-003 remains Doing until Human Studio apply and fresh-source confirmation."
     }
   ],
   "authority": {
