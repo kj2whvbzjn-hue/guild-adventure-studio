@@ -5,7 +5,7 @@
     "name": "V9ゲーム再実装・System Structure再整理",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-09-09T11:21:44.905Z"
+    "updated_at": "2026-09-09T11:43:35.800Z"
   },
   "project_context": {
     "purpose": "既存Material・Decision・51 Current SpecificationをSystem Node / Contract / Connectionへ再編し、Flag / Event / Impact / Specification Candidateで再整理工程を実データ管理する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-R19-DETAILED-SPECS",
     "work_box_id": "BOX-R19-DETAILED-SPECS",
-    "theme": "Phase 1 Gate再開: legacy persist CorrectionのCurrent carry-forward確認 / Phase 1 E2E再実行待ち",
-    "goal": "GKS-B893 / GA-B486.224をCurrent Implementation Verification対象とする。TASK-R30-012-CORR-001はbare persist=0・autoSave正規経路・Current Gate/Integrationのcarry-forwardまで確認済みだが、Acceptanceに含まれるTASK-R30-012 Phase 1 E2E独立再実行PASSが未記録のためDoingを維持する。TASK-R30-012は既存Failed Checkを履歴保持したまま、次のPassed Checkからresolveする。並行してPassive DefinitionのCurrent正規Source / Game Loader監査は完了として同期する。"
+    "theme": "Phase 1 Save/New Game E2E完了 / Phase 1→2 Gate実行待ち",
+    "goal": "Current GKS-B893 / GA-B486.224の公開GameでTASK-R30-012を独立E2E再実行し、New Game→初回Auto Save→Title→Continue/Load→Base復帰をPASS確認した。歴史的Failed Check CHK-R30-012-PHASE1-E2Eは履歴としてFailedを保持したまま新Passed Checkで解決済み。TASK-R30-012-CORR-001とTASK-R30-012はDone。次はTASK-R39-001 Phase 1→2 Gateのみを実行し、Gate合格前にPhase 2先頭Taskを解放しない。"
   },
   "project_rules": [
     {
@@ -568,6 +568,21 @@
       "result": "Applied",
       "evidence": "Unowned Current implementation recorded for ledger visibility only. Current Export/monster/monsters.json has 4 monsters, all default_formation_position=FRONTLINE and persistent formalAiBinding program_id=AIP-0001 / layout_id=AIL-0001. node tests/test_monster_formal_ai_binding_gks_b892.js => MONSTER_FORMAL_AI_BINDING_GKS_B892_OK. This record does not create or complete a Task; ownership remains to be assigned under the existing Monster/Formal AI specification context if needed.",
       "recorded_at": "2026-09-09T20:20:15+09:00"
+    },
+    {
+      "id": "IMPL-REORG-R30-PHASE1-E2E-B893-001",
+      "studio_build": "GKS-B893",
+      "game_build": "GA-B486.224",
+      "work_box_ids": [
+        "BOX-R19-DETAILED-SPECS"
+      ],
+      "task_ids": [
+        "TASK-R30-012-CORR-001",
+        "TASK-R30-012"
+      ],
+      "result": "Applied",
+      "evidence": "Current public Game independent Playwright E2E PASS on workflow run 34346518744. New Game produced saveVersion=4 / characters=6 / partyIds=6 / gold=500 / selectedQuestId=''. Title Continue returned to Base, recorded success notification, did not expose Recovery UI, and reconciled selectedQuestId to QST-0006 through Current autoSave. Backup preserved the prior first-good save. pageerror=0. This closes the historical P1-CONTINUE-AFTER-FIRST-SAVE blocker without Source or Game Data edits.",
+      "recorded_at": "2026-09-09T20:37:39+09:00"
     }
   ],
   "discussions": [
@@ -25181,7 +25196,7 @@
       "id": "TASK-R30-012",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Phase 1 Save/New Game E2Eを検証する",
-      "status": "Blocked",
+      "status": "Done",
       "execution_order": 1120,
       "depends_on": [
         "TASK-R30-011",
@@ -25196,8 +25211,8 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:30:00+09:00",
-      "updated_at": "2026-09-09T20:20:15+09:00",
-      "result_scope": "CORRECTION_SOURCE_PRESENT / HISTORICAL_FAILED_CHECK_OPEN / PHASE1_E2E_RERUN_REQUIRED"
+      "updated_at": "2026-09-09T20:37:39+09:00",
+      "result_scope": "PUBLIC_GAME_PHASE1_E2E_PASS / HISTORICAL_FAILED_CHECK_RESOLVED"
     },
     {
       "id": "TASK-R31-001",
@@ -26949,7 +26964,7 @@
       "id": "TASK-R39-001",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Phase 1→2 Gateを管理する",
-      "status": "Blocked",
+      "status": "Todo",
       "execution_order": 1990,
       "depends_on": [
         "TASK-R30-012"
@@ -26963,7 +26978,8 @@
         "at": ""
       },
       "created_at": "2026-08-20T22:20:00+09:00",
-      "updated_at": "2026-08-21T14:45:00+09:00"
+      "updated_at": "2026-09-09T20:37:39+09:00",
+      "result_scope": "DEPENDENCY_CLEARED / PHASE1_GATE_READY"
     },
     {
       "id": "TASK-R39-002",
@@ -27185,7 +27201,7 @@
       "id": "TASK-R30-012-CORR-001",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Phase 1 E2Eで検出したlegacy persist経路をCurrent Save APIへ収束する",
-      "status": "Doing",
+      "status": "Done",
       "execution_order": 1115,
       "depends_on": [
         "TASK-R30-011"
@@ -27199,8 +27215,8 @@
         "at": ""
       },
       "created_at": "2026-08-22T11:05:00+09:00",
-      "updated_at": "2026-09-09T20:20:15+09:00",
-      "result_scope": "CURRENT_B893_CARRY_FORWARD_VERIFIED / BARE_PERSIST_ZERO / PARENT_PHASE1_E2E_RERUN_PENDING"
+      "updated_at": "2026-09-09T20:37:39+09:00",
+      "result_scope": "CURRENT_B893_APPLIED / BARE_PERSIST_ZERO / PUBLIC_GAME_PARENT_E2E_PASS"
     },
     {
       "id": "TASK-DEV-AUTOCORR-B734-VERIFY-001",
@@ -28902,15 +28918,15 @@
       "checked_at": "2026-08-22T10:23:00+09:00",
       "resolves_check_ids": [],
       "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
-        "mode": ""
+        "status": "Resolved",
+        "resolved_by": "CHK-R30-012-PUBLIC-GAME-B893-E2E-001",
+        "resolved_at": "2026-09-09T20:37:39+09:00",
+        "reason": "PASS. 公開Game GKS-B893 / GA-B486.224でNew Game→初回Auto Save→Guild→Title→Continue/Load→Base復帰をPlaywright実機E2Eで確認。歴史的失敗条件である初回Save selectedQuestId=''を実際に再現し、Continue後はFormal Quest QST-0006へ再選択されCurrent saveへautoSaveされる。Continue成功通知が記録され、Save Recovery modalはaria-hidden=true、pageerror=0。CHK-R30-012-PHASE1-E2Eを本Checkで解決する。",
+        "mode": "automatic"
       },
-      "blocking": true,
+      "blocking": false,
       "created_at": "2026-08-22T10:23:00+09:00",
-      "updated_at": "2026-08-22T10:23:00+09:00"
+      "updated_at": "2026-09-09T20:37:39+09:00"
     },
     {
       "id": "CHK-R30-012-CORR-ARTIFACT-001",
@@ -29400,6 +29416,31 @@
       "blocking": false,
       "created_at": "2026-09-09T20:20:15+09:00",
       "updated_at": "2026-09-09T20:20:15+09:00"
+    },
+    {
+      "id": "CHK-R30-012-PUBLIC-GAME-B893-E2E-001",
+      "title": "Current B893 public Game Phase 1 Save/New Game E2E independent verification",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-R30-012",
+      "status": "Passed",
+      "result": "PASS. 公開Game GKS-B893 / GA-B486.224でNew Game→初回Auto Save→Guild→Title→Continue/Load→Base復帰をPlaywright実機E2Eで確認。歴史的失敗条件である初回Save selectedQuestId=''を実際に再現し、Continue後はFormal Quest QST-0006へ再選択されCurrent saveへautoSaveされる。Continue成功通知が記録され、Save Recovery modalはaria-hidden=true、pageerror=0。CHK-R30-012-PHASE1-E2Eを本Checkで解決する。",
+      "evidence": "public_url=https://kj2whvbzjn-hue.github.io/guild-adventure-studio/game/; browser_agent_workflow_run=34346518744 run_number=65 conclusion=success; artifact_id=10101921822; artifact_sha256=7a08066953d333b93ee78702c71db43e294b5c6ae7ddb9011935859557b2c451; result.json ok=true failure=null finalUrl=public Game; after_new_game localStorage guildAdventureV10.save.v4: saveVersion=4, characters=6, partyIds=6, guild.gold=500, selectedQuestId=''; after_continue current save: saveVersion=4, characters=6, partyIds=6, guild.gold=500, selectedQuestId='QST-0006'; after_continue backup preserves first-good save with selectedQuestId=''; success notice text='セーブデータを読み込みました。'; saveRecoveryModal aria-hidden=true; page-errors.log empty. Current Source ZIP sha256=9ac6de6ddf3eee5a62fc2b9377820699ac896f0b9928ee19a5721b4919a694f6; game/assets/js/app-runtime.js sha256=26b93987d306c9d295aef685a97a94d1a74a8e7bc2009acec2aafadf8cab3134; Current Quick inspection 12/12 PASS warnings=0 timeouts=0 evidence_sha256=74c617a93f8484a5fce224a5d62fdc1b72db4049a47295d0a5e6ccf0f3c1abce. Prior CHK-R30-012-CORR-ARTIFACT-001 already records Targeted/Quick/Accept/Release PASS for the correction artifact and CHK-R30-012-CORR-B893-CARRYFORWARD-001 records bare persist()=0 plus Current autoSave carry-forward.",
+      "checked_by": "AI",
+      "checked_at": "2026-09-09T20:37:39+09:00",
+      "resolves_check_ids": [
+        "CHK-R30-012-PHASE1-E2E"
+      ],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-09T20:37:39+09:00",
+      "updated_at": "2026-09-09T20:37:39+09:00"
     }
   ],
   "workflow": {
@@ -30099,6 +30140,10 @@
     {
       "at": "2026-09-09T20:20:15+09:00",
       "message": "Current B893 Cast/Range implementation presence and B892/B893 Monster Formal AI binding were registered as Implementation Records without advancing their phase-gated task ownership/status."
+    },
+    {
+      "at": "2026-09-09T20:37:39+09:00",
+      "message": "TASK-R30-012 Phase 1 E2E完了。公開Game GKS-B893 / GA-B486.224をPlaywrightでNew Game→初回Auto Save→Guild→Title→Continue/Load→Baseまで独立実行しPASS。初回Save selectedQuestId=''からContinue時QST-0006へCurrent autoSaveで再選択・永続化され、旧persist未定義Failureは再発せず、Recovery UI非表示、pageerror=0。CHK-R30-012-PHASE1-E2Eは歴史的Failedを保持したままCHK-R30-012-PUBLIC-GAME-B893-E2E-001でResolved。TASK-R30-012-CORR-001 / TASK-R30-012をDone、TASK-R39-001をTodo(Phase 1→2 Gate Ready)へ同期。"
     }
   ],
   "authority": {
