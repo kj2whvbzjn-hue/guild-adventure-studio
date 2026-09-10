@@ -41,7 +41,7 @@
   }
   function respecIndividual(save,character,kind,id,balanceValue,options={}){
     const preview=previewIndividual(save,character,kind,id,balanceValue,options);if(!preview.ok)return{...preview,changed:false};
-    if(kind==='skill')removeSkillReferences(character,preview.id);else character.passiveIds=character.passiveIds.filter(x=>x!==preview.id);
+    if(kind==='skill')removeSkillReferences(character,preview.id);else{character.passiveIds=character.passiveIds.filter(x=>x!==preview.id);if(Array.isArray(character.passiveLoadoutIds))character.passiveLoadoutIds=character.passiveLoadoutIds.filter(x=>String(x)!==preview.id);}
     if(character.skillPointSpend?.[kind])delete character.skillPointSpend[kind][preview.id];
     character.skillPoints=preview.skillPointsAfter;save.guild.gold=preview.goldAfter;return{...preview,changed:true};
   }
@@ -55,7 +55,7 @@
   }
   function respecAll(save,character,balanceValue,options={}){
     const preview=previewAll(save,character,balanceValue,options);if(!preview.ok)return{...preview,changed:false};
-    character.skills=[];character.equippedSkillId='';if(Array.isArray(character.skillLoadoutIds))character.skillLoadoutIds=[];character.passiveIds=[];character.skillPointSpend={skill:{},passive:{}};character.skillPoints=preview.skillPointsAfter;save.guild.gold=preview.goldAfter;
+    character.skills=[];character.equippedSkillId='';if(Array.isArray(character.skillLoadoutIds))character.skillLoadoutIds=[];character.passiveIds=[];if(Array.isArray(character.passiveLoadoutIds))character.passiveLoadoutIds=[];character.skillPointSpend={skill:{},passive:{}};character.skillPoints=preview.skillPointsAfter;save.guild.gold=preview.goldAfter;
     return{...preview,changed:true};
   }
   return Object.freeze({normalizeBalance,costFor,refundFor,previewIndividual,respecIndividual,previewAll,respecAll});

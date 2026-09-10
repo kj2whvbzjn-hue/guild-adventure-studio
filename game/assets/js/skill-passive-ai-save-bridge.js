@@ -6,7 +6,7 @@
   'use strict';
 
   const LEGACY_CHARACTER_AI_KEYS=Object.freeze(['aiGraph','aiPolicy','defaultSkillId']);
-  const OPTIONAL_CHARACTER_DOMAIN_KEYS=Object.freeze(['skillPoints','skillPointSpend','passiveIds','skillLoadoutIds']);
+  const OPTIONAL_CHARACTER_DOMAIN_KEYS=Object.freeze(['skillPoints','skillPointSpend','passiveIds','skillLoadoutIds','passiveLoadoutIds']);
   const clone=value=>value==null?value:JSON.parse(JSON.stringify(value));
   const isObject=value=>value&&typeof value==='object'&&!Array.isArray(value);
   const own=(value,key)=>Object.prototype.hasOwnProperty.call(value,key);
@@ -47,6 +47,7 @@
         skillPointSpend:optionalField(character,'skillPointSpend'),
         passiveIds:optionalField(character,'passiveIds'),
         skillLoadoutIds:optionalField(character,'skillLoadoutIds'),
+        passiveLoadoutIds:optionalField(character,'passiveLoadoutIds'),
         formalAiBinding:clone(character.formalAiBinding)
       };
     });
