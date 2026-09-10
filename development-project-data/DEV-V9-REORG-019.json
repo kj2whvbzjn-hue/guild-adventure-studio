@@ -5,7 +5,7 @@
     "name": "V9ゲーム再実装・System Structure再整理",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-09-10T02:56:45.578Z"
+    "updated_at": "2026-09-10T04:26:47.947Z"
   },
   "project_context": {
     "purpose": "既存Material・Decision・51 Current SpecificationをSystem Node / Contract / Connectionへ再編し、Flag / Event / Impact / Specification Candidateで再整理工程を実データ管理する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-R19-DETAILED-SPECS",
     "work_box_id": "BOX-R19-DETAILED-SPECS",
-    "theme": "Phase 2 / R31-005・006 Skill Point Acquisition / Refundable Respec Runtime再実装",
-    "goal": "Human訂正仕様に従い、Skill/Passive習得=共通Skill Point、Level Up時Skill Point付与、各数値=Balance、Respec=Guild Gold、解除時は実際に習得で消費したSkill Pointを返還し、Respecで消費したGoldは返還しない境界へ修正。Human提供Fresh Current GKS-B899 / GA-B486.230をexact baselineとしてGKS-B901 / GA-B486.232 SOURCE_UPDATEを再構築し、Source Full/Applied-state FullをPASS。Game Data Balance配置、Human Apply、Fresh Current/public E2E完了まではR31-005/006をDoing、Phase2→3 GateはBlocked維持。"
+    "theme": "Phase 2 / R31-007 Skill / Passive Player UI接続",
+    "goal": "GKS-B901 / GA-B486.232 Fresh CurrentでSkill Point/Respec Runtimeと正式Game Data Balance配置を確認済み。R31-007としてTraining Hall / Character Skill画面をPlayer-facing Skill / Passive管理UIへ接続し、Runtime返却値だけからSkill Point残高、習得条件/Cost、Passive習得・有効状態、個別/全Respecの実消費SP返還とGold Costを表示・実行するGKS-B902 / GA-B486.233 SOURCE_UPDATEを作成。Loadout 5+5・AI接続はR31-008/009へ分離したまま。Human Apply、Fresh Current、公開Playwright完了まではR31-005/006/007をDoing、Phase2→3 GateはBlocked維持。"
   },
   "project_rules": [
     {
@@ -761,6 +761,20 @@
       "result": "Partial",
       "evidence": "Rebuilt from exact Human-provided Fresh Current GKS-B899 / GA-B486.230. Skill/Passive acquisition records exact Skill Point spend per owned ID; Save boundary preserves skillPointSpend; individual/all Respec returns only recorded actual spend, so starter/free/legacy ownership refunds 0 and later Balance changes do not alter refund amount. Guild Gold is still charged from Balance and never refunded. External targeted tests PASS. Complete Source Full 27/27 PASS; exact-baseline SOURCE_UPDATE accept selected Full 27/27 PASS copied=27 deleted=0 warnings=0 timeouts=0. target manifest=3096a2ce7c5be1e41f0388b46d37f618f0f9f8f22a2c17fd72ceb8d24e2358cb tree=6a88229b8035cc0330b886879f4df4ec64452b0ef7d88b2c6b254196d029e488 artifact_id=GKS-B901-6a88229b8035 ZIP sha256=cf2edbc64f205f6a1cc4ba5aa513ab7d09950e5ec736f5334bef508c83d9359a. B900 artifact is superseded and must not be applied. No Export/** in Source Update; no deletion; protected test semantic change=0.",
       "recorded_at": "2026-09-10T11:13:33+09:00"
+    },
+    {
+      "id": "IMPL-REORG-R31-007-SKILL-PASSIVE-UI-B902-001",
+      "studio_build": "GKS-B902",
+      "game_build": "GA-B486.233",
+      "work_box_ids": [
+        "BOX-R19-DETAILED-SPECS"
+      ],
+      "task_ids": [
+        "TASK-R31-007"
+      ],
+      "result": "Partial",
+      "evidence": "Exact baseline Human-provided Fresh Current guild-adventure-studio-sub(20260910-040629).zip sha256=94cba8a24712a9ca793ebcb29930a146d9b421dca9e07fa3a40f2043ca19de5f, GKS-B901 / GA-B486.232, package_manifest_sha256=3096a2ce7c5be1e41f0388b46d37f618f0f9f8f22a2c17fd72ceb8d24e2358cb, full tree=0d8f81a180f3ece5e56dc2dadd937d0a699b7dfedd1b10c3b094fbe0a25fe74e. Formal Export skill_progression Balance is deployed and public GitHub sub matches: level +1 SP, Skill 1 SP, Passive 1 SP, individual Respec 50 G, all 200 G. B902 adds Player-facing Skill/Passive management UI only: Training Hall navigation, SP/Gold summary, production Skill acquisition rows, Passive learned/effective state, acquisition, individual/all Respec. UI formats acquisition/respec Runtime return values and does not own economy/eligibility calculations. Existing Skill tags retained. Loadout 5+5 and AI connection remain excluded. Complete target Source Full 27/27 PASS; final direct SOURCE_UPDATE ZIP exact-baseline Quick 12/12 PASS and Accept selected Full 27/27 PASS, warnings=0, timeouts=0, copied=23, deleted=0. Test Integrity protected_changed=0, build_token_only=11, machine_derived_hash_sync=1. No Export/**; no deletion. target_manifest=b22fcac22ae57a18df1ead9ecf63b1b1911f9da6745a072808692a2ebcbd4b70 target_tree=eb571c9a34793ffad337c3b8516738d989aaaa0ffcd5e18cf00d3bfbb474a606 artifact_id=GKS-B902-eb571c9a3479 final_zip_sha256=885229c53bcc71e4328212fb49b36b35eb6d7c936fc4978d5cca0a7daad3e182. Human Apply/Fresh Current/public E2E pending.",
+      "recorded_at": "2026-09-10T13:19:00+09:00"
     }
   ],
   "discussions": [
@@ -25501,9 +25515,9 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:35:00+09:00",
-      "updated_at": "2026-09-10T11:13:33+09:00",
-      "result_scope": "B901_SOURCE_UPDATE_READY / SKILLPOINT_SPEND_LEDGER_VERIFIED / GAME_DATA_BALANCE_AND_HUMAN_APPLY_PENDING",
-      "blocking_reason": "Source Runtime/Save境界とGKS-B901 SOURCE_UPDATE検証は完了。具体Balanceは別GAME_DATA work_typeのため、Human Apply後にBalance Game Data配置とFresh Current/public E2Eが必要。"
+      "updated_at": "2026-09-10T13:19:00+09:00",
+      "result_scope": "B901_FRESH_CURRENT_VERIFIED / GAME_DATA_BALANCE_DEPLOYED / PLAYER_FLOW_PUBLIC_E2E_PENDING_B902_UI",
+      "blocking_reason": "B901 Runtime/Save境界、Fresh Current、正式Game Data Balance配置は確認済み。Player-facing習得/Respec操作の公開E2EはR31-007 B902 UIをHuman Apply後に実施するためDoingを維持。"
     },
     {
       "id": "TASK-R31-006",
@@ -25521,9 +25535,9 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:35:00+09:00",
-      "updated_at": "2026-09-10T11:13:33+09:00",
-      "result_scope": "B901_SOURCE_UPDATE_READY / EXACT_SP_REFUND_AND_GOLD_NONREFUND_VERIFIED / GAME_DATA_BALANCE_AND_HUMAN_APPLY_PENDING",
-      "blocking_reason": "B901 Respec Runtimeは実消費Skill Point返還とGold非返還を実装・検証済み。具体Gold/SP BalanceのGame Data配置、Human Apply、Fresh Current/public E2Eが未完了。"
+      "updated_at": "2026-09-10T13:19:00+09:00",
+      "result_scope": "B901_FRESH_CURRENT_VERIFIED / EXACT_SP_REFUND_GOLD_NONREFUND / PLAYER_FLOW_PUBLIC_E2E_PENDING_B902_UI",
+      "blocking_reason": "B901で実消費Skill Point返還・Respec Gold非返還Runtime、Fresh Current、正式Balance配置まで確認済み。Player-facing公開E2EはB902 UI適用後に実施するためDoingを維持。"
     },
     {
       "id": "TASK-R31-007",
@@ -25541,9 +25555,9 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:35:00+09:00",
-      "updated_at": "2026-09-09T20:53:39+09:00",
-      "result_scope": "SKILL_UI_PRESENT / PASSIVE_UI_MISSING",
-      "blocking_reason": "Skill list/detail/equip UI exists, but no Player-facing Passive list/detail/effective-state UI or Training Hall Passive UI is connected."
+      "updated_at": "2026-09-10T13:19:00+09:00",
+      "result_scope": "B902_SOURCE_UPDATE_READY / SKILL_PASSIVE_PLAYER_UI_CONNECTED / HUMAN_APPLY_FRESH_CURRENT_PUBLIC_E2E_PENDING",
+      "blocking_reason": "GKS-B902 / GA-B486.233でTraining Hall/Character Skill画面へSkill Point、正式Skill習得候補、Passive習得/有効状態、個別/全Respec UIをRuntime境界経由で接続。Source Fullおよびexact-baseline Applied-state FullはPASS。Human Apply、Fresh Current、公開Playwright未完了のためDoingを維持。"
     },
     {
       "id": "TASK-R31-008",
@@ -27213,9 +27227,9 @@
         "at": ""
       },
       "created_at": "2026-08-20T22:20:00+09:00",
-      "updated_at": "2026-09-10T11:13:33+09:00",
-      "result_scope": "WAITING_PHASE2_COMPLETION / R31-001_DONE / R31-004_DONE / R31-005-006_B901_SOURCE_READY",
-      "blocking_reason": "R31-001/004はDone。R31-005/006はHuman訂正仕様をGKS-B901 Source Runtimeへ反映しFull/Applied-state Full PASSだが、Balance Game Data配置→Human Apply/Fresh Current→公開E2Eが未完了。R31-007/008/009/011/012等も残るためPhase 3はBlockedを維持する。"
+      "updated_at": "2026-09-10T13:19:00+09:00",
+      "result_scope": "WAITING_PHASE2_COMPLETION / R31-001_DONE / R31-004_DONE / R31-005-006_B901_RUNTIME_DATA_READY / R31-007_B902_SOURCE_READY",
+      "blocking_reason": "R31-001/004はDone。R31-005/006はB901 Runtime・Fresh Current・正式Balance Game Dataまで成立し、R31-007はB902 Player UI Source Update readyだがHuman Apply/Fresh Current/public E2E待ち。R31-008/009/011/012等も残るためPhase 3はBlockedを維持する。"
     },
     {
       "id": "TASK-R39-003",
@@ -30190,6 +30204,75 @@
       "blocking": false,
       "created_at": "2026-09-10T11:13:33+09:00",
       "updated_at": "2026-09-10T11:13:33+09:00"
+    },
+    {
+      "id": "CHK-R31-005-006-B901-FRESH-CURRENT-GAME-DATA-001",
+      "title": "R31-005/006 B901 Fresh Current and Skill Progression Game Data verification",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-R31-005",
+      "status": "Passed",
+      "result": "PASS. Human-provided Fresh Current is GKS-B901 / GA-B486.232 with Package Manifest 696 files; Skill Point acquisition/refund Runtime is present. Formal Export and public GitHub sub both contain game_runtime.skill_progression Balance: Level Up +1 SP, Skill 1 SP, Passive 1 SP, individual Respec 50 G, all Respec 200 G.",
+      "evidence": "Fresh Current archive guild-adventure-studio-sub(20260910-040629).zip sha256=94cba8a24712a9ca793ebcb29930a146d9b421dca9e07fa3a40f2043ca19de5f; package_manifest_sha256=3096a2ce7c5be1e41f0388b46d37f618f0f9f8f22a2c17fd72ceb8d24e2358cb; source tree=0d8f81a180f3ece5e56dc2dadd937d0a699b7dfedd1b10c3b094fbe0a25fe74e. Current package manifest, Critical 159, Save V4 and Adventure/Battle integration PASS. Public Export/system/adventure_settings.json confirmed on GitHub sub.",
+      "checked_by": "AI",
+      "checked_at": "2026-09-10T13:19:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-10T13:19:00+09:00",
+      "updated_at": "2026-09-10T13:19:00+09:00"
+    },
+    {
+      "id": "CHK-R31-007-B902-PLAYER-UI-RUNTIME-BOUNDARY-001",
+      "title": "R31-007 B902 Skill/Passive Player UI Runtime boundary verification",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-R31-007",
+      "status": "Passed",
+      "result": "PASS. Training Hall and Character Skill view expose Skill Point/Gold summary, production Skill acquisition candidates, Passive learned/effective state, acquisition, individual Respec and all Respec. Acquisition and Respec actions call the formal Runtime APIs; UI formats returned cost/refund/failure values and does not recreate the economy/eligibility formulas. Existing Skill tag display remains present.",
+      "evidence": "External static/runtime targeted checks: R31_005_006_B902_RUNTIME_BALANCE_FLOW_OK and R31_007_SKILL_PASSIVE_UI_WIRING_OK; node --check game/assets/js/app-runtime.js PASS. Scope excludes Loadout 5+5 and AI connection.",
+      "checked_by": "AI",
+      "checked_at": "2026-09-10T13:19:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-10T13:19:00+09:00",
+      "updated_at": "2026-09-10T13:19:00+09:00"
+    },
+    {
+      "id": "CHK-R31-007-B902-SOURCE-UPDATE-READY-001",
+      "title": "R31-007 B902 exact-baseline SOURCE_UPDATE readiness",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-R31-007",
+      "status": "Passed",
+      "result": "PASS. GKS-B902 / GA-B486.233 complete Source Full 27/27 PASS. Final ZIP exact-baseline Quick 12/12 PASS and Applied-state Accept escalated to Full 27/27 PASS, warnings=0, timeouts=0, copied=23, deleted=0. Encoding ZIP PASS. No protected semantic test changes, no Export, no deletion.",
+      "evidence": "baseline_manifest=3096a2ce7c5be1e41f0388b46d37f618f0f9f8f22a2c17fd72ceb8d24e2358cb; baseline_tree=0d8f81a180f3ece5e56dc2dadd937d0a699b7dfedd1b10c3b094fbe0a25fe74e; target_manifest=b22fcac22ae57a18df1ead9ecf63b1b1911f9da6745a072808692a2ebcbd4b70; target_tree=eb571c9a34793ffad337c3b8516738d989aaaa0ffcd5e18cf00d3bfbb474a606; artifact_id=GKS-B902-eb571c9a3479; final_zip_sha256=885229c53bcc71e4328212fb49b36b35eb6d7c936fc4978d5cca0a7daad3e182; protected_changed=0/build_token_only=11/machine_derived_hash_sync=1.",
+      "checked_by": "AI",
+      "checked_at": "2026-09-10T13:19:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-10T13:19:00+09:00",
+      "updated_at": "2026-09-10T13:19:00+09:00"
     }
   ],
   "workflow": {
@@ -30957,6 +31040,10 @@
     {
       "at": "2026-09-10T11:13:33+09:00",
       "message": "HumanがRespec仕様を訂正。解除時はSkill/Passive習得時に実際に消費したSkill Pointを返還し、Respecで消費したGuild Goldは返還しない。Human提供 guild-adventure-studio-sub(20260910-020242).zip（GKS-B899 / GA-B486.230、baseline manifest c00f5d...、tree 428e58...）を唯一のbaselineとして再構築。既発行B900は内容一意性のため再利用せずsuperseded扱いとし、GKS-B901 / GA-B486.232へ前進。実消費SP ledgerをSaveへ追加し、starter/free/legacy所持はrefund 0、Balance変更後も実消費額を返す境界を実装。外部targeted tests PASS、Source Full 27/27 PASS、exact-baseline Applied-state Accept Full 27/27 PASS、warnings/timeouts 0、copied=27/deleted=0、Exportなし。R31-005/006はHuman Apply・Balance Game Data・Fresh Current/public E2E待ちでDoing、R39-002はBlocked維持。"
+    },
+    {
+      "at": "2026-09-10T13:19:00+09:00",
+      "message": "Fresh Current GKS-B901 / GA-B486.232（guild-adventure-studio-sub(20260910-040629).zip）と正式Game Data配置を確認。game_runtime.skill_progressionはLevel Up +1 SP、Skill/Passive各1 SP、個別Respec 50 G、全Respec 200 GでExport/public sub一致。R31-007としてTraining Hall/Character Skill画面へPlayer-facing Skill/Passive管理UIをGKS-B902 / GA-B486.233で実装。UIはRuntime返却値のみ表示・実行し、習得/Respec計算を独自所有しない。既存Skill tag表示を保持し、Loadout 5+5/AIはR31-008/009へ分離。Source Full 27/27、最終ZIP Quick 12/12、Applied-state Accept Full 27/27、warnings/timeouts 0、copied=23/deleted=0、Encoding PASS、Exportなし。R31-005/006/007はHuman Apply/Fresh Current/public E2E待ちでDoing、R39-002はBlocked維持。"
     }
   ],
   "authority": {
