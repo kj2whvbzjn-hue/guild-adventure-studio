@@ -5,7 +5,7 @@
     "name": "V9ゲーム再実装・System Structure再整理",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-09-10T01:10:20.754Z"
+    "updated_at": "2026-09-10T02:56:45.578Z"
   },
   "project_context": {
     "purpose": "既存Material・Decision・51 Current SpecificationをSystem Node / Contract / Connectionへ再編し、Flag / Event / Impact / Specification Candidateで再整理工程を実データ管理する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-R19-DETAILED-SPECS",
     "work_box_id": "BOX-R19-DETAILED-SPECS",
-    "theme": "Phase 2 / R31-004 Inventory・Equipment装備前後比較 Source Update ready",
-    "goal": "TASK-R31-001はFresh Current GKS-B898 / GA-B486.229および公開Playwright E2Eで完了確認。TASK-R31-004はGKS-B899 / GA-B486.230 SOURCE_UPDATEを作成し、Equipment Runtimeが装備前後比較・MOD・交換装備・bow/quiver警告をpreviewとして所有、UIはRuntime返却値のみ表示する境界へ変更。Applied-state Full Gate 27/27 PASS。HumanによるSource適用とFresh Current B899確認後にTASK-R31-004をDone判定する。Phase2→3 Gateは他のPhase2残件があるためBlockedを維持する。"
+    "theme": "Phase 2 / R31-005・006 Skill Point Acquisition / Refundable Respec Runtime再実装",
+    "goal": "Human訂正仕様に従い、Skill/Passive習得=共通Skill Point、Level Up時Skill Point付与、各数値=Balance、Respec=Guild Gold、解除時は実際に習得で消費したSkill Pointを返還し、Respecで消費したGoldは返還しない境界へ修正。Human提供Fresh Current GKS-B899 / GA-B486.230をexact baselineとしてGKS-B901 / GA-B486.232 SOURCE_UPDATEを再構築し、Source Full/Applied-state FullをPASS。Game Data Balance配置、Human Apply、Fresh Current/public E2E完了まではR31-005/006をDoing、Phase2→3 GateはBlocked維持。"
   },
   "project_rules": [
     {
@@ -717,6 +717,50 @@
       "result": "Partial",
       "evidence": "Direct Studio SOURCE_UPDATE prepared from exact Human-provided Fresh Current B898 baseline. Equipment Runtime now owns previewEquip and returns before/after battle-value comparison rows, Formal MOD display rows, replaced/returned equipment, selected target slot and bow/quiver warning. Equip commit and preview share the same applyEquipmentToCharacterState mutation contract. Inventory/Equipment UI renders Runtime output only and does not call characterBattleValues or contribution calculators. External boundary probe R31_004_EQUIPMENT_UI_RUNTIME_BOUNDARY_OK. Applied-state Full Gate 27/27 PASS, warnings=0, timeouts=0, copied=23, deleted=0. Test Integrity PASS protected_changed=0; build_token_only=11; machine_derived_hash_sync=1. baseline_manifest=66486ee2cf3159103e99f4d994c98e637daa575e174690e1446a3efbad35aac6; baseline_tree=3f4fba278f4e09353c38864557a3f91d7727acd14a86dbc7f556352bf7dfb72a; target_manifest=c00f5d04d1cd05d4426d2aac801f8f3ed70b1096e36e4b9de6531f185186e0a1; target_tree=3a731f83931d762d7f85e3f278b32c5dd9fd6249e7ee8e2a3a9a3695e0df0fcc; artifact_id=GKS-B899-3a731f83931d; source_update_zip_sha256=fdd8fe40a9b65d182a3785a1bb7c205f3bd59b9754ce0beb48da4a22ebbeaeab. No Export/**, no Game Data change, no deletion. Fresh Current apply evidence pending. Packaging correction: required unchanged control files shared/integrity/delete-policy.json and shared/integrity/test-integrity-policy.json were added to the SOURCE_UPDATE ZIP because Studio inspectStudioPackage reads both directly from the selected ZIP. Target source content/manifest/tree are unchanged.",
       "recorded_at": "2026-09-10T10:07:43+09:00"
+    },
+    {
+      "id": "IMPL-REORG-R31-004-FRESH-CURRENT-B899-PUBLIC-E2E-001",
+      "studio_build": "GKS-B899",
+      "game_build": "GA-B486.230",
+      "work_box_ids": [
+        "BOX-R19-DETAILED-SPECS"
+      ],
+      "task_ids": [
+        "TASK-R31-004"
+      ],
+      "result": "Applied",
+      "evidence": "Human-provided Fresh Current source ZIP guild-adventure-studio-sub(20260910-011052).zip sha256=6feb0cde63b0dbda11961d6292f62c95cd93564ecbfd8118f563996cc99aff9b; package-build.json=GKS-B899 / GA-B486.230; package_manifest_sha256=c00f5d04d1cd05d4426d2aac801f8f3ed70b1096e36e4b9de6531f185186e0a1; Current package manifest PASS files=694; Critical Runtime integrity PASS files=51; Current Full Inspection 27/27 PASS, warnings=0, timeouts=0. Public GitHub Pages source is B899/B230 and Pages deployment succeeded. Browser Agent Playwright Run 34425014820 completed 35/35 steps: unequip ロウ head -> select アルト -> choose replacement head -> preview 「頭 装備前後比較」 -> battle-value delta -> returned equipment 「木の重装頭」 -> MOD summary -> commit -> 布の軽装頭 equipped and 木の重装頭 returned to inventory. Automation PASS, console=0, page_errors=0, response_patches=0; artifact_id=10132302776 artifact_sha256=3b5456cdc0fc444d39b2355dce9da1d3dfc3a51ee5b3c699dde17f22144a7ae4. Fresh Current full-tree SHA differs from pre-apply simulated target only at development-project-data/DEV-V9-REORG-019.json due Studio Development Project merge; product/source payload files have 0 add/delete/content drift.",
+      "recorded_at": "2026-09-10T10:20:15+09:00"
+    },
+    {
+      "id": "IMPL-REORG-R31-005-006-SKILLPOINT-RESPEC-B900-001",
+      "studio_build": "GKS-B900",
+      "game_build": "GA-B486.231",
+      "work_box_ids": [
+        "BOX-R19-DETAILED-SPECS"
+      ],
+      "task_ids": [
+        "TASK-R31-005",
+        "TASK-R31-006"
+      ],
+      "result": "Partial",
+      "evidence": "Human decision implemented in Source: shared Skill Point state; Level Up grant from Balance config; Skill/Passive acquisition consumes shared SP and checks ability requirements only; Save preserves skillPoints; Gold-funded individual/all Respec uses Balance values; no SP refund; passive removal can fail closed if Equipment dependency would be violated. B900 complete Source Full 27/27 PASS, applied-state Full 27/27 PASS copied=27 deleted=0 warnings=0 timeouts=0. Source target manifest=6f48b4cca9eef77d5b6b91d0653b68dcd3f2f4ed12e106e749ddc65d2a320e0f tree=94b8c503d3e8317be064c7032eba0e7a55f527fda31ff35cde55e2a6849552b6. Direct Source artifact built against Fresh B899 baseline tree=428e58977a06d56f166d9a05dabe50cc9536c3b2bf8ac1c896e49c92e268156a, but final apply is intentionally deferred: Balance is separate GAME_DATA work_type and its deployment changes the full-tree binding, so Source must be rebased after Game Data Fresh Current. No Export/** in Source Update; no deletion; no protected-test semantic modification.",
+      "recorded_at": "2026-09-10T10:48:33+09:00"
+    },
+    {
+      "id": "IMPL-REORG-R31-005-006-SKILLPOINT-REFUND-B901-001",
+      "studio_build": "GKS-B901",
+      "game_build": "GA-B486.232",
+      "work_box_ids": [
+        "BOX-R19-DETAILED-SPECS"
+      ],
+      "task_ids": [
+        "TASK-R31-005",
+        "TASK-R31-006"
+      ],
+      "result": "Partial",
+      "evidence": "Rebuilt from exact Human-provided Fresh Current GKS-B899 / GA-B486.230. Skill/Passive acquisition records exact Skill Point spend per owned ID; Save boundary preserves skillPointSpend; individual/all Respec returns only recorded actual spend, so starter/free/legacy ownership refunds 0 and later Balance changes do not alter refund amount. Guild Gold is still charged from Balance and never refunded. External targeted tests PASS. Complete Source Full 27/27 PASS; exact-baseline SOURCE_UPDATE accept selected Full 27/27 PASS copied=27 deleted=0 warnings=0 timeouts=0. target manifest=3096a2ce7c5be1e41f0388b46d37f618f0f9f8f22a2c17fd72ceb8d24e2358cb tree=6a88229b8035cc0330b886879f4df4ec64452b0ef7d88b2c6b254196d029e488 artifact_id=GKS-B901-6a88229b8035 ZIP sha256=cf2edbc64f205f6a1cc4ba5aa513ab7d09950e5ec736f5334bef508c83d9359a. B900 artifact is superseded and must not be applied. No Export/** in Source Update; no deletion; protected test semantic change=0.",
+      "recorded_at": "2026-09-10T11:13:33+09:00"
     }
   ],
   "discussions": [
@@ -956,6 +1000,19 @@
       "artifact_note": "AI_START Fail Closed: work_type boundary mismatch detected before Game JSON modification.",
       "created_at": "2026-08-21T14:49:00+09:00",
       "updated_at": "2026-08-21T15:05:00+09:00"
+    },
+    {
+      "id": "DISC-R31-005-006-WORKTYPE-BALANCE-SPLIT-001",
+      "title": "R31-005/006 Skill Point・Respec Balanceのwork_type分離",
+      "status": "Open",
+      "summary": "HumanはSkill Point/RespecのResource構造を確定し、具体数値はBalanceとした。Runtime Source実装とBalance Game Data更新はwork_typeが異なるため同一Source Updateへ混在させない。",
+      "body": "R31-005/006のRuntime SourceはGKS-B900 / GA-B486.231として実装・検証済み。Skill Point付与量、Skill/Passive習得Cost、Respec Gold額はGame Data側のBalanceとして保持する必要がある。Development Project AI ProtocolによりSOURCE_UPDATEとGAME_DATAを同一Task成果物へ混在できない。よって適用順は (1) Balance Game Data更新、(2) Fresh Current取得、(3) 同Fresh CurrentへB900 Source差分を再binding、(4) Source適用、(5) 公開Playwright E2E とする。B900 Sourceの現時点artifactはCurrent B899へbind済みだが、Game Data更新でfull-tree SHAが変わるため最終適用用には再bindingが必要。",
+      "open_questions": "GAME_DATA工程をDevelopment Project上で独立Taskとして登録する必要がある。Balance具体値はRULE-REORG-008によりHuman再質問対象とせず、初期値はBalance候補として調整可能にする。",
+      "conclusion": "SourceとGame Dataを分離して順序適用する。Source側へBalance数値をハードコードしない。",
+      "related_discussion_ids": [],
+      "artifact_note": "B900 source implementation verified; Balance Project JSON candidate prepared separately.",
+      "created_at": "2026-09-10T10:48:33+09:00",
+      "updated_at": "2026-09-10T10:48:33+09:00"
     }
   ],
   "decisions": [
@@ -1637,15 +1694,15 @@
       "id": "DEC-R23-SKILL-ACQ-001",
       "title": "スキル・パッシブ習得とリスペック方式を確定する",
       "status": "Approved",
-      "text": "スキルおよびパッシブは訓練所で習得する。習得条件は能力値条件方式とし、前提スキル必須方式は採用しない。職業制限・武器制限は設けず、スキル/パッシブ自身の経験値成長は持たせない。習得にはコストを必要とし、具体値はBalance可変とする。リスペックは任意のスキルまたは任意のパッシブを個別解除でき、スキル＋パッシブの一括全解除も可能とする。リスペックにもコストを必要とし、具体値はBalance可変とする。解除したスキル/パッシブは通常条件を満たせば再習得可能で、再習得時は通常の習得コストを支払う。解除時に過去の習得コストは返却しない。リスペック対象外のレベル・能力値・職業・装備等は変更しない。",
-      "rationale": "Humanが訓練所、能力値条件、習得コスト、個別/一括リスペック、再習得、返金なしを確定したため。",
+      "text": "スキルおよびパッシブは訓練所で習得する。習得条件は能力値条件方式とし、前提スキル必須方式は採用しない。職業制限・武器制限は設けず、スキル/パッシブ自身の経験値成長は持たせない。スキルおよびパッシブの習得コストは共通のスキルポイントで支払う。スキルポイントはキャラクターのレベルアップ時に獲得する。レベルアップ時のスキルポイント獲得量、およびSkill/Passiveごとの習得必要スキルポイントはBalance可変とする。リスペックは任意のスキルまたは任意のパッシブを個別解除でき、スキル＋パッシブの一括全解除も可能とする。リスペックの支払Resourceはギルド資金Goldとし、個別解除・一括全解除の具体Gold額はBalance可変とする。解除時は、そのSkill/Passiveを習得した際に実際に消費したスキルポイントを返還する。初期配布・無料付与・旧データ等で消費記録のないSkill/Passiveは返還対象にしない。リスペックで支払ったGoldは返還しない。解除したスキル/パッシブは通常条件を満たせば再習得可能で、再習得時は通常のスキルポイント習得コストを支払う。リスペック対象外のレベル・能力値・職業・装備等は変更しない。",
+      "rationale": "Humanが先行の「Skill Point返却なし」を明示的に訂正し、Respecでは習得時に消費したSkill Pointを返還し、Respecで消費したGoldは返還しないと確定したため。Balance変更後でも実消費分を正確に返還し、無料所持SkillからSkill Pointが生成されないよう、習得時の実消費量をCharacter Save境界へ記録する。",
       "source_discussion_ids": [
         "DISC-R21-GAME-AUDIT-001"
       ],
       "approved_by": "Human",
-      "approved_at": "2026-08-20T18:40:00+09:00",
+      "approved_at": "2026-09-10T11:13:33+09:00",
       "created_at": "2026-08-20T18:40:00+09:00",
-      "updated_at": "2026-08-20T18:40:00+09:00"
+      "updated_at": "2026-09-10T11:13:33+09:00"
     },
     {
       "id": "DEC-R23-RECRUIT-001",
@@ -4094,8 +4151,8 @@
       "id": "SPEC-V9-019-SKILL-ACQ-001",
       "title": "Skill / Passive Acquisition / Respec",
       "status": "Draft",
-      "summary": "訓練所でのSkill/Passive習得・解除契約。",
-      "body": "# 1. 習得場所\nSkillおよびPassiveは訓練所で習得する。\n\n# 2. 習得条件\n能力値条件方式とする。\n前提Skill必須方式は採用しない。\nJob制限・武器制限は設けない。\nSkill/Passive自身のEXP成長は持たせない。\n\n# 3. 習得Cost\n習得にはCostを必要とする。\n具体値はBalance可変。\n\n# 4. Respec\n以下を可能とする。\n- 任意Skillの個別解除\n- 任意Passiveの個別解除\n- Skill + Passiveの一括全解除\n\nRespecにもCostを必要とし、具体値はBalance可変。\n解除済みSkill/Passiveは通常条件を満たせば再習得可能。\n再習得時は通常の習得Costを支払う。\n過去の習得Costは返却しない。\n\n# 5. 非対象\nRespecでLevel、能力値、Job、Equipment等を変更しない。\n",
+      "summary": "訓練所でSkill Pointを消費するSkill/Passive習得、Level Up時Skill Point獲得、Guild Goldを消費し実消費Skill Pointを返還するRespec契約。",
+      "body": "# 1. 習得場所\nSkillおよびPassiveは訓練所で習得する。\n\n# 2. 習得条件\n能力値条件方式とする。\n前提Skill必須方式は採用しない。\nJob制限・武器制限は設けない。\nSkill/Passive自身のEXP成長は持たせない。\n\n# 3. Skill Point\nSkillおよびPassiveの習得Costは共通のSkill Pointで支払う。\nSkill PointはCharacterのLevel Up時に獲得する。\nLevel Up時の獲得量はBalance可変。\nSkill/Passiveごとの必要Skill PointもBalance可変。\n習得時に実際に消費したSkill Point量をCharacter状態へ記録し、Save/Loadで保持する。\n初期配布・無料付与・旧データ等で消費記録がないSkill/Passiveには返還可能Skill Pointを生成しない。\n\n# 4. Respec\n以下を可能とする。\n- 任意Skillの個別解除\n- 任意Passiveの個別解除\n- Skill + Passiveの一括全解除\n\nRespec CostはGuild Goldで支払う。個別/一括の具体Gold額はBalance可変。\n解除時は、その対象の習得時に実際に消費したSkill Pointを返還する。\n一括解除では対象全件の実消費Skill Pointを合計して返還する。\nRespecで消費したGuild Goldは返還しない。\n解除済みSkill/Passiveは通常条件を満たせば再習得可能。\n再習得時は通常のSkill Point習得Costを支払い、新しい実消費量を記録する。\n\n# 5. 非対象\nRespecでLevel、能力値、Job、Equipment等を変更しない。\n",
       "decision_refs": [
         "DEC-R23-SKILL-ACQ-001"
       ],
@@ -4104,7 +4161,7 @@
         "SPEC-V9-019-PASSIVE-001",
         "SPEC-V9-019-GUILD-001"
       ],
-      "acceptance_criteria": "- 訓練所からSkill/Passiveを習得できる。\n- 個別解除と一括全解除ができる。\n- RespecでCharacterの他状態を変更しない。",
+      "acceptance_criteria": "- 訓練所からSkill/PassiveをSkill Point消費で習得できる。\n- Skill PointはLevel Up時にBalance設定量だけ増える。\n- Skill/Passive習得必要Skill PointはBalanceから解決する。\n- 習得時に実消費Skill Point量を保存できる。\n- RespecはGuild Gold消費で個別解除と一括全解除ができる。\n- Respec Gold額はBalanceから解決する。\n- Respec時に対象Skill/Passiveの実消費Skill Pointを返還する。\n- 初期配布・無料付与等の消費記録なしSkill/PassiveはSkill Pointを返還しない。\n- Respecで消費したGoldは返還しない。\n- RespecでCharacterの他状態を変更しない。",
       "system_node_id": "SYS-V9-SKILL-ACQ",
       "contract_ids": [
         "CONTRACT-V9-GUILD-TO-SKILL-ACQ",
@@ -4115,11 +4172,11 @@
       ],
       "source_candidate_id": "",
       "material_snapshot_hash": "",
-      "revision": 1,
+      "revision": 3,
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-08-20T21:17:00+09:00",
-      "updated_at": "2026-08-20T21:17:00+09:00"
+      "updated_at": "2026-09-10T11:13:33+09:00"
     },
     {
       "id": "SPEC-V9-019-RECRUIT-001",
@@ -25412,7 +25469,7 @@
       "id": "TASK-R31-004",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Inventory / Equipment UIの装備・比較表示境界を実装する",
-      "status": "Doing",
+      "status": "Done",
       "execution_order": null,
       "depends_on": [],
       "acceptance_criteria": "",
@@ -25424,9 +25481,9 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:35:00+09:00",
-      "updated_at": "2026-09-10T10:01:56+09:00",
-      "result_scope": "GKS-B899_SOURCE_UPDATE_READY / RUNTIME_OWNED_EQUIPMENT_PREVIEW / APPLIED_STATE_FULL_PASS / HUMAN_APPLY_CURRENT_VERIFY_PENDING",
-      "blocking_reason": "Implementation and SOURCE_UPDATE validation are complete. Human apply to target Source and Fresh Current GKS-B899 / GA-B486.230 verification remain before Done."
+      "updated_at": "2026-09-10T10:20:15+09:00",
+      "result_scope": "GKS-B899_FRESH_CURRENT_VERIFIED / PUBLIC_PLAYWRIGHT_35_STEP_PASS / EQUIPMENT_COMPARISON_COMPLETE",
+      "blocking_reason": ""
     },
     {
       "id": "TASK-R31-005",
@@ -25435,8 +25492,8 @@
       "status": "Doing",
       "execution_order": null,
       "depends_on": [],
-      "acceptance_criteria": "",
-      "work_type": "",
+      "acceptance_criteria": "- CharacterがSkill Point残高を正式状態として保持する。\n- Level Up確定時にBalance設定量のSkill Pointを付与できるRuntime境界を持つ。\n- Skill/Passive習得は共通Skill Pointを消費し、能力値条件を満たす場合だけ成功する。\n- Job/武器/前提Skillを習得条件へ追加しない。\n- 習得Cost具体値はSourceへ固定せずBalanceから解決する。\n- Skill/Passive所有状態、Skill Point残高、習得時の実消費Skill Point記録をSave境界へ保持できる。",
+      "work_type": "SOURCE_UPDATE",
       "requires_human_approval": false,
       "approval": {
         "status": "Pending",
@@ -25444,19 +25501,19 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:35:00+09:00",
-      "updated_at": "2026-09-09T20:53:39+09:00",
-      "result_scope": "PASSIVE_REQUIREMENT_VALIDATION_PRESENT / ACQUISITION_RUNTIME_INCOMPLETE",
-      "blocking_reason": "Formal Passive ability-condition validation exists, but Skill/Passive acquisition cost/conditions and Training Hall acquisition runtime are not implemented. Current Skill UI explicitly states acquisition conditions/cost are deferred."
+      "updated_at": "2026-09-10T11:13:33+09:00",
+      "result_scope": "B901_SOURCE_UPDATE_READY / SKILLPOINT_SPEND_LEDGER_VERIFIED / GAME_DATA_BALANCE_AND_HUMAN_APPLY_PENDING",
+      "blocking_reason": "Source Runtime/Save境界とGKS-B901 SOURCE_UPDATE検証は完了。具体Balanceは別GAME_DATA work_typeのため、Human Apply後にBalance Game Data配置とFresh Current/public E2Eが必要。"
     },
     {
       "id": "TASK-R31-006",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Skill / Passive Respec境界を実装する",
-      "status": "Todo",
+      "status": "Doing",
       "execution_order": null,
       "depends_on": [],
-      "acceptance_criteria": "",
-      "work_type": "",
+      "acceptance_criteria": "- 任意Skill/Passiveの個別解除とSkill+Passive一括全解除をRuntime境界で実行できる。\n- Respec CostはGuild Goldから消費し、具体額はBalanceから解決する。\n- Gold不足時は状態を変更しない。\n- Respec時は対象Skill/Passiveの習得時に実際に消費したSkill Pointを返還する。\n- 初期配布・無料付与等で実消費記録のないSkill/PassiveはSkill Pointを返還しない。\n- Respecで支払ったGoldは返還しない。\n- RespecでLevel/Stats/Job/Equipment等を変更しない。\n- 解除後は通常条件とSkill Point Costで再習得できる。",
+      "work_type": "SOURCE_UPDATE",
       "requires_human_approval": false,
       "approval": {
         "status": "Pending",
@@ -25464,9 +25521,9 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:35:00+09:00",
-      "updated_at": "2026-09-09T20:53:39+09:00",
-      "result_scope": "PHASE2_OPEN / RESPEC_RUNTIME_NOT_IMPLEMENTED",
-      "blocking_reason": ""
+      "updated_at": "2026-09-10T11:13:33+09:00",
+      "result_scope": "B901_SOURCE_UPDATE_READY / EXACT_SP_REFUND_AND_GOLD_NONREFUND_VERIFIED / GAME_DATA_BALANCE_AND_HUMAN_APPLY_PENDING",
+      "blocking_reason": "B901 Respec Runtimeは実消費Skill Point返還とGold非返還を実装・検証済み。具体Gold/SP BalanceのGame Data配置、Human Apply、Fresh Current/public E2Eが未完了。"
     },
     {
       "id": "TASK-R31-007",
@@ -27156,9 +27213,9 @@
         "at": ""
       },
       "created_at": "2026-08-20T22:20:00+09:00",
-      "updated_at": "2026-09-10T10:01:56+09:00",
-      "result_scope": "WAITING_PHASE2_COMPLETION / R31-001_DONE / R31-004_B899_READY_NOT_CURRENT",
-      "blocking_reason": "QST-0003 blocker and TASK-R31-001 are cleared. TASK-R31-004 B899 comparison update is ready but not yet Fresh Current, and other Phase2 tasks/E2E remain incomplete; Phase3 stays blocked."
+      "updated_at": "2026-09-10T11:13:33+09:00",
+      "result_scope": "WAITING_PHASE2_COMPLETION / R31-001_DONE / R31-004_DONE / R31-005-006_B901_SOURCE_READY",
+      "blocking_reason": "R31-001/004はDone。R31-005/006はHuman訂正仕様をGKS-B901 Source Runtimeへ反映しFull/Applied-state Full PASSだが、Balance Game Data配置→Human Apply/Fresh Current→公開E2Eが未完了。R31-007/008/009/011/012等も残るためPhase 3はBlockedを維持する。"
     },
     {
       "id": "TASK-R39-003",
@@ -29903,6 +29960,236 @@
       "blocking": false,
       "created_at": "2026-09-10T10:01:56+09:00",
       "updated_at": "2026-09-10T10:07:43+09:00"
+    },
+    {
+      "id": "CHK-R31-004-GKS-B899-FRESH-CURRENT-PUBLIC-E2E-001",
+      "title": "R31-004 Fresh Current B899 + public Equipment comparison E2E",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-R31-004",
+      "status": "Passed",
+      "result": "PASS. Fresh Current B899/B230 matches the intended R31-004 product/source payload, Current Full Gate passes 27/27, and public Game E2E verifies runtime-owned equipment comparison preview and commit.",
+      "evidence": "fresh_source_zip_sha256=6feb0cde63b0dbda11961d6292f62c95cd93564ecbfd8118f563996cc99aff9b; package_manifest_sha256=c00f5d04d1cd05d4426d2aac801f8f3ed70b1096e36e4b9de6531f185186e0a1; Current Full=27/27 warnings=0 timeouts=0; Browser Agent run=34425014820 steps=35/35 automation=PASS console=0 page_errors=0 response_patches=0 artifact_id=10132302776 artifact_sha256=3b5456cdc0fc444d39b2355dce9da1d3dfc3a51ee5b3c699dde17f22144a7ae4; preview assertions=頭 装備前後比較 / 差 / 所持品へ戻る: 木の重装頭 / MODなし; commit assertions=布の軽装頭 equipped / 木の重装頭 inventory.",
+      "checked_by": "AI",
+      "checked_at": "2026-09-10T10:20:15+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-10T10:20:15+09:00",
+      "updated_at": "2026-09-10T10:20:15+09:00"
+    },
+    {
+      "id": "CHK-R31-005-B899-ACQUISITION-BOUNDARY-AUDIT-001",
+      "title": "R31-005 Current B899 Skill/Passive Acquisition boundary audit",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-R31-005",
+      "status": "Passed",
+      "result": "AUDIT PASS. Current gap is bounded: Formal Passive ability requirement validation exists, but acquisition mutation/cost runtime and Training Hall acquisition connection do not. Approved authority requires a Cost but does not identify the payment Resource/Owner, so implementation must fail closed until Human decides that system boundary.",
+      "evidence": "DEC-R23-SKILL-ACQ-001; SPEC-V9-019-SKILL-ACQ-001(Draft reflecting the decision); Current B899 game training facility is navigation-only; character Skill developer assignment explicitly says acquisition conditions/cost are deferred; Export/skill/skills.json data=0; Export/master/passives.json PAS-0001 description says acquisition condition is unresolved and abilityRequirementContracts=[]; no acquisition_cost/respec_cost owner field found in Current product/runtime data.",
+      "checked_by": "AI",
+      "checked_at": "2026-09-10T10:20:15+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-10T10:20:15+09:00",
+      "updated_at": "2026-09-10T10:20:15+09:00"
+    },
+    {
+      "id": "CHK-R31-005-HUMAN-SKILLPOINT-RESOURCE-DECISION-001",
+      "title": "R31-005 Skill Point / Respec Resource Human decision capture",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-R31-005",
+      "status": "Passed",
+      "result": "Human Decision captured: Skill/Passive acquisition uses shared Skill Point; Skill Point is granted on Level Up; grant/acquisition numeric values are Balance; Respec uses Guild Gold with Balance-defined amount. Existing no-refund rule remains unchanged.",
+      "evidence": "Human instruction in current work session; DEC-R23-SKILL-ACQ-001 revision; SPEC-V9-019-SKILL-ACQ-001 revision",
+      "checked_by": "AI",
+      "checked_at": "2026-09-10T10:35:28+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-10T10:35:28+09:00",
+      "updated_at": "2026-09-10T10:35:28+09:00"
+    },
+    {
+      "id": "CHK-R31-005-B900-SKILLPOINT-RUNTIME-001",
+      "title": "R31-005 B900 Skill Point acquisition Runtime targeted verification",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-R31-005",
+      "status": "Passed",
+      "result": "PASS. Character Skill Point state, Balance-defined Level Up grant, shared Skill/Passive acquisition cost, ability requirement enforcement, insufficient-SP atomic failure, ownership mutation and Save capture are verified. No Job/weapon/prerequisite Skill acquisition condition is implemented.",
+      "evidence": "External targeted tests (kept outside protected Source test tree): R31_005_SKILL_POINT_ACQUISITION_RUNTIME_OK; R31_005_APP_SKILL_POINT_WIRING_OK. Source files: game/assets/js/skill-acquisition-runtime.js, app-runtime.js, ai-save-bridge.js, skill-passive-ai-save-bridge.js.",
+      "checked_by": "AI",
+      "checked_at": "2026-09-10T10:48:33+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-10T10:48:33+09:00",
+      "updated_at": "2026-09-10T10:48:33+09:00"
+    },
+    {
+      "id": "CHK-R31-006-B900-GOLD-RESPEC-RUNTIME-001",
+      "title": "R31-006 B900 Gold Respec Runtime targeted verification",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-R31-006",
+      "status": "Passed",
+      "result": "PASS. Individual Skill/Passive and all-respec boundaries deduct Balance-defined Guild Gold, fail atomically on insufficient Gold, do not refund Skill Point, and do not mutate Level/Stats/Job/Equipment. Passive removal can be rejected when post-removal equipment state would become invalid.",
+      "evidence": "External targeted test (outside protected Source test tree): R31_006_GOLD_RESPEC_RUNTIME_OK. Source file: game/assets/js/skill-respec-runtime.js.",
+      "checked_by": "AI",
+      "checked_at": "2026-09-10T10:48:33+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-10T10:48:33+09:00",
+      "updated_at": "2026-09-10T10:48:33+09:00"
+    },
+    {
+      "id": "CHK-R31-005-006-B900-SOURCE-FULL-001",
+      "title": "R31-005/006 B900 Source Full and applied-state verification",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-R31-005",
+      "status": "Passed",
+      "result": "PASS. B900/GA-B486.231 complete Source tree Full Inspection 27/27 PASS; B899 Fresh Current overlay simulation also Full 27/27 PASS with warnings=0/timeouts=0.",
+      "evidence": "Source Full evidence_sha256=7dd7470054c13bdb141e14324678d2c4b533a4f1305e25cc376a88a29f0d015b; SOURCE_UPDATE_APPLIED_STATE_OK final_gate=full selected=full copied=27 deleted=0 applied_tree_sha256=94b8c503d3e8317be064c7032eba0e7a55f527fda31ff35cde55e2a6849552b6; target_package_manifest_sha256=6f48b4cca9eef77d5b6b91d0653b68dcd3f2f4ed12e106e749ddc65d2a320e0f; current-B899 baseline tree=428e58977a06d56f166d9a05dabe50cc9536c3b2bf8ac1c896e49c92e268156a. No Export/** and no deletion. New targeted tests were deliberately kept outside protected Source test tree; protected test semantic change was not requested.",
+      "checked_by": "AI",
+      "checked_at": "2026-09-10T10:48:33+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-10T10:48:33+09:00",
+      "updated_at": "2026-09-10T10:48:33+09:00"
+    },
+    {
+      "id": "CHK-R31-005-006-HUMAN-REFUND-DECISION-002",
+      "title": "R31-005/006 Respec Skill Point refund Human revision",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-R31-006",
+      "status": "Passed",
+      "result": "Human revision captured. Respec returns the Skill Points actually consumed to acquire the removed Skill/Passive; Gold paid for Respec is not returned. Free/starter/legacy-owned entries without a recorded Skill Point spend do not generate a refund.",
+      "evidence": "Human instruction in current work session; DEC-R23-SKILL-ACQ-001 revised; SPEC-V9-019-SKILL-ACQ-001 revision 3.",
+      "checked_by": "AI",
+      "checked_at": "2026-09-10T11:13:33+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-10T11:13:33+09:00",
+      "updated_at": "2026-09-10T11:13:33+09:00"
+    },
+    {
+      "id": "CHK-R31-005-B901-SKILLPOINT-SPEND-LEDGER-001",
+      "title": "R31-005 B901 Skill Point spend ledger targeted verification",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-R31-005",
+      "status": "Passed",
+      "result": "PASS. Acquisition records the exact Skill Point cost actually paid per acquired Skill/Passive, Save capture preserves that ledger, legacy/free owned entries normalize without refund entitlement, and Level Up/ability requirement/shared-SP behavior remains intact.",
+      "evidence": "External targeted tests outside protected Source test tree: R31_005_SKILL_POINT_ACQUISITION_RUNTIME_OK; R31_005_APP_SKILL_POINT_WIRING_OK. Source: skill-acquisition-runtime.js, app-runtime.js, ai-save-bridge.js, skill-passive-ai-save-bridge.js.",
+      "checked_by": "AI",
+      "checked_at": "2026-09-10T11:13:33+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-10T11:13:33+09:00",
+      "updated_at": "2026-09-10T11:13:33+09:00"
+    },
+    {
+      "id": "CHK-R31-006-B901-SP-REFUND-GOLD-NONREFUND-001",
+      "title": "R31-006 B901 exact Skill Point refund / Gold non-refund verification",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-R31-006",
+      "status": "Passed",
+      "result": "PASS. Individual and all Respec refund only the exact Skill Points recorded as actually spent at acquisition, including after Balance costs change; free/starter Skill refunds 0; Respec Gold is deducted and not refunded; insufficient Gold and passive dependency blocks are atomic.",
+      "evidence": "External targeted test outside protected Source test tree: R31_006_SKILL_POINT_REFUND_GOLD_NONREFUND_OK. Source: skill-respec-runtime.js + skill-acquisition-runtime.js spend ledger.",
+      "checked_by": "AI",
+      "checked_at": "2026-09-10T11:13:33+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-10T11:13:33+09:00",
+      "updated_at": "2026-09-10T11:13:33+09:00"
+    },
+    {
+      "id": "CHK-R31-005-006-B901-SOURCE-UPDATE-READY-001",
+      "title": "R31-005/006 B901 rebuilt SOURCE_UPDATE exact-baseline readiness",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-R31-005",
+      "status": "Passed",
+      "result": "PASS. Human-provided GKS-B899/GA-B486.230 archive is the exact baseline. GKS-B901/GA-B486.232 Source Full 27/27 PASS and exact-baseline Applied-state Accept selected Full 27/27 PASS, warnings=0, timeouts=0, copied=27, deleted=0. No protected semantic test change and no Export in update ZIP.",
+      "evidence": "baseline_manifest=c00f5d04d1cd05d4426d2aac801f8f3ed70b1096e36e4b9de6531f185186e0a1; baseline_tree=428e58977a06d56f166d9a05dabe50cc9536c3b2bf8ac1c896e49c92e268156a; target_manifest=3096a2ce7c5be1e41f0388b46d37f618f0f9f8f22a2c17fd72ceb8d24e2358cb; target_tree=6a88229b8035cc0330b886879f4df4ec64452b0ef7d88b2c6b254196d029e488; artifact_id=GKS-B901-6a88229b8035; update_zip_sha256=cf2edbc64f205f6a1cc4ba5aa513ab7d09950e5ec736f5334bef508c83d9359a; Test Integrity protected_changed=0 build_token_only=11 machine_derived_hash_sync=1; Encoding ZIP PASS; no deletion.",
+      "checked_by": "AI",
+      "checked_at": "2026-09-10T11:13:33+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-10T11:13:33+09:00",
+      "updated_at": "2026-09-10T11:13:33+09:00"
     }
   ],
   "workflow": {
@@ -30654,6 +30941,22 @@
     {
       "at": "2026-09-10T10:07:43+09:00",
       "message": "R31-004 B899 SOURCE_UPDATE packaging correction. Studio更新ZIP解析で必須の shared/integrity/delete-policy.json / test-integrity-policy.json が差分ZIPから欠落していたため、B898 Currentと同一内容を制御ファイルとして同梱。Target Source内容・package manifest・target treeは変更なし。修正版ZIP Applied-state Full Gate 27/27 PASS, copied=23, deleted=0, warnings=0, timeouts=0。"
+    },
+    {
+      "at": "2026-09-10T10:20:15+09:00",
+      "message": "Fresh Current GKS-B899 / GA-B486.230を受領・検証。package manifest 694件、Critical Runtime 51件、Current Full 27/27 PASS。公開Game Browser Agent Run 34425014820でR31-004 Equipment comparison 35-step E2E PASS（before/after差分・交換装備・MOD表示・装備Commit、console/page error 0）。TASK-R31-004をDoneへ同期。続いてR31-005を監査し、Acquisition Runtime未実装、Formal Skill 0件、PAS-0001取得条件未確定、Approved Authorityでは習得Costの支払Resource/Ownerが未決と確認。推測実装せずこの1点のみHuman Decision待ち。R39-002は他Phase2残件のためBlocked維持。Human approval/workflowは変更していない。"
+    },
+    {
+      "at": "2026-09-10T10:35:28+09:00",
+      "message": "Human Decision更新。Skill/Passive習得Resourceを共通Skill Pointへ確定。Skill PointはLevel Up時獲得し、獲得量・Skill/Passive必要量はBalance可変。Respec支払ResourceはGuild Gold、具体額はBalance可変。既決の解除時習得Cost返却なしを維持し、Skill Pointも返却しない。TASK-R31-005/006のSource実装Blockを解除しSOURCE_UPDATE境界を明示。"
+    },
+    {
+      "at": "2026-09-10T10:48:33+09:00",
+      "message": "Human確定のSkill Point/Gold構造をR31-005/006 Source Runtimeへ実装。GKS-B900 / GA-B486.231としてSkill Point state、Level Up Balance付与、Skill/Passive共通SP習得、能力値条件、Save保持、Guild Gold個別/全Respec、SP返却なし、Equipment依存Fail Closedを実装。外部targeted tests PASS、Source Full 27/27 PASS、Fresh B899 overlay Applied-state Full 27/27 PASS。Balance具体値はGAME_DATA work_typeのためSourceへ混在させず、Game Data適用後Fresh CurrentへB900を再bindingする工程分離を記録。Phase2→3 GateはBlocked維持。"
+    },
+    {
+      "at": "2026-09-10T11:13:33+09:00",
+      "message": "HumanがRespec仕様を訂正。解除時はSkill/Passive習得時に実際に消費したSkill Pointを返還し、Respecで消費したGuild Goldは返還しない。Human提供 guild-adventure-studio-sub(20260910-020242).zip（GKS-B899 / GA-B486.230、baseline manifest c00f5d...、tree 428e58...）を唯一のbaselineとして再構築。既発行B900は内容一意性のため再利用せずsuperseded扱いとし、GKS-B901 / GA-B486.232へ前進。実消費SP ledgerをSaveへ追加し、starter/free/legacy所持はrefund 0、Balance変更後も実消費額を返す境界を実装。外部targeted tests PASS、Source Full 27/27 PASS、exact-baseline Applied-state Accept Full 27/27 PASS、warnings/timeouts 0、copied=27/deleted=0、Exportなし。R31-005/006はHuman Apply・Balance Game Data・Fresh Current/public E2E待ちでDoing、R39-002はBlocked維持。"
     }
   ],
   "authority": {
