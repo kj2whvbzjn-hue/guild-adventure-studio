@@ -5,7 +5,7 @@
     "name": "V9ゲーム再実装・System Structure再整理",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-09-10T00:10:36.703Z"
+    "updated_at": "2026-09-10T00:32:05.658Z"
   },
   "project_context": {
     "purpose": "既存Material・Decision・51 Current SpecificationをSystem Node / Contract / Connectionへ再編し、Flag / Event / Impact / Specification Candidateで再整理工程を実データ管理する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-R19-DETAILED-SPECS",
     "work_box_id": "BOX-R19-DETAILED-SPECS",
-    "theme": "Phase 2 / QST-0003 B897 Public + Physical iPhone E2E PASS",
-    "goal": "QST-0003のB897修正をPublic Playwright E2EとHuman physical iPhone実機の両方で確認済み。旧iOS freeze/roster-loss Failed Checkは解決。TASK-R31-012全体はPhase2残スコープのE2Eが残るためDoing、Phase2→3 GateはBlockedを維持する。Human approval fieldは変更しない。"
+    "theme": "Phase 2 / R31-001 Equipment Contribution Hard-cut Source Update ready",
+    "goal": "TASK-R31-001の残存Legacy Equipment Contribution境界をhard-cut。GKS-B898 / GA-B486.229 SOURCE_UPDATEはApplied-state Full Gate 27/27 PASS。record.params / params.stats数値fallback、legacy equipmentBonus計算、Equipment由来AGI直接加算を除去し、Formal Equipment fieldだけをBattle Contributionへ接続。Current 308 Equipmentのnormalize互換を確認済み。HumanによるSource適用とFresh Current B898確認後にTASK-R31-001をDone判定し、次工程R31-004へ進む。Phase2→3 GateはBlockedを維持する。"
   },
   "project_rules": [
     {
@@ -675,6 +675,20 @@
       "result": "Partial",
       "evidence": "SOURCE_UPDATE ready, not Current yet. app-runtime: manual Current backup restore path; Quest start immutable owner guard + memory rollback; nested/double autosave removed so Quest start commits once. battle-control: synchronous formal simulation outer 1-tick dispatch replaced by semantically equivalent processTicks(cap). No Game Data changes, no Export/**, no deletion, protected test changes=0. Device recovery and QST-0003 E2E remain pending after Human apply.",
       "recorded_at": "2026-09-10T04:31:00+09:00"
+    },
+    {
+      "id": "IMPL-REORG-R31-EQUIPMENT-CONTRIBUTION-B898-001",
+      "studio_build": "GKS-B898",
+      "game_build": "GA-B486.229",
+      "work_box_ids": [
+        "BOX-R19-DETAILED-SPECS"
+      ],
+      "task_ids": [
+        "TASK-R31-001"
+      ],
+      "result": "Applied",
+      "evidence": "Direct Studio SOURCE_UPDATE prepared from exact B897 baseline. Applied-state Full Gate 27/27 PASS, warnings=0, timeouts=0. Formal Equipment Contribution hard-cut complete; no Game Data/Export change and no deletion. ZIP sha256=2b8ba6c8c9fb0e820591fdfa2fdf1243d617723207e194b3940ac7d12c23d69a. Fresh Current apply evidence is still pending.",
+      "recorded_at": "2026-09-10T09:28:17+09:00"
     }
   ],
   "discussions": [
@@ -25322,9 +25336,9 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:35:00+09:00",
-      "updated_at": "2026-09-09T20:53:39+09:00",
-      "result_scope": "SUBSTANTIAL_CURRENT_IMPLEMENTATION / HARD_CUT_REMAINDER",
-      "blocking_reason": "Current Game equipment consumer still accepts record.params / params.stats fallback via formalEquipmentNumber(), and active equipmentBonus() helper remains although SPEC-V9-019-EQUIP-004 forbids legacy field fallback / old equipmentBonus()."
+      "updated_at": "2026-09-10T09:28:17+09:00",
+      "result_scope": "GKS-B898_SOURCE_UPDATE_READY / APPLIED_STATE_FULL_PASS / HUMAN_APPLY_CURRENT_VERIFY_PENDING",
+      "blocking_reason": "Implementation and SOURCE_UPDATE validation are complete. Human apply to target Source and Fresh Current GKS-B898 / GA-B486.229 verification remain before Done."
     },
     {
       "id": "TASK-R31-002",
@@ -27114,9 +27128,9 @@
         "at": ""
       },
       "created_at": "2026-08-20T22:20:00+09:00",
-      "updated_at": "2026-09-10T09:05:29+09:00",
-      "result_scope": "WAITING_PHASE2_COMPLETION / QST0003_IOS_BLOCKER_CLEARED",
-      "blocking_reason": "QST-0003 iOS blockerはPublic + physical iPhone E2Eで解消。ただしPhase2の他の未完了Task/E2Eが残るためPhase3は解放しない。"
+      "updated_at": "2026-09-10T09:28:17+09:00",
+      "result_scope": "WAITING_PHASE2_COMPLETION / R31-001_B898_READY_NOT_CURRENT",
+      "blocking_reason": "QST-0003 blocker is cleared. TASK-R31-001 B898 hard-cut update is ready but not yet Fresh Current, and other Phase2 tasks/E2E remain incomplete; Phase3 stays blocked."
     },
     {
       "id": "TASK-R39-003",
@@ -29792,6 +29806,29 @@
       "blocking": false,
       "created_at": "2026-09-10T09:05:29+09:00",
       "updated_at": "2026-09-10T09:05:29+09:00"
+    },
+    {
+      "id": "CHK-R31-001-GKS-B898-SOURCE-UPDATE-READY-001",
+      "title": "R31-001 Equipment Contribution hard-cut GKS-B898 SOURCE_UPDATE readiness",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-R31-001",
+      "status": "Passed",
+      "result": "PASS. B897 baselineからB898 targetへEquipment Contribution consumerをhard-cut。Formal numeric fieldsはtop-levelのみをAuthorityとし、params/params.stats fallbackを除去。legacy Equipment combat fieldsをFail Closed、old equipmentBonus calculationを除去、Equipment由来AGI direct contributionを除去。Current Export Equipment 308 records normalize PASS。SOURCE_UPDATE Applied-state Full Gate 27/27 PASS / warning 0 / timeout 0.",
+      "evidence": "baseline GKS-B897 / GA-B486.228; target GKS-B898 / GA-B486.229; baseline_package_manifest_sha256=2a62138d6446233ce5d0e172e31543f1c21c5e0a510722b4408d4a7d267b18e1; baseline_source_tree_sha256=d02204a2a029102fb12b8bef30e475e51daeaf67f1773aa5bb95a6ad365487f2; target_package_manifest_sha256=66486ee2cf3159103e99f4d994c98e637daa575e174690e1446a3efbad35aac6; target_source_tree_sha256=318b44aca3fd644e706fe3530ae7527e04e22e1f139db619480f800ffa5cc77a; artifact_id=GKS-B898-318b44aca3fd; R31_001_HARD_CUT_OK; R31_001_CURRENT_EXPORT_308_OK; CRITICAL_CONFORMANCE_R19_OK checks=159; AI_GAME_SAVE_SCHEMA_V4_OK; adventure-battle-runtime-integration PASS; adventure-quest-start-runtime-integration PASS; equipment generator/pipeline/UI/json/base-set/touch/file-picker tests PASS; device build/cache tests PASS; SOURCE_UPDATE_APPLIED_STATE_OK selected=full copied=23 deleted=0; APPLIED_INSPECTION_PASS profile=full passed=27 failed=0 warnings=0 timeouts=0; no Export/**; DELETE_MANIFEST no deletion; protected tests changed only derived build/cache tokens.",
+      "checked_by": "AI",
+      "checked_at": "2026-09-10T09:28:17+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-10T09:28:17+09:00",
+      "updated_at": "2026-09-10T09:28:17+09:00"
     }
   ],
   "workflow": {
@@ -30531,6 +30568,10 @@
     {
       "at": "2026-09-10T09:05:29+09:00",
       "message": "Human physical iPhone実機再確認PASS。提供Screen RecordingでGKS-B897 / GA-B486.228、QST-0003 playback進行、必敗完了、帰還確定、拠点復帰、冒険者Roster保持（アルト/セリア等）を確認。旧CHK-R31-012-QST0003-IOS-LOSS-001を新Passed CheckでResolved、blocking=falseへ更新。QST-0003 blockerはPublic Playwright + physical iPhoneの二重証跡で解消。TASK-R31-011/012は残Phase2 scopeのためDoing、R39-002はBlocked維持。Human approval fieldは変更していない。"
+    },
+    {
+      "at": "2026-09-10T09:28:17+09:00",
+      "message": "TASK-R31-001残工程を実装。GKS-B898 / GA-B486.229 SOURCE_UPDATEを生成し、Equipment Contributionのparams/params.stats fallback、legacy equipmentBonus calculation、Equipment AGI direct addをhard-cut。Current 308 Equipment normalize PASS。Critical 159 / Save V4 / Adventure / Equipment / Device tests PASS、Applied-state Full Gate 27/27 PASS・warnings0・timeouts0。Export変更なし、削除なし、protected testの意味変更なし（build/cache tokenのみ）。Human ApplyとFresh Current B898確認待ちのためTASK-R31-001はDoingを維持。R31-004以降およびPhase2→3 Gateは未進行。Human approval fieldは変更していない。"
     }
   ],
   "authority": {
