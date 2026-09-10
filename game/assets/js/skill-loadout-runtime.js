@@ -4,7 +4,7 @@
   if(root)root.GKGameSkillLoadout=api;
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
   'use strict';
-  const DEFAULT_SKILL_IDS=Object.freeze(['SKL-TEST-ATTACK','SKL-TEST-HEAVY','SKL-TEST-POISON']);
+  const DEFAULT_SKILL_IDS=Object.freeze([]);
   const FORMAL_SKILL_ID=/^SKL-\d{4}$/;
   const asId=value=>typeof value==='string'?value.trim():'';
   function normalizeSkillIds(value,{fallback=DEFAULT_SKILL_IDS}={}){

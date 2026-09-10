@@ -1,9 +1,9 @@
-const CACHE_NAME="gks-studio-b902";
+const CACHE_NAME="gks-studio-b903";
 const CACHE_PREFIX="gks-studio-";
-const OFFLINE_URL='./index.html?appv=902';
+const OFFLINE_URL='./index.html?appv=903';
 const APP_SHELL=[
   "./",
-  "./index.html?appv=902",
+  "./index.html?appv=903",
   "./manifest.webmanifest?v=583",
   "./icon-192.png?v=550",
   "./icon-512.png?v=550",
@@ -43,7 +43,7 @@ const APP_SHELL=[
   "./ai-production/ai-simulation-runner.js?v=1",
   "./ai-production/ai-export-adapter.js?v=2",
   "./ai-production/ai-production-ui.js?v=2",
-  "./layer-controller.js?v=902",
+  "./layer-controller.js?v=903",
   "./data-exchange/schemas/ai_search-dataset.schema.json",
   "./data-exchange/schemas/ai_condition-dataset.schema.json",
   "./data-exchange/schemas/ai_target_selector-dataset.schema.json",
@@ -57,6 +57,7 @@ const APP_SHELL=[
   "./data-exchange/data-exchange-transaction.js?v=3",
   "./data-exchange/data-exchange-audit.js?v=5",
   "./data-exchange/data-exchange-ui.js?v=25",
+  "../assets/shared/config/adventure-runtime-config.js?v=1",
   "../assets/shared/js/adventure-story-system.js?v=11",
   "./adventure-entity-json-import.js?v=583"
 ];
