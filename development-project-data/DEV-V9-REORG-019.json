@@ -5,7 +5,7 @@
     "name": "V9ゲーム再実装・System Structure再整理",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-09-10T05:48:22.719Z"
+    "updated_at": "2026-09-10T06:06:33.800Z"
   },
   "project_context": {
     "purpose": "既存Material・Decision・51 Current SpecificationをSystem Node / Contract / Connectionへ再編し、Flag / Event / Impact / Specification Candidateで再整理工程を実データ管理する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-R19-DETAILED-SPECS",
     "work_box_id": "BOX-R19-DETAILED-SPECS",
-    "theme": "Hardcode Correction Block 1 / B903 SOURCE_UPDATE適用待ち",
-    "goal": "GKS-B902 / GA-B486.233 Fresh Currentをexact baselineとして、Sourceだけで完結する可変Owner化・固定fallback撤去をGKS-B903 / GA-B486.234へ分割実装。最終SOURCE_UPDATEはApplied-state Full 27/27 PASS。Human ApplyとB903 Fresh Current確認後、初期Skill Point・初期Passive・初期FormationのGame Data Owner追加を次ブロックとして実施する。R31 task statusとHuman workflow approvalは変更しない。"
+    "theme": "Hardcode Correction Block 2 / Character Initial State Game Data Owner",
+    "goal": "Fresh Current GKS-B903 / GA-B486.234を確認済み。Player初期Skill Point・初期Passive・初期FormationのCurrent挙動をADV-0001 game_runtime.characterへGame Data Ownerとして追加した全件Project JSONを準備。Studio全件読込・Gameデータ配置後のFresh Currentを受領してから、Source側の固定初期値をOwner参照へ接続する。既存R31 task statusとHuman workflow approvalは変更しない。"
   },
   "project_rules": [
     {
@@ -796,6 +796,18 @@
       "result": "Partial",
       "evidence": "Human-provided exact baseline guild-adventure-studio-sub(20260910-042724).zip -> B903 Source-only hardcode correction block. Adventure balance/default fallbacks, Quest duration fallback, QuestRun history config ownership, DOT stack max runtime fallback, Active Skill AI generation hardcoded current rules, and Production validation-Skill fallback were corrected. Source Full 27/27 PASS; final ZIP applied-state Accept selected Full 27/27 PASS, warnings=0, timeouts=0, copied=30, deleted=0, Export diff=0, protected semantic change=0. target_manifest=7371a3f316f2a06fb76d51a02b6b2bc03625dd8dc22b9c7684a4c188a36f8ef1 target_tree=27ad2b911beb9e3c6560dae0a300ca03108806668aa472d183813f163cf2b9d7 artifact_id=GKS-B903-27ad2b911beb zip_sha256=6e0bf7591f893ceba6da34b3b3035285b0f9e7dbbebfcdecbe7c470215bbba98. Initial character Skill Point/Passive/Formation data ownership is separated to the next Game Data block.",
       "recorded_at": "2026-09-10T14:32:00+09:00"
+    },
+    {
+      "id": "IMPL-REORG-HARDCODE-B903-BLOCK2-GAME-DATA-001",
+      "studio_build": "GKS-B903",
+      "game_build": "GA-B486.234",
+      "work_box_ids": [
+        "BOX-R19-DETAILED-SPECS"
+      ],
+      "task_ids": [],
+      "result": "Partial",
+      "evidence": "Human-provided Fresh Current guild-adventure-studio-sub(20260910-054855).zip sha256=20232ceca6326bd65ad51e8a19ba4e22010ae4feee36ecdfdb91ab925aaa54b2; package-build=GKS-B903 / GA-B486.234; package_manifest_sha256=7371a3f316f2a06fb76d51a02b6b2bc03625dd8dc22b9c7684a4c188a36f8ef1; Current Full 27/27 PASS warnings=0 timeouts=0. Fresh Current matches B903 completed target at every file except development-project-data/DEV-V9-REORG-019.json integration state; product/source drift=0. GAME_DATA_UPDATE artifact PRJ-GAS-V4_CHARACTER_INITIAL_STATE_OWNER_B903_READY.json sha256=b781f19d69aee5c569f53ddf476d9b9416731b52290a00a4ba615f58ccc13922 adds only ADV-0001 game_runtime.character initial_skill_points=0, starter_passive_ids=[], initial_formation_position=FRONTLINE plus metadata/history. Full Import base gate and formal export static validators report ERROR 0 / WARNING 0. No deletion. Source connection is intentionally deferred until Game Data deployment changes Export and a new Fresh Current is supplied.",
+      "recorded_at": "2026-09-10T14:57:14+09:00"
     }
   ],
   "discussions": [
@@ -30317,6 +30329,29 @@
       "blocking": false,
       "created_at": "2026-09-10T14:32:00+09:00",
       "updated_at": "2026-09-10T14:32:00+09:00"
+    },
+    {
+      "id": "CHK-HARDCODE-B903-BLOCK2-GAME-DATA-PREFLIGHT-001",
+      "title": "B903 hardcode correction block 2 character initial-state Game Data preflight",
+      "gate": "General",
+      "target_type": "Project",
+      "target_id": "DEV-V9-REORG-019",
+      "status": "Passed",
+      "result": "PASS. B903 Fresh Current integrity is confirmed and the full Project JSON adds only the three character initial-state owner fields plus metadata/history. Full Import base gate and formal export static validation report no errors or warnings.",
+      "evidence": "Fresh archive sha256=20232ceca6326bd65ad51e8a19ba4e22010ae4feee36ecdfdb91ab925aaa54b2; package_manifest=7371a3f316f2a06fb76d51a02b6b2bc03625dd8dc22b9c7684a4c188a36f8ef1; Full evidence sha256=5a5fabbdbb477d49e3f025c8dd450e95ac987c6ed4712c9af98f8aa299aa240f; project artifact sha256=b781f19d69aee5c569f53ddf476d9b9416731b52290a00a4ba615f58ccc13922; preflight report sha256=1468cdd62be8e2a3eb9595f3681a00a3bc68b00634929ab994e575cb38d1535c; product/source drift vs B903 target=0; deletions=0.",
+      "checked_by": "AI",
+      "checked_at": "2026-09-10T14:57:14+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-10T14:57:14+09:00",
+      "updated_at": "2026-09-10T14:57:14+09:00"
     }
   ],
   "workflow": {
@@ -31092,6 +31127,10 @@
     {
       "at": "2026-09-10T14:32:00+09:00",
       "message": "Human hardcode prohibition instructionに基づき修正を分割。Block 1はB902 exact baselineからB903 SOURCE_UPDATEとして、Adventure runtime固定fallback、Quest duration固定fallback、QuestRun履歴Config、DOT stack上限runtime fallback、Active Skill AI current rule直書き、Production validation Skill fallbackを是正。Source Full 27/27、final ZIP applied-state Full 27/27、warnings/timeouts 0、deleted 0、Export diff 0、protected semantic change 0。初期Skill Point/Passive/FormationのData Owner追加は次Game Data blockへ分離。既存R31 statusとworkflow approvalは維持。"
+    },
+    {
+      "at": "2026-09-10T14:57:14+09:00",
+      "message": "Fresh Current GKS-B903 / GA-B486.234を受領・確認。Package Manifest 697件、Critical Runtime 51件、Current Full 27/27 PASS。B903完成targetとの差分はDevelopment Project統合ファイル1件のみでproduct/source drift 0。Hardcode Correction Block 2をGAME_DATA_UPDATEとして分離し、ADV-0001 game_runtime.characterへinitial_skill_points / starter_passive_ids / initial_formation_positionをCurrent挙動のままData Owner化する全件Project JSONを準備。Full Import base gateおよびFormal Export静的検証はERROR 0 / WARNING 0。Source接続はGame Data配置後Fresh Currentへrebaseして実施する。"
     }
   ],
   "authority": {
