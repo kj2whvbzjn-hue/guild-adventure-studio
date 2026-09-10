@@ -5,7 +5,7 @@
     "name": "V9ゲーム再実装・System Structure再整理",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-09-10T10:13:40.840Z"
+    "updated_at": "2026-09-10T11:07:36.009Z"
   },
   "project_context": {
     "purpose": "既存Material・Decision・51 Current SpecificationをSystem Node / Contract / Connectionへ再編し、Flag / Event / Impact / Specification Candidateで再整理工程を実データ管理する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-R19-DETAILED-SPECS",
     "work_box_id": "BOX-R19-DETAILED-SPECS",
-    "theme": "R31-008 Skill Loadout / Passive Selection Save Boundary",
-    "goal": "GKS-B905 / GA-B486.236 SOURCE_UPDATEをHuman Applyし、Fresh CurrentでActive Skill最大5 + Passive最大5のPlayer編集・Save/Load・選択Passive Runtimeを公開E2E確認してR31-008を完了する。容量はADV-0001 game_runtime.skill_loadoutのBalance Ownerから取得済み。R31-009 AI候補接続は別Taskとして維持する。"
+    "theme": "R31-008 Save Quota Correction / Public E2E Blocker",
+    "goal": "Fresh Current GKS-B905 / GA-B486.236で再現したQuotaExceededError(code 22)をB906 SOURCE_UPDATEで修正。localStorage上のSave temp stagingを廃止し、Checksum/Schema stage検証をメモリ上で維持する。Human Apply後Fresh Currentで同一容量条件とR31-008 Player UI Save/Load・Battle Runtime公開E2Eを再実行する。R31-009は別Taskのまま維持する。"
   },
   "project_rules": [
     {
@@ -173,12 +173,12 @@
     }
   ],
   "source_baseline": {
-    "studio_build": "GKS-B904",
-    "game_build": "GA-B486.235",
-    "source_label": "Human-provided Fresh Current guild-adventure-studio-sub(20260910-062235).zip",
-    "source_role": "current_after_character_initial_state_owner_connection_and_public_skill_respec_e2e",
-    "recorded_at": "2026-09-10T16:32:26+09:00",
-    "package_manifest_sha256": "6584bcbf771ad32961ba93bb28b0553c556a2d8ce53d036c9605d62bb4bfecaf"
+    "studio_build": "GKS-B905",
+    "game_build": "GA-B486.236",
+    "source_label": "Human-provided Fresh Current guild-adventure-studio-sub(20260910-101411).zip",
+    "source_role": "exact_current_before_save_quota_correction",
+    "recorded_at": "2026-09-10T19:59:00+09:00",
+    "package_manifest_sha256": "33643d6f0f4f81e341d7b7ebbdf604a70f0a4888f10f2c76f99b10e66d1d21af"
   },
   "lifecycle": {
     "status": "Active",
@@ -822,6 +822,20 @@
       "result": "Partial",
       "evidence": "Exact baseline GKS-B904 / GA-B486.235 package_manifest=6584bcbf771ad32961ba93bb28b0553c556a2d8ce53d036c9605d62bb4bfecaf source_tree=6043fc702c26cfa67fe470433afd69a867be08eb40268f93bdf1f3d131a28110。Formal ExportでADV-0001 game_runtime.skill_loadout active_skill_slots=5 / passive_slots=5の配置済みを確認。GKS-B905 / GA-B486.236 target package_manifest=33643d6f0f4f81e341d7b7ebbdf604a70f0a4888f10f2c76f99b10e66d1d21af source_tree=ed938b0f99a6b2b435f5bcb0ea908bdd73daee4398b469d82a994b8b21f260ba artifact_id=GKS-B905-ed938b0f99a6。Active選択=skillLoadoutIds、Passive選択=passiveLoadoutIdsとして所有集合から分離し、容量をFormal Game Dataから解決。Save Schema/Bridge、Respec cleanup、Player UI、選択PassiveのみのFormal Runtime候補化を接続。R31-009 AI Skill候補filterは未変更。External targeted 25/25 PASS。Update Quick 14/14 PASS evidence=d806df1c6833003305e3cec79a0507df1c94534cfe171690c0e63cee504b6637。Accept 14/14 PASS evidence=6d733cb9b288d9ca09f6dcafc07c3ce777ae4c13701ebc557b08808bac147709、applied Full 27/27 PASS。Release 14/14 PASS evidence=b25ccc6f69e5b0877ffcfb6f67478f6d71759a86ffba61a509a0672740a842e8。Final ZIP sha256=ffcf3e6d33a5e1717ae6b341edc684be808c87092760b36f409cc2b59a2a38ca、extracted Release 14/14 PASS evidence=f54f9a006ed50b1215cd2fff59c5fc6586a0a579e92564792e4c0086e906aea5。Source deletion=0、Game Data change/exclusion=0。Human Apply/Public E2E pending。",
       "recorded_at": "2026-09-10T19:04:47+09:00"
+    },
+    {
+      "id": "IMPL-R31-008-SAVE-QUOTA-CORR-001",
+      "studio_build": "GKS-B906",
+      "game_build": "GA-B486.237",
+      "work_box_ids": [
+        "BOX-R19-DETAILED-SPECS"
+      ],
+      "task_ids": [
+        "TASK-R31-008-CORR-QUOTA-001"
+      ],
+      "result": "Partial",
+      "evidence": "Human-authorized Save quota correction from exact Fresh Current GKS-B905 / GA-B486.236. app-runtime normal Save / Backup restore / Migration now verifies buildSaveStageRecord in memory and no longer persists SAVE_TEMP_KEY. Same-capacity targeted harness B905 FAIL code22 -> B906 PASS with Main/Backup semantics preserved. Budget PASS compat 13->13 catch 62->59. Source Quick 12/12; Update Quick 14/14; Accept 14/14 with applied Full 27/27; Release 14/14; extracted ZIP Release 14/14. baseline manifest=33643d6f0f4f81e341d7b7ebbdf604a70f0a4888f10f2c76f99b10e66d1d21af tree=b6af76745fe7d3f447b37b37259f2668499f75f47222def531ed05b4d5e21323; target manifest=89b55289c3157048ce9af22039384163fb21acde343911dce6712f9ff0dac773 tree=6190407e2c0e7a4b3f59700636b5e8a4e368d9e459f32f6449a3b0dc4f014b51; artifact_id=GKS-B906-6190407e2c0e; final ZIP sha256=f13694644c255499d3e1a965036d39f63b92f6abd63a39a1a9653da066e6beb7. Export/Game Data changes=0; deletions=0. Original Failed Check remains unresolved until Human Apply + independent public/fresh failure retest.",
+      "recorded_at": "2026-09-10T19:59:00+09:00"
     }
   ],
   "discussions": [
@@ -25610,9 +25624,11 @@
       "id": "TASK-R31-008",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Skill Loadout編集とSave境界を実装する",
-      "status": "Doing",
+      "status": "Blocked",
       "execution_order": null,
-      "depends_on": [],
+      "depends_on": [
+        "TASK-R31-008-CORR-QUOTA-001"
+      ],
       "acceptance_criteria": "- Active Skill Loadoutは所有済みSkillだけを登録できる。\n- Passive選択は所有済みPassiveだけを登録でき、Active Skill選択と別集合で保持する。\n- Active Skill枠数とPassive枠数はBalance Ownerから解決し、Sourceへ具体枠数を固定しない。\n- Active Skill選択とPassive選択をCharacter Saveで保持し、Save/Load後も一致する。\n- Player Skill / Passive画面から両選択を編集できる。\n- Passive Runtimeは選択中Passiveだけを有効候補として扱う。\n- AIが使用可能Skill集合をLoadoutへ制限する接続はTASK-R31-009へ分離する。",
       "work_type": "SOURCE_UPDATE",
       "requires_human_approval": false,
@@ -25622,9 +25638,9 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:35:00+09:00",
-      "updated_at": "2026-09-10T19:04:47+09:00",
-      "result_scope": "B905_SOURCE_UPDATE_GATED / ACTIVE_PASSIVE_SELECTION_CONNECTED / HUMAN_APPLY_PUBLIC_E2E_PENDING",
-      "blocking_reason": "SOURCE_UPDATE GKS-B905 / GA-B486.236はRelease GateまでPASS。Human Apply後のFresh Current確認とPlayer UI Save/Load・選択Passive Battle Runtimeの公開E2E完了までDoingを維持する。"
+      "updated_at": "2026-09-10T19:59:00+09:00",
+      "result_scope": "B905_APPLIED / SOURCE_RUNTIME_TESTS_PASS / PUBLIC_E2E_BLOCKED_BY_SAVE_QUOTA / B906_CORRECTION_READY",
+      "blocking_reason": "Fresh Current B905の公開操作中にAuto SaveがQuotaExceededError(code 22)で停止。Correction Task TASK-R31-008-CORR-QUOTA-001をHuman指示「修正して」で実行しB906 artifactを準備。Human Apply後に同一Failure再検証とR31-008公開E2Eを独立再実行するまでBlocked。"
     },
     {
       "id": "TASK-R31-009",
@@ -27732,6 +27748,26 @@
       "created_at": "2026-08-28T09:50:00+09:00",
       "updated_at": "2026-08-28T11:04:00+09:00",
       "acceptance_criteria": "既存回帰とQuick/Full/Accept/Releaseを通し、同一logic複数applyContract identity parityを確認する。Human Apply後のFresh Source確認までCurrent完了扱いにしない。"
+    },
+    {
+      "id": "TASK-R31-008-CORR-QUOTA-001",
+      "box_id": "BOX-R19-DETAILED-SPECS",
+      "title": "Save QuotaExceeded再発をAtomic Save境界でCorrectionする",
+      "status": "Doing",
+      "execution_order": null,
+      "depends_on": [],
+      "acceptance_criteria": "- Failure Signature `f8598c388a16111b2bbe` / `CHK-R31-008-B905-SAVE-QUOTA-001` の原因だけを修正する。\n- game/assets/js/app-runtime.js の通常Save / Backup復旧 / Save Migrationで、stage recordをlocalStorageへ追加保持せずメモリ上でChecksum/Schema検証する。\n- Currentの1Slot Auto Save、previous-good Backup、Migration Backup、FNV1A32 Integrity、Save Schema、rollback、Save Version意味を変更しない。\n- Main + Backupが収まる同一容量条件で、B905はQuotaExceededError(code 22)を再現しB906はSave成功することをTargeted検証する。\n- Compatibility Budget 0 / Exception Budget 0。新規fallback/compat/shim/adapter/alias/dual-read/dual-write/silent recoveryを追加しない。\n- Test/Gateを弱体化せず、Source Quick / Applied-state Accept / Full / Releaseを通す。\n- Export/Game Data変更なし、削除なし。\n- Correction artifactだけでは元Failedをresolveせず、Human Apply後Fresh Currentで再現E2Eを独立実行して解決する。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Approved",
+        "by": "human_instruction",
+        "at": "2026-09-10T19:59:00+09:00"
+      },
+      "created_at": "2026-09-10T19:59:00+09:00",
+      "updated_at": "2026-09-10T19:59:00+09:00",
+      "result_scope": "B906_SOURCE_UPDATE_GATED / HUMAN_APPLY_AND_FAILURE_RETEST_PENDING",
+      "blocking_reason": "Human Apply後のFresh Current確認と同一Quota条件でのSave再実行待ち。"
     }
   ],
   "checks": [
@@ -30504,6 +30540,98 @@
       "blocking": false,
       "created_at": "",
       "updated_at": ""
+    },
+    {
+      "id": "CHK-R31-008-B905-SAVE-QUOTA-001",
+      "title": "R31-008 Public E2E Save quota failure",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-R31-008",
+      "status": "Failed",
+      "result": "Fresh Current GKS-B905 / GA-B486.236の公開操作でAuto SaveがQuotaExceededError / Runtime code 22で停止。Source auditで通常Save・Backup復旧・Migrationがstage recordをSAVE_TEMP_KEYへlocalStorage setItemしており、Main/Backupと同時に一時3重化する経路を確認。",
+      "evidence": "Human-provided ScreenRecording_09-10-2026 19-32-02_1.mp4; game/assets/js/app-runtime.js B905 lines 560-593 / 608-611 / 649-669; deterministic quota harness: beforeUsage=11689 free=311, B905 save=FAIL QuotaExceededError code=22, main unchanged, temp cleanup complete. Failure Signature=f8598c388a16111b2bbe. Root cause: game/assets/js/app-runtime.js SAVE_TEMP_KEY localStorage staging adds a third full Save-sized record during commit even when Main + previous-good Backup already fit.",
+      "checked_by": "AI",
+      "checked_at": "2026-09-10T19:59:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": true,
+      "created_at": "2026-09-10T19:59:00+09:00",
+      "updated_at": "2026-09-10T19:59:00+09:00"
+    },
+    {
+      "id": "CHK-R31-008-B906-QUOTA-TARGETED-001",
+      "title": "B906 Save quota targeted correction",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-R31-008-CORR-QUOTA-001",
+      "status": "Passed",
+      "result": "Targeted quota harness PASS. Same logical storage condition that fails B905 now commits B906 without SAVE_TEMP_KEY localStorage write.",
+      "evidence": "B905 beforeUsage=11689 free=311 => FAIL QuotaExceededError code=22. B906 same condition => PASS; mainIsNext=true; backupIsPreviousMain=true; tempPresent=false. app-runtime SAVE_TEMP_KEY setItem count 3 -> 0 globally. node --check PASS.",
+      "checked_by": "AI",
+      "checked_at": "2026-09-10T19:59:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-10T19:59:00+09:00",
+      "updated_at": "2026-09-10T19:59:00+09:00"
+    },
+    {
+      "id": "CHK-R31-008-B906-QUOTA-BUDGET-001",
+      "title": "B906 Correction compatibility/exception budget",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-R31-008-CORR-QUOTA-001",
+      "status": "Passed",
+      "result": "Compatibility Budget 0 / Exception Budget 0 PASS.",
+      "evidence": "autonomous-correction.py budget PASS. app-runtime compat count 13->13; catch count 62->59; no production file add/remove.",
+      "checked_by": "AI",
+      "checked_at": "2026-09-10T19:59:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-10T19:59:00+09:00",
+      "updated_at": "2026-09-10T19:59:00+09:00"
+    },
+    {
+      "id": "CHK-R31-008-B906-SOURCE-GATES-001",
+      "title": "B906 Save quota SOURCE_UPDATE gates",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-R31-008-CORR-QUOTA-001",
+      "status": "Passed",
+      "result": "SOURCE_UPDATE Quick / Accept / applied Full / Release PASS.",
+      "evidence": "Source Quick 12/12 evidence_sha256=d4883e26ef509f412408f67f5c82ce86944df28677e023cf5836fb9eb10e372c; Update Quick 14/14 evidence_sha256=6770eba3f21e97ff346ab7140527ad1027c1be44851279fdbda332f5d5578c25; Accept 14/14 evidence_sha256=bbfb57566ce2775e6785731f14558f36795e4986c8a36aaeaec4698d39de5c2c with applied Full 27/27; Release 14/14 evidence_sha256=88a457e6dbbbdb9ad336a4eca4befcfe4504468c23b576005da158a05b3c758c; extracted final ZIP Release 14/14 evidence_sha256=024435506b5fc7113bf2e698525c64eb1349efba6193e7224abc397f6f3b79c7; warnings=0 timeouts=0; copied=698 deleted=0.",
+      "checked_by": "AI",
+      "checked_at": "2026-09-10T19:59:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-10T19:59:00+09:00",
+      "updated_at": "2026-09-10T19:59:00+09:00"
     }
   ],
   "workflow": {
@@ -31295,6 +31423,10 @@
     {
       "at": "2026-09-10T19:04:47+09:00",
       "message": "R31-008 SOURCE_UPDATE GKS-B905 / GA-B486.236をRelease Gateまで完了。Active=skillLoadoutIds / Passive=passiveLoadoutIdsとして別集合化し、容量はADV-0001 Balance Ownerから取得。Save/Respec/Player UI/選択Passive Runtimeを接続、R31-009 AI filterは未変更。Final ZIP sha256=ffcf3e6d33a5e1717ae6b341edc684be808c87092760b36f409cc2b59a2a38ca。Human Apply後Fresh Current/Public E2E待ち。"
+    },
+    {
+      "at": "2026-09-10T19:59:00+09:00",
+      "message": "Human指示「修正して」によりR31-008公開E2Eを停止したSave QuotaExceededError(code 22)を専用SOURCE_UPDATE Correctionへ分離。Failure Signature=f8598c388a16111b2bbe。Exact B905でSAVE_TEMP_KEY localStorage stagingによる一時3重化を再現し、B906では通常Save/Backup復旧/Migrationのstageをメモリ検証へ変更。Main/previous-good Backup/Migration Backup/FNV1A32/Schema/rollback意味は維持。Targeted B905 FAIL->B906 PASS、Budget PASS、Source Quick 12/12、Applied Full 27/27、Release 14/14。Human Apply後の同一Failure再検証までCorrection Doing / R31-008 Blockedを維持。"
     }
   ],
   "authority": {
