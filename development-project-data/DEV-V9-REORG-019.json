@@ -5,7 +5,7 @@
     "name": "V9ゲーム再実装・System Structure再整理",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-09-10T07:55:56.811Z"
+    "updated_at": "2026-09-10T10:13:40.840Z"
   },
   "project_context": {
     "purpose": "既存Material・Decision・51 Current SpecificationをSystem Node / Contract / Connectionへ再編し、Flag / Event / Impact / Specification Candidateで再整理工程を実データ管理する。",
@@ -15,7 +15,7 @@
     "architecture_id": "ARCH-R19-DETAILED-SPECS",
     "work_box_id": "BOX-R19-DETAILED-SPECS",
     "theme": "R31-008 Skill Loadout / Passive Selection Save Boundary",
-    "goal": "Fresh Current GKS-B904 / GA-B486.235を監査。Human確定のActive Skill最大5 + Passive最大5をBalance可変とするため、ADV-0001 game_runtime.skill_loadoutへ容量Ownerを追加した全件Project JSONを準備。Game Data配置後のFresh Currentをexact baselineとして、Active Skill/Passive選択Runtime・UI・SaveをSOURCE_UPDATEで接続する。R31-009 AI候補接続は別Taskとして維持する。"
+    "goal": "GKS-B905 / GA-B486.236 SOURCE_UPDATEをHuman Applyし、Fresh CurrentでActive Skill最大5 + Passive最大5のPlayer編集・Save/Load・選択Passive Runtimeを公開E2E確認してR31-008を完了する。容量はADV-0001 game_runtime.skill_loadoutのBalance Ownerから取得済み。R31-009 AI候補接続は別Taskとして維持する。"
   },
   "project_rules": [
     {
@@ -808,6 +808,20 @@
       "result": "Partial",
       "evidence": "Human-provided Fresh Current guild-adventure-studio-sub(20260910-054855).zip sha256=20232ceca6326bd65ad51e8a19ba4e22010ae4feee36ecdfdb91ab925aaa54b2; package-build=GKS-B903 / GA-B486.234; package_manifest_sha256=7371a3f316f2a06fb76d51a02b6b2bc03625dd8dc22b9c7684a4c188a36f8ef1; Current Full 27/27 PASS warnings=0 timeouts=0. Fresh Current matches B903 completed target at every file except development-project-data/DEV-V9-REORG-019.json integration state; product/source drift=0. GAME_DATA_UPDATE artifact PRJ-GAS-V4_CHARACTER_INITIAL_STATE_OWNER_B903_READY.json sha256=b781f19d69aee5c569f53ddf476d9b9416731b52290a00a4ba615f58ccc13922 adds only ADV-0001 game_runtime.character initial_skill_points=0, starter_passive_ids=[], initial_formation_position=FRONTLINE plus metadata/history. Full Import base gate and formal export static validators report ERROR 0 / WARNING 0. No deletion. Source connection is intentionally deferred until Game Data deployment changes Export and a new Fresh Current is supplied.",
       "recorded_at": "2026-09-10T14:57:14+09:00"
+    },
+    {
+      "id": "IMPL-R31-008-B905-001",
+      "studio_build": "GKS-B905",
+      "game_build": "GA-B486.236",
+      "work_box_ids": [
+        "BOX-R19-DETAILED-SPECS"
+      ],
+      "task_ids": [
+        "TASK-R31-008"
+      ],
+      "result": "Partial",
+      "evidence": "Exact baseline GKS-B904 / GA-B486.235 package_manifest=6584bcbf771ad32961ba93bb28b0553c556a2d8ce53d036c9605d62bb4bfecaf source_tree=6043fc702c26cfa67fe470433afd69a867be08eb40268f93bdf1f3d131a28110。Formal ExportでADV-0001 game_runtime.skill_loadout active_skill_slots=5 / passive_slots=5の配置済みを確認。GKS-B905 / GA-B486.236 target package_manifest=33643d6f0f4f81e341d7b7ebbdf604a70f0a4888f10f2c76f99b10e66d1d21af source_tree=ed938b0f99a6b2b435f5bcb0ea908bdd73daee4398b469d82a994b8b21f260ba artifact_id=GKS-B905-ed938b0f99a6。Active選択=skillLoadoutIds、Passive選択=passiveLoadoutIdsとして所有集合から分離し、容量をFormal Game Dataから解決。Save Schema/Bridge、Respec cleanup、Player UI、選択PassiveのみのFormal Runtime候補化を接続。R31-009 AI Skill候補filterは未変更。External targeted 25/25 PASS。Update Quick 14/14 PASS evidence=d806df1c6833003305e3cec79a0507df1c94534cfe171690c0e63cee504b6637。Accept 14/14 PASS evidence=6d733cb9b288d9ca09f6dcafc07c3ce777ae4c13701ebc557b08808bac147709、applied Full 27/27 PASS。Release 14/14 PASS evidence=b25ccc6f69e5b0877ffcfb6f67478f6d71759a86ffba61a509a0672740a842e8。Final ZIP sha256=ffcf3e6d33a5e1717ae6b341edc684be808c87092760b36f409cc2b59a2a38ca、extracted Release 14/14 PASS evidence=f54f9a006ed50b1215cd2fff59c5fc6586a0a579e92564792e4c0086e906aea5。Source deletion=0、Game Data change/exclusion=0。Human Apply/Public E2E pending。",
+      "recorded_at": "2026-09-10T19:04:47+09:00"
     }
   ],
   "discussions": [
@@ -25608,9 +25622,9 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:35:00+09:00",
-      "updated_at": "2026-09-10T16:32:26+09:00",
-      "result_scope": "B904_SCOPE_AUDITED / ACTIVE5_PASSIVE5_BALANCE_OWNER_PROJECT_READY / SOURCE_CONNECTION_AFTER_GAME_DATA_DEPLOYMENT",
-      "blocking_reason": "Current ExportにSkill Loadout容量Ownerがまだない。Human確定のActive Skill最大5 + Passive最大5をSource固定せずBalance値として先にGame Data配置し、配置後Fresh Currentをexact baselineとしてSource接続する。"
+      "updated_at": "2026-09-10T19:04:47+09:00",
+      "result_scope": "B905_SOURCE_UPDATE_GATED / ACTIVE_PASSIVE_SELECTION_CONNECTED / HUMAN_APPLY_PUBLIC_E2E_PENDING",
+      "blocking_reason": "SOURCE_UPDATE GKS-B905 / GA-B486.236はRelease GateまでPASS。Human Apply後のFresh Current確認とPlayer UI Save/Load・選択Passive Battle Runtimeの公開E2E完了までDoingを維持する。"
     },
     {
       "id": "TASK-R31-009",
@@ -30467,6 +30481,29 @@
       "blocking": false,
       "created_at": "2026-09-10T16:32:26+09:00",
       "updated_at": "2026-09-10T16:32:26+09:00"
+    },
+    {
+      "id": "CHK-R31-008-B905-SOURCE-001",
+      "target_type": "Task",
+      "target_id": "TASK-R31-008",
+      "status": "Passed",
+      "result": "GKS-B905 SOURCE_UPDATE候補の局所・Quick・Accept・Release Gate PASS。Active/Passive別選択、所有/容量拒否、Save永続、Respec参照除去、選択Passive Runtime接続を確認。",
+      "evidence": "R31_008_TARGETED_OK 25/25; Update Quick 14/14; Accept 14/14 with applied Full 27/27; Release 14/14; extracted final ZIP Release 14/14. Public/Human-applied E2Eは未実施のためTask完了Checkとはしない。",
+      "checked_by": "AI",
+      "checked_at": "2026-09-10T19:04:47+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "title": "",
+      "gate": "General",
+      "blocking": false,
+      "created_at": "",
+      "updated_at": ""
     }
   ],
   "workflow": {
@@ -31254,6 +31291,10 @@
     {
       "at": "2026-09-10T16:32:26+09:00",
       "message": "R31-008再開監査。CurrentはskillLoadoutIdsをSave substrateとして保持するが実Runtimeは単一equippedSkillId中心で、PassiveはpassiveIds全件を有効候補にしており、正式5+5選択境界と容量Ownerが未実装。Human確定Active Skill最大5 + Passive最大5をSourceへ固定せず、ADV-0001 game_runtime.skill_loadoutのBalance値として先行配置する全件Project JSONを準備。R31-009 AI使用可能Skill集合接続は分離維持。"
+    },
+    {
+      "at": "2026-09-10T19:04:47+09:00",
+      "message": "R31-008 SOURCE_UPDATE GKS-B905 / GA-B486.236をRelease Gateまで完了。Active=skillLoadoutIds / Passive=passiveLoadoutIdsとして別集合化し、容量はADV-0001 Balance Ownerから取得。Save/Respec/Player UI/選択Passive Runtimeを接続、R31-009 AI filterは未変更。Final ZIP sha256=ffcf3e6d33a5e1717ae6b341edc684be808c87092760b36f409cc2b59a2a38ca。Human Apply後Fresh Current/Public E2E待ち。"
     }
   ],
   "authority": {
