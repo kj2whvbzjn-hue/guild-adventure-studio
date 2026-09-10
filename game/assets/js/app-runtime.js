@@ -564,8 +564,7 @@ function writeAutoSaveSnapshot(snapshot){
  let mainSwitched=false;
  try{
   const stageRecord=buildSaveStageRecord(payload);
-  localStorage.setItem(SAVE_TEMP_KEY,stageRecord);
-  const verifiedPayload=verifySaveStageRecord(localStorage.getItem(SAVE_TEMP_KEY));
+  const verifiedPayload=verifySaveStageRecord(stageRecord);
   if(verifiedPayload!==payload)throw new Error('Save Integrity: staged payload changed before commit.');
   if(previous!==null){
    validateSavePayload(previous);
@@ -577,7 +576,6 @@ function writeAutoSaveSnapshot(snapshot){
   const committed=localStorage.getItem(SAVE_KEY);
   if(committed!==verifiedPayload)throw new Error('Save Integrity: committed payload verification failed.');
   validateSavePayload(committed);
-  localStorage.removeItem(SAVE_TEMP_KEY);
   return snapshot;
  }catch(error){
   if(mainSwitched){
@@ -588,7 +586,6 @@ function writeAutoSaveSnapshot(snapshot){
   try{
    if(previousBackup===null)localStorage.removeItem(SAVE_BACKUP_KEY);else localStorage.setItem(SAVE_BACKUP_KEY,previousBackup);
   }catch(backupRollbackError){console.error('Save backup rollback failed',backupRollbackError);}
-  try{localStorage.removeItem(SAVE_TEMP_KEY)}catch{}
   throw error;
  }finally{saveCommitInProgress=false;}
 }
@@ -607,8 +604,8 @@ function currentAutoSaveBackupInfo(){try{const candidate=readCurrentAutoSaveBack
 function refreshTitleBackupRecovery(){const button=$('titleRestoreBackup');if(!button)return null;const info=currentAutoSaveBackupInfo();button.hidden=!info?.available;button.disabled=saveLoadOperationInProgress;button.textContent=info?.available?`バックアップから復旧（${info.character_count}名）`:'バックアップから復旧';return info;}
 function restoreAutoSaveBackup(){
  const candidate=readCurrentAutoSaveBackup();if(!candidate)throw new Error('復旧可能なバックアップがありません。');const previous=localStorage.getItem(SAVE_KEY);let mainSwitched=false;
- try{const stageRecord=buildSaveStageRecord(candidate.raw);localStorage.setItem(SAVE_TEMP_KEY,stageRecord);const verified=verifySaveStageRecord(localStorage.getItem(SAVE_TEMP_KEY));if(verified!==candidate.raw)throw new Error('Save Recovery: staged backup changed before restore.');localStorage.setItem(SAVE_KEY,verified);mainSwitched=true;if(localStorage.getItem(SAVE_KEY)!==verified)throw new Error('Save Recovery: restored payload verification failed.');validateSavePayload(localStorage.getItem(SAVE_KEY));localStorage.removeItem(SAVE_TEMP_KEY);return candidate.save;}
- catch(error){if(mainSwitched){try{if(previous===null)localStorage.removeItem(SAVE_KEY);else localStorage.setItem(SAVE_KEY,previous)}catch(rollbackError){console.error('Save recovery main rollback failed',rollbackError)}}try{localStorage.removeItem(SAVE_TEMP_KEY)}catch{}throw error;}
+ try{const stageRecord=buildSaveStageRecord(candidate.raw);const verified=verifySaveStageRecord(stageRecord);if(verified!==candidate.raw)throw new Error('Save Recovery: staged backup changed before restore.');localStorage.setItem(SAVE_KEY,verified);mainSwitched=true;if(localStorage.getItem(SAVE_KEY)!==verified)throw new Error('Save Recovery: restored payload verification failed.');validateSavePayload(localStorage.getItem(SAVE_KEY));return candidate.save;}
+ catch(error){if(mainSwitched){try{if(previous===null)localStorage.removeItem(SAVE_KEY);else localStorage.setItem(SAVE_KEY,previous)}catch(rollbackError){console.error('Save recovery main rollback failed',rollbackError)}}throw error;}
 }
 async function restoreBackupAndContinue(){
  const info=currentAutoSaveBackupInfo();if(!info?.available){notify('復旧可能なバックアップがありません。','bad');refreshTitleBackupRecovery();return false}if(!confirm(`直前バックアップ（冒険者 ${info.character_count}名）を現在セーブへ復旧しますか？`))return false;
@@ -653,18 +650,15 @@ function commitMigratedSave(raw,result,{sourceKey=SAVE_KEY}={}){
   localStorage.setItem(SAVE_MIGRATION_BACKUP_KEY,raw);
   if(localStorage.getItem(SAVE_MIGRATION_BACKUP_KEY)!==raw)throw new Error('Save Migration: pre-migration backup verification failed.');
   const current=buildAutoSaveSnapshot(result.save),payload=JSON.stringify(current),stageRecord=buildSaveStageRecord(payload);
-  localStorage.setItem(SAVE_TEMP_KEY,stageRecord);
-  const verifiedPayload=verifySaveStageRecord(localStorage.getItem(SAVE_TEMP_KEY));
+  const verifiedPayload=verifySaveStageRecord(stageRecord);
   if(verifiedPayload!==payload)throw new Error('Save Migration: staged payload changed before commit.');
   localStorage.setItem(SAVE_KEY,verifiedPayload);
   if(localStorage.getItem(SAVE_KEY)!==verifiedPayload)throw new Error('Save Migration: committed payload verification failed.');
   validateSavePayload(localStorage.getItem(SAVE_KEY));
-  localStorage.removeItem(SAVE_TEMP_KEY);
   return current;
  }catch(error){
   try{if(previousCurrent===null)localStorage.removeItem(SAVE_KEY);else localStorage.setItem(SAVE_KEY,previousCurrent)}catch(rollbackError){console.error('Save migration rollback failed',rollbackError);}
   try{if(previousMigrationBackup===null)localStorage.removeItem(SAVE_MIGRATION_BACKUP_KEY);else localStorage.setItem(SAVE_MIGRATION_BACKUP_KEY,previousMigrationBackup)}catch(backupRollbackError){console.error('Save migration backup rollback failed',backupRollbackError);}
-  try{localStorage.removeItem(SAVE_TEMP_KEY)}catch{}
   throw error;
  }
 }
