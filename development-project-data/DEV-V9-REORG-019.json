@@ -5,7 +5,7 @@
     "name": "V9ゲーム再実装・System Structure再整理",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-09-10T06:06:33.800Z"
+    "updated_at": "2026-09-10T07:55:56.811Z"
   },
   "project_context": {
     "purpose": "既存Material・Decision・51 Current SpecificationをSystem Node / Contract / Connectionへ再編し、Flag / Event / Impact / Specification Candidateで再整理工程を実データ管理する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-R19-DETAILED-SPECS",
     "work_box_id": "BOX-R19-DETAILED-SPECS",
-    "theme": "Hardcode Correction Block 2 / Character Initial State Game Data Owner",
-    "goal": "Fresh Current GKS-B903 / GA-B486.234を確認済み。Player初期Skill Point・初期Passive・初期FormationのCurrent挙動をADV-0001 game_runtime.characterへGame Data Ownerとして追加した全件Project JSONを準備。Studio全件読込・Gameデータ配置後のFresh Currentを受領してから、Source側の固定初期値をOwner参照へ接続する。既存R31 task statusとHuman workflow approvalは変更しない。"
+    "theme": "R31-008 Skill Loadout / Passive Selection Save Boundary",
+    "goal": "Fresh Current GKS-B904 / GA-B486.235を監査。Human確定のActive Skill最大5 + Passive最大5をBalance可変とするため、ADV-0001 game_runtime.skill_loadoutへ容量Ownerを追加した全件Project JSONを準備。Game Data配置後のFresh Currentをexact baselineとして、Active Skill/Passive選択Runtime・UI・SaveをSOURCE_UPDATEで接続する。R31-009 AI候補接続は別Taskとして維持する。"
   },
   "project_rules": [
     {
@@ -173,12 +173,12 @@
     }
   ],
   "source_baseline": {
-    "studio_build": "GKS-B799",
-    "game_build": "GA-B486.211",
-    "source_label": "Human-provided Fresh Current GKS-B799",
-    "source_role": "current_after_multi_hit_hit_apply_conformance",
-    "recorded_at": "2026-08-28T11:04:00+09:00",
-    "package_manifest_sha256": "8ded28e7e527541daf4257bf65fab04506a514d33591590b2b86a8ba4d71e9cd"
+    "studio_build": "GKS-B904",
+    "game_build": "GA-B486.235",
+    "source_label": "Human-provided Fresh Current guild-adventure-studio-sub(20260910-062235).zip",
+    "source_role": "current_after_character_initial_state_owner_connection_and_public_skill_respec_e2e",
+    "recorded_at": "2026-09-10T16:32:26+09:00",
+    "package_manifest_sha256": "6584bcbf771ad32961ba93bb28b0553c556a2d8ce53d036c9605d62bb4bfecaf"
   },
   "lifecycle": {
     "status": "Active",
@@ -25536,7 +25536,7 @@
       "id": "TASK-R31-005",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Skill / Passive習得条件のRuntime境界を実装する",
-      "status": "Doing",
+      "status": "Done",
       "execution_order": null,
       "depends_on": [],
       "acceptance_criteria": "- CharacterがSkill Point残高を正式状態として保持する。\n- Level Up確定時にBalance設定量のSkill Pointを付与できるRuntime境界を持つ。\n- Skill/Passive習得は共通Skill Pointを消費し、能力値条件を満たす場合だけ成功する。\n- Job/武器/前提Skillを習得条件へ追加しない。\n- 習得Cost具体値はSourceへ固定せずBalanceから解決する。\n- Skill/Passive所有状態、Skill Point残高、習得時の実消費Skill Point記録をSave境界へ保持できる。",
@@ -25548,15 +25548,15 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:35:00+09:00",
-      "updated_at": "2026-09-10T13:19:00+09:00",
-      "result_scope": "B901_FRESH_CURRENT_VERIFIED / GAME_DATA_BALANCE_DEPLOYED / PLAYER_FLOW_PUBLIC_E2E_PENDING_B902_UI",
-      "blocking_reason": "B901 Runtime/Save境界、Fresh Current、正式Game Data Balance配置は確認済み。Player-facing習得/Respec操作の公開E2EはR31-007 B902 UIをHuman Apply後に実施するためDoingを維持。"
+      "updated_at": "2026-09-10T16:32:26+09:00",
+      "result_scope": "B904_PUBLIC_PLAYWRIGHT_40_STEP_PASS / LEVEL_UP_SP_AND_PASSIVE_ACQUISITION_CONFIRMED",
+      "blocking_reason": ""
     },
     {
       "id": "TASK-R31-006",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Skill / Passive Respec境界を実装する",
-      "status": "Doing",
+      "status": "Done",
       "execution_order": null,
       "depends_on": [],
       "acceptance_criteria": "- 任意Skill/Passiveの個別解除とSkill+Passive一括全解除をRuntime境界で実行できる。\n- Respec CostはGuild Goldから消費し、具体額はBalanceから解決する。\n- Gold不足時は状態を変更しない。\n- Respec時は対象Skill/Passiveの習得時に実際に消費したSkill Pointを返還する。\n- 初期配布・無料付与等で実消費記録のないSkill/PassiveはSkill Pointを返還しない。\n- Respecで支払ったGoldは返還しない。\n- RespecでLevel/Stats/Job/Equipment等を変更しない。\n- 解除後は通常条件とSkill Point Costで再習得できる。",
@@ -25568,19 +25568,19 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:35:00+09:00",
-      "updated_at": "2026-09-10T13:19:00+09:00",
-      "result_scope": "B901_FRESH_CURRENT_VERIFIED / EXACT_SP_REFUND_GOLD_NONREFUND / PLAYER_FLOW_PUBLIC_E2E_PENDING_B902_UI",
-      "blocking_reason": "B901で実消費Skill Point返還・Respec Gold非返還Runtime、Fresh Current、正式Balance配置まで確認済み。Player-facing公開E2EはB902 UI適用後に実施するためDoingを維持。"
+      "updated_at": "2026-09-10T16:32:26+09:00",
+      "result_scope": "B904_PUBLIC_PLAYWRIGHT_40_STEP_PASS / INDIVIDUAL_AND_ALL_RESPEC_SP_REFUND_GOLD_CONSUMPTION_CONFIRMED",
+      "blocking_reason": ""
     },
     {
       "id": "TASK-R31-007",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Skill / Passive UIの表示境界を実装する",
-      "status": "Doing",
+      "status": "Done",
       "execution_order": null,
       "depends_on": [],
       "acceptance_criteria": "",
-      "work_type": "",
+      "work_type": "SOURCE_UPDATE",
       "requires_human_approval": false,
       "approval": {
         "status": "Pending",
@@ -25588,9 +25588,9 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:35:00+09:00",
-      "updated_at": "2026-09-10T13:19:00+09:00",
-      "result_scope": "B902_SOURCE_UPDATE_READY / SKILL_PASSIVE_PLAYER_UI_CONNECTED / HUMAN_APPLY_FRESH_CURRENT_PUBLIC_E2E_PENDING",
-      "blocking_reason": "GKS-B902 / GA-B486.233でTraining Hall/Character Skill画面へSkill Point、正式Skill習得候補、Passive習得/有効状態、個別/全Respec UIをRuntime境界経由で接続。Source Fullおよびexact-baseline Applied-state FullはPASS。Human Apply、Fresh Current、公開Playwright未完了のためDoingを維持。"
+      "updated_at": "2026-09-10T16:32:26+09:00",
+      "result_scope": "B904_PUBLIC_PLAYWRIGHT_40_STEP_PASS / PLAYER_SKILL_PASSIVE_UI_CONFIRMED",
+      "blocking_reason": ""
     },
     {
       "id": "TASK-R31-008",
@@ -25599,8 +25599,8 @@
       "status": "Doing",
       "execution_order": null,
       "depends_on": [],
-      "acceptance_criteria": "",
-      "work_type": "",
+      "acceptance_criteria": "- Active Skill Loadoutは所有済みSkillだけを登録できる。\n- Passive選択は所有済みPassiveだけを登録でき、Active Skill選択と別集合で保持する。\n- Active Skill枠数とPassive枠数はBalance Ownerから解決し、Sourceへ具体枠数を固定しない。\n- Active Skill選択とPassive選択をCharacter Saveで保持し、Save/Load後も一致する。\n- Player Skill / Passive画面から両選択を編集できる。\n- Passive Runtimeは選択中Passiveだけを有効候補として扱う。\n- AIが使用可能Skill集合をLoadoutへ制限する接続はTASK-R31-009へ分離する。",
+      "work_type": "SOURCE_UPDATE",
       "requires_human_approval": false,
       "approval": {
         "status": "Pending",
@@ -25608,9 +25608,9 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:35:00+09:00",
-      "updated_at": "2026-09-09T21:36:17+09:00",
-      "result_scope": "DEMO_RUNTIME_IDENTIFIED / FORMAL_TARGET_ACTIVE5_PASSIVE5 / IMPLEMENTATION_PENDING",
-      "blocking_reason": "Human clarification: current skill-loadout-runtime.jsはデモ版。本来のLoadoutはActive Skill最大5 + Passive最大5。Current単一equippedSkillId/Save substrateから正式5+5 Runtime/UI/Save契約へ置換・接続が必要。"
+      "updated_at": "2026-09-10T16:32:26+09:00",
+      "result_scope": "B904_SCOPE_AUDITED / ACTIVE5_PASSIVE5_BALANCE_OWNER_PROJECT_READY / SOURCE_CONNECTION_AFTER_GAME_DATA_DEPLOYMENT",
+      "blocking_reason": "Current ExportにSkill Loadout容量Ownerがまだない。Human確定のActive Skill最大5 + Passive最大5をSource固定せずBalance値として先にGame Data配置し、配置後Fresh Currentをexact baselineとしてSource接続する。"
     },
     {
       "id": "TASK-R31-009",
@@ -25688,9 +25688,9 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:35:00+09:00",
-      "updated_at": "2026-09-10T09:05:29+09:00",
-      "result_scope": "QST0003_PUBLIC_AND_PHYSICAL_IPHONE_B897_E2E_PASSED / FULL_PHASE2_E2E_REMAINS",
-      "blocking_reason": "QST-0003の公開E2Eと物理iPhone再確認はPASSし、旧freeze/roster-loss blockerは解消。TASK-R31-012全体はPhase2残スコープのE2E完了待ち。"
+      "updated_at": "2026-09-10T16:32:26+09:00",
+      "result_scope": "QST0003_PUBLIC_AND_PHYSICAL_IPHONE_B897_PASS / EQUIPMENT_R31-004_PUBLIC_PASS / SKILL_ACQ_RESPEC_UI_R31-005-007_PUBLIC_40_STEP_PASS / LOADOUT_AI_E2E_REMAINS",
+      "blocking_reason": "Equipment比較とSkill Point/Passive習得・Respec Player flowは公開E2E PASS。R31-008 Loadout、R31-009 AI候補接続および残Phase2統合E2Eが未完了のためDoingを維持。"
     },
     {
       "id": "TASK-R32-001",
@@ -27260,9 +27260,9 @@
         "at": ""
       },
       "created_at": "2026-08-20T22:20:00+09:00",
-      "updated_at": "2026-09-10T13:19:00+09:00",
-      "result_scope": "WAITING_PHASE2_COMPLETION / R31-001_DONE / R31-004_DONE / R31-005-006_B901_RUNTIME_DATA_READY / R31-007_B902_SOURCE_READY",
-      "blocking_reason": "R31-001/004はDone。R31-005/006はB901 Runtime・Fresh Current・正式Balance Game Dataまで成立し、R31-007はB902 Player UI Source Update readyだがHuman Apply/Fresh Current/public E2E待ち。R31-008/009/011/012等も残るためPhase 3はBlockedを維持する。"
+      "updated_at": "2026-09-10T16:32:26+09:00",
+      "result_scope": "WAITING_PHASE2_COMPLETION / R31-001_004_005_006_007_010_DONE / R31-008_009_011_012_REMAIN",
+      "blocking_reason": "R31-005/006/007はB904公開40-step E2EでDone。R31-008/009/011/012等が残るためPhase 3はBlockedを維持する。"
     },
     {
       "id": "TASK-R39-003",
@@ -30352,6 +30352,121 @@
       "blocking": false,
       "created_at": "2026-09-10T14:57:14+09:00",
       "updated_at": "2026-09-10T14:57:14+09:00"
+    },
+    {
+      "id": "CHK-R31-005-B904-PUBLIC-E2E-001",
+      "title": "R31-005 B904 public acquisition flow",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-R31-005",
+      "status": "Passed",
+      "result": "PASS. Level Up Skill Point grant and Passive acquisition through Player UI are confirmed on public Game.",
+      "evidence": "Fresh Current GKS-B904 / GA-B486.235; public Browser Agent run=34445954237 run_number=82 head=329c0b0e70ed6089118d94da66dbab12913108fb job=102770673471; Chromium; 40/40 PASS; console=0; page_errors=0; response_patches=0; artifact_id=10139656614; artifact_sha256=f185bbebdae46a3894ee27f4801faf41bcd60ad70534897b7c0b63de157789b0. Level Up +1 SP, PAS-0001 acquisition SP 1->0, individual Respec SP 0->1 Gold 500->450, reacquire, all Respec SP 0->1 Gold 450->250.",
+      "checked_by": "AI",
+      "checked_at": "2026-09-10T16:32:26+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-10T16:32:26+09:00",
+      "updated_at": "2026-09-10T16:32:26+09:00"
+    },
+    {
+      "id": "CHK-R31-006-B904-PUBLIC-E2E-001",
+      "title": "R31-006 B904 public Respec flow",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-R31-006",
+      "status": "Passed",
+      "result": "PASS. Individual/all Respec refund exact spent Skill Point and consume configured Gold on public Game.",
+      "evidence": "Fresh Current GKS-B904 / GA-B486.235; public Browser Agent run=34445954237 run_number=82 head=329c0b0e70ed6089118d94da66dbab12913108fb job=102770673471; Chromium; 40/40 PASS; console=0; page_errors=0; response_patches=0; artifact_id=10139656614; artifact_sha256=f185bbebdae46a3894ee27f4801faf41bcd60ad70534897b7c0b63de157789b0. Level Up +1 SP, PAS-0001 acquisition SP 1->0, individual Respec SP 0->1 Gold 500->450, reacquire, all Respec SP 0->1 Gold 450->250.",
+      "checked_by": "AI",
+      "checked_at": "2026-09-10T16:32:26+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-10T16:32:26+09:00",
+      "updated_at": "2026-09-10T16:32:26+09:00"
+    },
+    {
+      "id": "CHK-R31-007-B904-PUBLIC-E2E-001",
+      "title": "R31-007 B904 public Skill/Passive UI",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-R31-007",
+      "status": "Passed",
+      "result": "PASS. Player-facing Skill/Passive UI and persistent post-action state are confirmed on public Game.",
+      "evidence": "Fresh Current GKS-B904 / GA-B486.235; public Browser Agent run=34445954237 run_number=82 head=329c0b0e70ed6089118d94da66dbab12913108fb job=102770673471; Chromium; 40/40 PASS; console=0; page_errors=0; response_patches=0; artifact_id=10139656614; artifact_sha256=f185bbebdae46a3894ee27f4801faf41bcd60ad70534897b7c0b63de157789b0. Level Up +1 SP, PAS-0001 acquisition SP 1->0, individual Respec SP 0->1 Gold 500->450, reacquire, all Respec SP 0->1 Gold 450->250.",
+      "checked_by": "AI",
+      "checked_at": "2026-09-10T16:32:26+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-10T16:32:26+09:00",
+      "updated_at": "2026-09-10T16:32:26+09:00"
+    },
+    {
+      "id": "CHK-R31-008-B904-SCOPE-AUDIT-001",
+      "title": "R31-008 B904 Loadout scope audit",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-R31-008",
+      "status": "Passed",
+      "result": "PASS. Current Save substrate exists but multi-slot semantics and Passive selection are not implemented; capacity owner is absent from Current Export. Source scope is fixed and R31-009 AI filtering remains excluded.",
+      "evidence": "R31-008_B904_SCOPE_AUDIT.json sha256=636f37a57be83017a7f2d4205ae38680cabafa774065704583e5b44165cd4334; Fresh source quick 12/12 PASS evidence_sha256=2f8329d99c9389d3671e37535914882facf5606e871c16f83b400a96480275b8.",
+      "checked_by": "AI",
+      "checked_at": "2026-09-10T16:32:26+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-10T16:32:26+09:00",
+      "updated_at": "2026-09-10T16:32:26+09:00"
+    },
+    {
+      "id": "CHK-R31-008-B904-GAME-DATA-CAPACITY-PREFLIGHT-001",
+      "title": "R31-008 Loadout capacity Game Data preflight",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-R31-008",
+      "status": "Passed",
+      "result": "PASS. Full Project JSON candidate adds only the Skill Loadout Balance owner and passes the Studio full-import base gate with ERROR 0 / WARNING 0.",
+      "evidence": "PRJ-GAS-V4_SKILL_LOADOUT_CAPACITY_B904_READY.json sha256=46b3cdb136556d0827c0628874499c14fdddb079d895290aae47e5c1a1b2ddf8; preflight R31-008_B904_GAME_DATA_CAPACITY_PREFLIGHT.json sha256=6bd457268e23cc13a7f5637339adb9fe587f23e7fd0cf4b0445c56a7fcd4a513; registered full-import gate test PASS.",
+      "checked_by": "AI",
+      "checked_at": "2026-09-10T16:32:26+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-10T16:32:26+09:00",
+      "updated_at": "2026-09-10T16:32:26+09:00"
     }
   ],
   "workflow": {
@@ -31131,6 +31246,14 @@
     {
       "at": "2026-09-10T14:57:14+09:00",
       "message": "Fresh Current GKS-B903 / GA-B486.234を受領・確認。Package Manifest 697件、Critical Runtime 51件、Current Full 27/27 PASS。B903完成targetとの差分はDevelopment Project統合ファイル1件のみでproduct/source drift 0。Hardcode Correction Block 2をGAME_DATA_UPDATEとして分離し、ADV-0001 game_runtime.characterへinitial_skill_points / starter_passive_ids / initial_formation_positionをCurrent挙動のままData Owner化する全件Project JSONを準備。Full Import base gateおよびFormal Export静的検証はERROR 0 / WARNING 0。Source接続はGame Data配置後Fresh Currentへrebaseして実施する。"
+    },
+    {
+      "at": "2026-09-10T16:32:26+09:00",
+      "message": "Fresh Current GKS-B904 / GA-B486.235と公開Browser E2Eを確認。Run 34445954237は40/40 PASS、console/page error/response patch 0。Level Up→SP付与→PAS-0001習得→個別Respec SP返還/Gold消費→再習得→全Respec SP返還/Gold消費を確認し、TASK-R31-005/006/007をDoneへ同期。"
+    },
+    {
+      "at": "2026-09-10T16:32:26+09:00",
+      "message": "R31-008再開監査。CurrentはskillLoadoutIdsをSave substrateとして保持するが実Runtimeは単一equippedSkillId中心で、PassiveはpassiveIds全件を有効候補にしており、正式5+5選択境界と容量Ownerが未実装。Human確定Active Skill最大5 + Passive最大5をSourceへ固定せず、ADV-0001 game_runtime.skill_loadoutのBalance値として先行配置する全件Project JSONを準備。R31-009 AI使用可能Skill集合接続は分離維持。"
     }
   ],
   "authority": {
