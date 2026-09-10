@@ -5,7 +5,7 @@
     "name": "V9ゲーム再実装・System Structure再整理",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-09-10T04:26:47.947Z"
+    "updated_at": "2026-09-10T05:48:22.719Z"
   },
   "project_context": {
     "purpose": "既存Material・Decision・51 Current SpecificationをSystem Node / Contract / Connectionへ再編し、Flag / Event / Impact / Specification Candidateで再整理工程を実データ管理する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-R19-DETAILED-SPECS",
     "work_box_id": "BOX-R19-DETAILED-SPECS",
-    "theme": "Phase 2 / R31-007 Skill / Passive Player UI接続",
-    "goal": "GKS-B901 / GA-B486.232 Fresh CurrentでSkill Point/Respec Runtimeと正式Game Data Balance配置を確認済み。R31-007としてTraining Hall / Character Skill画面をPlayer-facing Skill / Passive管理UIへ接続し、Runtime返却値だけからSkill Point残高、習得条件/Cost、Passive習得・有効状態、個別/全Respecの実消費SP返還とGold Costを表示・実行するGKS-B902 / GA-B486.233 SOURCE_UPDATEを作成。Loadout 5+5・AI接続はR31-008/009へ分離したまま。Human Apply、Fresh Current、公開Playwright完了まではR31-005/006/007をDoing、Phase2→3 GateはBlocked維持。"
+    "theme": "Hardcode Correction Block 1 / B903 SOURCE_UPDATE適用待ち",
+    "goal": "GKS-B902 / GA-B486.233 Fresh Currentをexact baselineとして、Sourceだけで完結する可変Owner化・固定fallback撤去をGKS-B903 / GA-B486.234へ分割実装。最終SOURCE_UPDATEはApplied-state Full 27/27 PASS。Human ApplyとB903 Fresh Current確認後、初期Skill Point・初期Passive・初期FormationのGame Data Owner追加を次ブロックとして実施する。R31 task statusとHuman workflow approvalは変更しない。"
   },
   "project_rules": [
     {
@@ -161,6 +161,15 @@
       "source_id": "conversation",
       "created_at": "2026-08-22T12:54:00+09:00",
       "updated_at": "2026-08-22T12:54:00+09:00"
+    },
+    {
+      "id": "RULE-REORG-017",
+      "text": "システム契約上、固定必須であることが明示されたものを除き、ゲーム仕様・数値・制限・閾値・コスト・上限・確率・初期値・選択値等はData/Config等の正本から可変取得し、SourceへCurrent値をハードコードしない。既に正本がある値は重複Ownerを作らず正本を参照する。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation",
+      "created_at": "2026-09-10T14:32:00+09:00",
+      "updated_at": "2026-09-10T14:32:00+09:00"
     }
   ],
   "source_baseline": {
@@ -775,6 +784,18 @@
       "result": "Partial",
       "evidence": "Exact baseline Human-provided Fresh Current guild-adventure-studio-sub(20260910-040629).zip sha256=94cba8a24712a9ca793ebcb29930a146d9b421dca9e07fa3a40f2043ca19de5f, GKS-B901 / GA-B486.232, package_manifest_sha256=3096a2ce7c5be1e41f0388b46d37f618f0f9f8f22a2c17fd72ceb8d24e2358cb, full tree=0d8f81a180f3ece5e56dc2dadd937d0a699b7dfedd1b10c3b094fbe0a25fe74e. Formal Export skill_progression Balance is deployed and public GitHub sub matches: level +1 SP, Skill 1 SP, Passive 1 SP, individual Respec 50 G, all 200 G. B902 adds Player-facing Skill/Passive management UI only: Training Hall navigation, SP/Gold summary, production Skill acquisition rows, Passive learned/effective state, acquisition, individual/all Respec. UI formats acquisition/respec Runtime return values and does not own economy/eligibility calculations. Existing Skill tags retained. Loadout 5+5 and AI connection remain excluded. Complete target Source Full 27/27 PASS; final direct SOURCE_UPDATE ZIP exact-baseline Quick 12/12 PASS and Accept selected Full 27/27 PASS, warnings=0, timeouts=0, copied=23, deleted=0. Test Integrity protected_changed=0, build_token_only=11, machine_derived_hash_sync=1. No Export/**; no deletion. target_manifest=b22fcac22ae57a18df1ead9ecf63b1b1911f9da6745a072808692a2ebcbd4b70 target_tree=eb571c9a34793ffad337c3b8516738d989aaaa0ffcd5e18cf00d3bfbb474a606 artifact_id=GKS-B902-eb571c9a3479 final_zip_sha256=885229c53bcc71e4328212fb49b36b35eb6d7c936fc4978d5cca0a7daad3e182. Human Apply/Fresh Current/public E2E pending.",
       "recorded_at": "2026-09-10T13:19:00+09:00"
+    },
+    {
+      "id": "IMPL-REORG-HARDCODE-B903-BLOCK1-001",
+      "studio_build": "GKS-B903",
+      "game_build": "GA-B486.234",
+      "work_box_ids": [
+        "BOX-R19-DETAILED-SPECS"
+      ],
+      "task_ids": [],
+      "result": "Partial",
+      "evidence": "Human-provided exact baseline guild-adventure-studio-sub(20260910-042724).zip -> B903 Source-only hardcode correction block. Adventure balance/default fallbacks, Quest duration fallback, QuestRun history config ownership, DOT stack max runtime fallback, Active Skill AI generation hardcoded current rules, and Production validation-Skill fallback were corrected. Source Full 27/27 PASS; final ZIP applied-state Accept selected Full 27/27 PASS, warnings=0, timeouts=0, copied=30, deleted=0, Export diff=0, protected semantic change=0. target_manifest=7371a3f316f2a06fb76d51a02b6b2bc03625dd8dc22b9c7684a4c188a36f8ef1 target_tree=27ad2b911beb9e3c6560dae0a300ca03108806668aa472d183813f163cf2b9d7 artifact_id=GKS-B903-27ad2b911beb zip_sha256=6e0bf7591f893ceba6da34b3b3035285b0f9e7dbbebfcdecbe7c470215bbba98. Initial character Skill Point/Passive/Formation data ownership is separated to the next Game Data block.",
+      "recorded_at": "2026-09-10T14:32:00+09:00"
     }
   ],
   "discussions": [
@@ -30273,6 +30294,29 @@
       "blocking": false,
       "created_at": "2026-09-10T13:19:00+09:00",
       "updated_at": "2026-09-10T13:19:00+09:00"
+    },
+    {
+      "id": "CHK-HARDCODE-B903-BLOCK1-SOURCE-READY-001",
+      "title": "B903 hardcode correction block 1 exact-baseline SOURCE_UPDATE readiness",
+      "gate": "General",
+      "target_type": "Project",
+      "target_id": "DEV-V9-REORG-019",
+      "status": "Passed",
+      "result": "PASS. Source-only correction scope is complete and the final direct Studio update ZIP is bound to the Human B902 baseline. Applied-state acceptance selected Full and passed 27/27 with no warnings/timeouts/deletions; Export is unchanged and protected semantic changes are zero.",
+      "evidence": "baseline_manifest=b22fcac22ae57a18df1ead9ecf63b1b1911f9da6745a072808692a2ebcbd4b70; baseline_tree=ba6d3b5fbe3d7e72df9d1bb0a8e04e38fa59b896f4c771b7d1510344d8d165d1; target_manifest=7371a3f316f2a06fb76d51a02b6b2bc03625dd8dc22b9c7684a4c188a36f8ef1; target_tree=27ad2b911beb9e3c6560dae0a300ca03108806668aa472d183813f163cf2b9d7; artifact_id=GKS-B903-27ad2b911beb; zip_sha256=6e0bf7591f893ceba6da34b3b3035285b0f9e7dbbebfcdecbe7c470215bbba98; protected_changed=0; build_token_only=11; machine_hash_sync=1.",
+      "checked_by": "AI",
+      "checked_at": "2026-09-10T14:32:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-10T14:32:00+09:00",
+      "updated_at": "2026-09-10T14:32:00+09:00"
     }
   ],
   "workflow": {
@@ -31044,6 +31088,10 @@
     {
       "at": "2026-09-10T13:19:00+09:00",
       "message": "Fresh Current GKS-B901 / GA-B486.232（guild-adventure-studio-sub(20260910-040629).zip）と正式Game Data配置を確認。game_runtime.skill_progressionはLevel Up +1 SP、Skill/Passive各1 SP、個別Respec 50 G、全Respec 200 GでExport/public sub一致。R31-007としてTraining Hall/Character Skill画面へPlayer-facing Skill/Passive管理UIをGKS-B902 / GA-B486.233で実装。UIはRuntime返却値のみ表示・実行し、習得/Respec計算を独自所有しない。既存Skill tag表示を保持し、Loadout 5+5/AIはR31-008/009へ分離。Source Full 27/27、最終ZIP Quick 12/12、Applied-state Accept Full 27/27、warnings/timeouts 0、copied=23/deleted=0、Encoding PASS、Exportなし。R31-005/006/007はHuman Apply/Fresh Current/public E2E待ちでDoing、R39-002はBlocked維持。"
+    },
+    {
+      "at": "2026-09-10T14:32:00+09:00",
+      "message": "Human hardcode prohibition instructionに基づき修正を分割。Block 1はB902 exact baselineからB903 SOURCE_UPDATEとして、Adventure runtime固定fallback、Quest duration固定fallback、QuestRun履歴Config、DOT stack上限runtime fallback、Active Skill AI current rule直書き、Production validation Skill fallbackを是正。Source Full 27/27、final ZIP applied-state Full 27/27、warnings/timeouts 0、deleted 0、Export diff 0、protected semantic change 0。初期Skill Point/Passive/FormationのData Owner追加は次Game Data blockへ分離。既存R31 statusとworkflow approvalは維持。"
     }
   ],
   "authority": {
