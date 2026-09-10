@@ -5,7 +5,7 @@
     "name": "V9ゲーム再実装・System Structure再整理",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-09-10T00:32:05.658Z"
+    "updated_at": "2026-09-10T01:10:20.754Z"
   },
   "project_context": {
     "purpose": "既存Material・Decision・51 Current SpecificationをSystem Node / Contract / Connectionへ再編し、Flag / Event / Impact / Specification Candidateで再整理工程を実データ管理する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-R19-DETAILED-SPECS",
     "work_box_id": "BOX-R19-DETAILED-SPECS",
-    "theme": "Phase 2 / R31-001 Equipment Contribution Hard-cut Source Update ready",
-    "goal": "TASK-R31-001の残存Legacy Equipment Contribution境界をhard-cut。GKS-B898 / GA-B486.229 SOURCE_UPDATEはApplied-state Full Gate 27/27 PASS。record.params / params.stats数値fallback、legacy equipmentBonus計算、Equipment由来AGI直接加算を除去し、Formal Equipment fieldだけをBattle Contributionへ接続。Current 308 Equipmentのnormalize互換を確認済み。HumanによるSource適用とFresh Current B898確認後にTASK-R31-001をDone判定し、次工程R31-004へ進む。Phase2→3 GateはBlockedを維持する。"
+    "theme": "Phase 2 / R31-004 Inventory・Equipment装備前後比較 Source Update ready",
+    "goal": "TASK-R31-001はFresh Current GKS-B898 / GA-B486.229および公開Playwright E2Eで完了確認。TASK-R31-004はGKS-B899 / GA-B486.230 SOURCE_UPDATEを作成し、Equipment Runtimeが装備前後比較・MOD・交換装備・bow/quiver警告をpreviewとして所有、UIはRuntime返却値のみ表示する境界へ変更。Applied-state Full Gate 27/27 PASS。HumanによるSource適用とFresh Current B899確認後にTASK-R31-004をDone判定する。Phase2→3 Gateは他のPhase2残件があるためBlockedを維持する。"
   },
   "project_rules": [
     {
@@ -689,6 +689,34 @@
       "result": "Applied",
       "evidence": "Direct Studio SOURCE_UPDATE prepared from exact B897 baseline. Applied-state Full Gate 27/27 PASS, warnings=0, timeouts=0. Formal Equipment Contribution hard-cut complete; no Game Data/Export change and no deletion. ZIP sha256=2b8ba6c8c9fb0e820591fdfa2fdf1243d617723207e194b3940ac7d12c23d69a. Fresh Current apply evidence is still pending.",
       "recorded_at": "2026-09-10T09:28:17+09:00"
+    },
+    {
+      "id": "IMPL-REORG-R31-001-FRESH-CURRENT-B898-PUBLIC-E2E-001",
+      "studio_build": "GKS-B898",
+      "game_build": "GA-B486.229",
+      "work_box_ids": [
+        "BOX-R19-DETAILED-SPECS"
+      ],
+      "task_ids": [
+        "TASK-R31-001"
+      ],
+      "result": "Applied",
+      "evidence": "Human-provided Fresh Current source is GKS-B898 / GA-B486.229 with package_manifest_sha256=66486ee2cf3159103e99f4d994c98e637daa575e174690e1446a3efbad35aac6. Public Browser Agent Playwright Run 34422665169 asserted GA-B486.229 and completed all 38 steps: New Game -> QST-0003 mandatory defeat -> failed-adventure return -> starter roster retained -> title backup shows 6 characters -> backup restore returns to active QST-0003. Automation verdict PASS, console messages=0, page errors=0, response patches=0. artifact_id=10131496678 artifact_sha256=92303cd1a85c9d2722fbbc286fd99b0a785e64a65a7f1d07a557381581dad98e.",
+      "recorded_at": "2026-09-10T10:01:56+09:00"
+    },
+    {
+      "id": "IMPL-REORG-R31-004-EQUIPMENT-COMPARISON-B899-001",
+      "studio_build": "GKS-B899",
+      "game_build": "GA-B486.230",
+      "work_box_ids": [
+        "BOX-R19-DETAILED-SPECS"
+      ],
+      "task_ids": [
+        "TASK-R31-004"
+      ],
+      "result": "Partial",
+      "evidence": "Direct Studio SOURCE_UPDATE prepared from exact Human-provided Fresh Current B898 baseline. Equipment Runtime now owns previewEquip and returns before/after battle-value comparison rows, Formal MOD display rows, replaced/returned equipment, selected target slot and bow/quiver warning. Equip commit and preview share the same applyEquipmentToCharacterState mutation contract. Inventory/Equipment UI renders Runtime output only and does not call characterBattleValues or contribution calculators. External boundary probe R31_004_EQUIPMENT_UI_RUNTIME_BOUNDARY_OK. Applied-state Full Gate 27/27 PASS, warnings=0, timeouts=0, copied=23, deleted=0. Test Integrity PASS protected_changed=0; build_token_only=11; machine_derived_hash_sync=1. baseline_manifest=66486ee2cf3159103e99f4d994c98e637daa575e174690e1446a3efbad35aac6; baseline_tree=3f4fba278f4e09353c38864557a3f91d7727acd14a86dbc7f556352bf7dfb72a; target_manifest=c00f5d04d1cd05d4426d2aac801f8f3ed70b1096e36e4b9de6531f185186e0a1; target_tree=3a731f83931d762d7f85e3f278b32c5dd9fd6249e7ee8e2a3a9a3695e0df0fcc; artifact_id=GKS-B899-3a731f83931d; source_update_zip_sha256=fdd8fe40a9b65d182a3785a1bb7c205f3bd59b9754ce0beb48da4a22ebbeaeab. No Export/**, no Game Data change, no deletion. Fresh Current apply evidence pending. Packaging correction: required unchanged control files shared/integrity/delete-policy.json and shared/integrity/test-integrity-policy.json were added to the SOURCE_UPDATE ZIP because Studio inspectStudioPackage reads both directly from the selected ZIP. Target source content/manifest/tree are unchanged.",
+      "recorded_at": "2026-09-10T10:07:43+09:00"
     }
   ],
   "discussions": [
@@ -25324,7 +25352,7 @@
       "id": "TASK-R31-001",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Equipment Contribution生成境界を実装する",
-      "status": "Doing",
+      "status": "Done",
       "execution_order": null,
       "depends_on": [],
       "acceptance_criteria": "",
@@ -25336,9 +25364,9 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:35:00+09:00",
-      "updated_at": "2026-09-10T09:28:17+09:00",
-      "result_scope": "GKS-B898_SOURCE_UPDATE_READY / APPLIED_STATE_FULL_PASS / HUMAN_APPLY_CURRENT_VERIFY_PENDING",
-      "blocking_reason": "Implementation and SOURCE_UPDATE validation are complete. Human apply to target Source and Fresh Current GKS-B898 / GA-B486.229 verification remain before Done."
+      "updated_at": "2026-09-10T10:01:56+09:00",
+      "result_scope": "GKS-B898_FRESH_CURRENT_VERIFIED / PUBLIC_PLAYWRIGHT_38_STEP_PASS / EQUIPMENT_CONTRIBUTION_HARD_CUT_COMPLETE",
+      "blocking_reason": ""
     },
     {
       "id": "TASK-R31-002",
@@ -25388,7 +25416,7 @@
       "execution_order": null,
       "depends_on": [],
       "acceptance_criteria": "",
-      "work_type": "",
+      "work_type": "SOURCE_UPDATE",
       "requires_human_approval": false,
       "approval": {
         "status": "Pending",
@@ -25396,9 +25424,9 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:35:00+09:00",
-      "updated_at": "2026-09-09T20:53:39+09:00",
-      "result_scope": "EQUIP_UNEQUIP_AND_REASON_UI_PRESENT / COMPARISON_INCOMPLETE",
-      "blocking_reason": "Current UI supports equipment listing, equip/unequip, requirement reasons and slot selection, but before/after comparison boundary required by the Phase 2 specification is not present."
+      "updated_at": "2026-09-10T10:01:56+09:00",
+      "result_scope": "GKS-B899_SOURCE_UPDATE_READY / RUNTIME_OWNED_EQUIPMENT_PREVIEW / APPLIED_STATE_FULL_PASS / HUMAN_APPLY_CURRENT_VERIFY_PENDING",
+      "blocking_reason": "Implementation and SOURCE_UPDATE validation are complete. Human apply to target Source and Fresh Current GKS-B899 / GA-B486.230 verification remain before Done."
     },
     {
       "id": "TASK-R31-005",
@@ -27128,9 +27156,9 @@
         "at": ""
       },
       "created_at": "2026-08-20T22:20:00+09:00",
-      "updated_at": "2026-09-10T09:28:17+09:00",
-      "result_scope": "WAITING_PHASE2_COMPLETION / R31-001_B898_READY_NOT_CURRENT",
-      "blocking_reason": "QST-0003 blocker is cleared. TASK-R31-001 B898 hard-cut update is ready but not yet Fresh Current, and other Phase2 tasks/E2E remain incomplete; Phase3 stays blocked."
+      "updated_at": "2026-09-10T10:01:56+09:00",
+      "result_scope": "WAITING_PHASE2_COMPLETION / R31-001_DONE / R31-004_B899_READY_NOT_CURRENT",
+      "blocking_reason": "QST-0003 blocker and TASK-R31-001 are cleared. TASK-R31-004 B899 comparison update is ready but not yet Fresh Current, and other Phase2 tasks/E2E remain incomplete; Phase3 stays blocked."
     },
     {
       "id": "TASK-R39-003",
@@ -29829,6 +29857,52 @@
       "blocking": false,
       "created_at": "2026-09-10T09:28:17+09:00",
       "updated_at": "2026-09-10T09:28:17+09:00"
+    },
+    {
+      "id": "CHK-R31-001-GKS-B898-FRESH-CURRENT-PUBLIC-E2E-001",
+      "title": "R31-001 Fresh Current B898 / public Game Playwright completion verification",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-R31-001",
+      "status": "Passed",
+      "result": "PASS. Human-provided Fresh Current is GKS-B898 / GA-B486.229 and carries the R31-001 hard-cut package manifest. Public deployed Game GA-B486.229 completed the existing QST-0003 38-step regression path without browser/page errors, including mandatory defeat, return, six-character backup and active-quest restore. R31-001 Fresh Current verification is complete.",
+      "evidence": "fresh_current_package_manifest_sha256=66486ee2cf3159103e99f4d994c98e637daa575e174690e1446a3efbad35aac6; browser_agent_run_id=34422665169 run_number=77; artifact_id=10131496678 artifact_sha256=92303cd1a85c9d2722fbbc286fd99b0a785e64a65a7f1d07a557381581dad98e; task=projects/guild-adventure/tasks/reorg-r31-qst0003-b898-public-e2e.json; automation_verdict=PASS; steps=38; public_build_assertion=GA-B486.229; console_messages=0; page_errors=0; response_patches=0.",
+      "checked_by": "AI public deployed Playwright + Human-provided Fresh Current",
+      "checked_at": "2026-09-10T10:01:56+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-10T10:01:56+09:00",
+      "updated_at": "2026-09-10T10:01:56+09:00"
+    },
+    {
+      "id": "CHK-R31-004-GKS-B899-SOURCE-UPDATE-READY-001",
+      "title": "R31-004 Equipment comparison boundary GKS-B899 SOURCE_UPDATE readiness",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-R31-004",
+      "status": "Passed",
+      "result": "PASS. Equipment Runtime owns equip preview/comparison and the UI renders returned comparison/MOD/replacement/warning data without independently recalculating battle values or equipability. Preview and commit share one equipment state mutation contract. B899 SOURCE_UPDATE applied-state Full Gate passed 27/27 with no warnings/timeouts.",
+      "evidence": "baseline=GKS-B898/GA-B486.229; target=GKS-B899/GA-B486.230; R31_004_EQUIPMENT_UI_RUNTIME_BOUNDARY_OK; adventure-battle-runtime-integration PASS; adventure-quest-start-runtime-integration PASS; equipment generator/pipeline/json tests PASS; SOURCE_UPDATE_APPLIED_STATE_OK final_gate=full selected=full copied=23 deleted=0; APPLIED_INSPECTION_PASS profile=full passed=27 failed=0 warnings=0 timeouts=0; Test Integrity protected_added=0 protected_changed=0 build_token_only=11 machine_derived_hash_sync=1; baseline_package_manifest_sha256=66486ee2cf3159103e99f4d994c98e637daa575e174690e1446a3efbad35aac6; baseline_source_tree_sha256=3f4fba278f4e09353c38864557a3f91d7727acd14a86dbc7f556352bf7dfb72a; target_package_manifest_sha256=c00f5d04d1cd05d4426d2aac801f8f3ed70b1096e36e4b9de6531f185186e0a1; target_source_tree_sha256=3a731f83931d762d7f85e3f278b32c5dd9fd6249e7ee8e2a3a9a3695e0df0fcc; artifact_id=GKS-B899-3a731f83931d; update_zip_sha256=fdd8fe40a9b65d182a3785a1bb7c205f3bd59b9754ce0beb48da4a22ebbeaeab; no Export/**; no deletion.; ZIP required-control-file parse check PASS: system-file-policy/delete-policy/test-integrity-policy all present and valid JSON; archive integrity PASS.",
+      "checked_by": "AI",
+      "checked_at": "2026-09-10T10:01:56+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-10T10:01:56+09:00",
+      "updated_at": "2026-09-10T10:07:43+09:00"
     }
   ],
   "workflow": {
@@ -30572,6 +30646,14 @@
     {
       "at": "2026-09-10T09:28:17+09:00",
       "message": "TASK-R31-001残工程を実装。GKS-B898 / GA-B486.229 SOURCE_UPDATEを生成し、Equipment Contributionのparams/params.stats fallback、legacy equipmentBonus calculation、Equipment AGI direct addをhard-cut。Current 308 Equipment normalize PASS。Critical 159 / Save V4 / Adventure / Equipment / Device tests PASS、Applied-state Full Gate 27/27 PASS・warnings0・timeouts0。Export変更なし、削除なし、protected testの意味変更なし（build/cache tokenのみ）。Human ApplyとFresh Current B898確認待ちのためTASK-R31-001はDoingを維持。R31-004以降およびPhase2→3 Gateは未進行。Human approval fieldは変更していない。"
+    },
+    {
+      "at": "2026-09-10T10:01:56+09:00",
+      "message": "Fresh Current GKS-B898 / GA-B486.229と公開Playwright Run77を確認し、TASK-R31-001をDoneへ同期。公開GameはQST-0003 38-step E2E PASS、console/page errors 0、6名Roster/Backup復旧を確認。続いてTASK-R31-004を実装し、Equipment Runtime所有のbefore/after preview・Formal MOD表示・交換装備・bow/quiver警告を追加、UI独自再計算を禁止した表示境界へ変更。GKS-B899 / GA-B486.230 SOURCE_UPDATEはApplied-state Full 27/27 PASS、warnings0/timeouts0、Export/Game Data変更なし、削除なし。Human ApplyとFresh Current B899確認待ちのためR31-004はDoing、Phase2→3 GateはBlockedを維持。Human approval fieldは変更していない。"
+    },
+    {
+      "at": "2026-09-10T10:07:43+09:00",
+      "message": "R31-004 B899 SOURCE_UPDATE packaging correction. Studio更新ZIP解析で必須の shared/integrity/delete-policy.json / test-integrity-policy.json が差分ZIPから欠落していたため、B898 Currentと同一内容を制御ファイルとして同梱。Target Source内容・package manifest・target treeは変更なし。修正版ZIP Applied-state Full Gate 27/27 PASS, copied=23, deleted=0, warnings=0, timeouts=0。"
     }
   ],
   "authority": {
