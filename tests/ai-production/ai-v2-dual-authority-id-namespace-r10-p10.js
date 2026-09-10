@@ -37,8 +37,7 @@ function saveBase(){const p=program('AIP-0002','Migrated Player AI'),l=layout('A
   // Existing migrated Player 0002 remains valid alongside Developer 0001/0003.
   let save=saveBase();assert.deepStrictEqual(Bridge.validateCurrent(save),[]);
   const catalog={schema_version:'2.0.0',data_version:dv,developer_programs:[developerProgram,duplicate.program],developer_program_layouts:[developerLayout,duplicate.layout],developer_program_runtime:[]};
-  const authority=Bridge.bindingAuthority(save,catalog,save.characters[0].formalAiBinding);
-  assert.strictEqual(authority.status,'resolved');assert.strictEqual(authority.source,'player');
+  const owned=Bridge.loadForCharacter(save,'C-1');assert(owned);assert.strictEqual(owned.program.id,'AIP-0002');assert.strictEqual(owned.layout.layout_id,'AIL-0002');
   assert.strictEqual(Bridge.nextPlayerProgramId(save,catalog),'AIP-0004','Player Program allocation must stay in even namespace');
   assert.strictEqual(Bridge.nextPlayerLayoutId(save,catalog),'AIL-0004','Player Layout allocation must stay in even namespace');
 
@@ -54,11 +53,12 @@ function saveBase(){const p=program('AIP-0002','Migrated Player AI'),l=layout('A
   assert(saveIssues.some(message=>message.includes('even AIP numeric namespace')));
   assert(saveIssues.some(message=>message.includes('even AIL numeric namespace')));
 
-  // Defense in depth remains fail-closed if an externally malformed Developer catalog collides anyway.
+  // Defense in depth remains fail-closed if an externally malformed Developer catalog collides with the character-owned Player AI ID.
   const collisionProgram=program('AIP-0002','Malformed Colliding Developer AI'),collisionLayout=layout('AIL-0002','AIP-0002');
-  const collisionRuntime={schema_version:'2.0.0',data_version:dv,program_id:'AIP-0002',program_version:1};
-  const collisionCatalog={schema_version:'2.0.0',data_version:dv,developer_programs:[collisionProgram],developer_program_layouts:[collisionLayout],developer_program_runtime:[collisionRuntime]};
-  assert.strictEqual(Bridge.bindingAuthority(save,collisionCatalog,save.characters[0].formalAiBinding).status,'ambiguous');
+  const collisionCatalog={schema_version:'2.0.0',data_version:dv,developer_programs:[collisionProgram],developer_program_layouts:[collisionLayout],developer_program_runtime:[]};
+  const editProgram=program('AIP-9996','Edited Player AI'),editLayout=layout('AIL-9996','AIP-9996');
+  assert.throws(()=>Bridge.saveForCharacter(save,'C-1',editProgram,editLayout,{catalog:collisionCatalog,now:'2026-09-03T00:03:00Z'}),error=>error?.code==='FORMAL_AI_PROGRAM_ID_COLLISION');
+  for(const name of ['bindingAuthority','characterBindingAuthority','equipCharacterBinding','clearCharacterBinding','playerBindingRows','developerBindingRows','availableCharacterBindings'])assert.strictEqual(typeof Bridge[name],'undefined',`Character AI attachment API must not exist: ${name}`);
 
-  console.log('AI_V2_DUAL_AUTHORITY_ID_NAMESPACE_R10_P10_OK developer_next=AIP-0003/AIL-0003 player_existing=AIP-0002/AIL-0002 player_next=AIP-0004/AIL-0004 export_even_reject=1 save_odd_reject=1 ambiguous_fail_closed=1');
+  console.log('AI_V2_DUAL_AUTHORITY_ID_NAMESPACE_R10_P10_OK developer_next=AIP-0003/AIL-0003 player_existing=AIP-0002/AIL-0002 player_next=AIP-0004/AIL-0004 export_even_reject=1 save_odd_reject=1 collision_save_reject=1 character_attachment=0');
 })();
