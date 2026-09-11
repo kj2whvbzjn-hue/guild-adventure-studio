@@ -1,13 +1,15 @@
 (function(root,factory){
   const Engine=typeof module==='object'&&module.exports?require('./ai-decision-engine.js'):root?.GKSAIDecisionEngine;
   const Formation=typeof module==='object'&&module.exports?require('../../assets/shared/js/formation-target-resolver.js'):root?.GKSFormationTargetResolver;
-  const api=factory(Engine,Formation);
+  const Boundary=typeof module==='object'&&module.exports?require('../../assets/shared/js/runtime-boundary-contracts.js'):root?.GKRuntimeBoundaryContracts;
+  const api=factory(Engine,Formation,Boundary);
   if(typeof module==='object'&&module.exports)module.exports=api;
   if(root)root.GKSAIBattleRuntimeContext=api;
-})(typeof globalThis!=='undefined'?globalThis:this,function(Engine,Formation){
+})(typeof globalThis!=='undefined'?globalThis:this,function(Engine,Formation,Boundary){
   'use strict';
   if(!Engine)throw new Error('Formal AI Decision Engine is required');
   if(!Formation)throw new Error('Formation Target Resolver is required');
+  if(!Boundary)throw new Error('Runtime Boundary Contracts are required');
   const EFFECT_SCOPE_MAP=Object.freeze({STATUS:'statusEffects',DOT:'dotStacks',MODIFIER:'modifierStacks',SHIELD:'shieldEffects',COVER:'coverEffects'});
   const clone=value=>value==null?value:JSON.parse(JSON.stringify(value));
   const isObject=value=>value&&typeof value==='object'&&!Array.isArray(value);
@@ -68,7 +70,7 @@
     return{action_id:null,reason:'unsupported_action'};
   }
   function fnv1a32(text){let h=2166136261>>>0;for(let i=0;i<text.length;i++){h^=text.charCodeAt(i);h=Math.imul(h,16777619)>>>0;}return h>>>0;}
-  function createDecisionRng(seed){let index=0;return()=>fnv1a32(`${String(seed)}|AI_DECISION|${index++}`)/0x100000000;}
+  function createDecisionRng(seed){let index=0;return()=>{const drawIndex=index++;return Boundary.runtimeDraw(Boundary.RNG_PURPOSES.AI_TIE_SELECTION,()=>fnv1a32(`${String(seed)}|AI_DECISION|${drawIndex}`)/0x100000000,{seed:String(seed),draw_index:drawIndex});};}
   function createHandlers(context){return Object.freeze({predicate,action,target_selector_master(id,ctx){return(ctx?.target_selectors||[]).find(row=>String(row?.id||'')===String(id||''))||null;},ai_decision_rng:createDecisionRng(context?.seed??0)});}
   function decide(runtime,battleInput){const context=snapshot(battleInput),trace=Engine.execute(runtime,context,createHandlers(context));return{proposal:clone(trace.outcome),trace};}
   return Object.freeze({EFFECT_SCOPE_MAP,clone,canonicalEffect,snapshotEffects,normalizeSkillStates,snapshot,compareNumber,effectRows,predicate,actorOf,legalCandidates,action,createDecisionRng,createHandlers,decide});

@@ -12,5 +12,138 @@
   "allowed_archive_references": [],
   "notes": [
     "Only executable local path references are checked."
-  ]
+  ],
+  "domain_contracts": {
+    "C01": {
+      "name": "BattleSnapshot",
+      "schema_version": 1,
+      "owners": [
+        "game/assets/js/app-runtime.js",
+        "game/assets/js/battle-control.js"
+      ],
+      "inputs": [
+        "initial actors",
+        "saved equipment performance",
+        "selected skills",
+        "AI binding",
+        "seed",
+        "settings version",
+        "battle-start fixed order"
+      ],
+      "output": "Tick processing and stored Battle result snapshot"
+    },
+    "C02": {
+      "name": "ActionReservation",
+      "schema_version": 1,
+      "owners": [
+        "game/assets/js/battle-control.js"
+      ],
+      "inputs": [
+        "actor",
+        "skill",
+        "start tick",
+        "complete tick",
+        "fixed targets",
+        "usage conditions"
+      ],
+      "output": "execution decision"
+    },
+    "C03": {
+      "name": "ResolvedHit",
+      "schema_version": 1,
+      "owners": [
+        "game/assets/js/tag-skill-runtime.js",
+        "game/assets/js/battle-control.js"
+      ],
+      "inputs": [
+        "judgement",
+        "per-hit damage",
+        "block",
+        "barrier",
+        "committed HP",
+        "actual HP loss",
+        "trigger context"
+      ],
+      "output": "post-hit trigger pipeline"
+    },
+    "C04": {
+      "name": "QuestRunSnapshot",
+      "schema_version": 1,
+      "owners": [
+        "assets/shared/js/adventure-story-system.js",
+        "game/assets/js/quest-run-save-bridge.js",
+        "game/assets/js/app-runtime.js"
+      ],
+      "inputs": [
+        "run id",
+        "start time",
+        "timeline",
+        "party",
+        "stones",
+        "modifiers",
+        "random selections",
+        "pending reward",
+        "EXP/result markers",
+        "receipt marker"
+      ],
+      "output": "generation, playback and return flow"
+    },
+    "C05": {
+      "name": "SaveTransaction",
+      "schema_version": 1,
+      "owners": [
+        "game/assets/js/app-runtime.js"
+      ],
+      "inputs": [
+        "source version",
+        "proposed state",
+        "validation result",
+        "committed state",
+        "recoverable previous state"
+      ],
+      "output": "serialized persistent write"
+    },
+    "C06": {
+      "name": "MasterValidation",
+      "schema_version": 1,
+      "owners": [
+        "studio/data-exchange/data-exchange-integrity-validator.js",
+        "game/assets/js/app-runtime.js"
+      ],
+      "inputs": [
+        "schema version",
+        "formal ids",
+        "values and units",
+        "references",
+        "error locations"
+      ],
+      "output": "Studio/Export/Game validation result"
+    }
+  },
+  "domain_write_policy": {
+    "display_layer_direct_domain_write": "forbidden",
+    "rule": "UI handlers may request domain operations but C01-C06 owners perform domain mutation/persistence. New domain writes must be added to an owner boundary, not a display-only module."
+  },
+  "rng_purposes": [
+    "BATTLE_ORDER",
+    "HIT",
+    "CRITICAL",
+    "TARGET_SELECTION",
+    "AI_TIE_SELECTION",
+    "GROWTH",
+    "REWARD",
+    "QUEST_SELECTION",
+    "ENCOUNTER_SEED",
+    "BATTLE_SEED",
+    "EXPLORATION_SEED",
+    "BLOCK",
+    "PASSIVE_TRIGGER",
+    "BATTLE_MISC"
+  ],
+  "test_fixture_policy": {
+    "path": "assets/shared/js/test-support/runtime-boundary-fixtures.js",
+    "loaded_by_public_entrypoints": false,
+    "production_export_prefix": "Export/",
+    "production_export_inclusion": "forbidden"
+  }
 }
