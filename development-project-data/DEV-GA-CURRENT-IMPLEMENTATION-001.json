@@ -5,17 +5,17 @@
     "name": "修正版34仕様に基づく新規実装計画",
     "status": "Implementing",
     "ai_attention": "Include",
-    "updated_at": "2026-09-11T22:11:40.454Z"
+    "updated_at": "2026-09-11T23:06:12.492Z"
   },
   "project_context": {
     "purpose": "修正版34仕様の全項目を実装し、Studio/Game/Export/Saveで一貫させる。",
-    "summary": "新規計画で実装開始。TASK-NIP-F01でCurrent SourceをGKS-B910 / GA-B486.241へ固定し、34仕様35ファイルのhash一致とGS-14 v1.1を確認済み。Source実装変更はF02から開始する。"
+    "summary": "TASK-NIP-F01/F02完了。Fresh CurrentはGKS-B911 / GA-B486.242。TASK-NIP-D01はユーザー明示条件「基礎値10・毎回30%増加」でEXP-LV-50-1.1へ改定済み。次はTASK-NIP-D02へ進む。"
   },
   "current_focus": {
     "architecture_id": "ARC-NIP",
     "work_box_id": "BOX-NIP-DECISIONS",
     "theme": "未確定事項具体化",
-    "goal": "TASK-NIP-D01「Level別必要EXP表」をDEVELOPMENT_ONLYで確定する"
+    "goal": "TASK-NIP-D02「MOD抽選・Tier・品質対応」をDEVELOPMENT_ONLYで確定する"
   },
   "source_baseline": {
     "studio_build": "GKS-B910",
@@ -57,7 +57,20 @@
   ],
   "implementation_records": [],
   "discussions": [],
-  "decisions": [],
+  "decisions": [
+    {
+      "id": "DEC-NIP-D01-EXP-1.1",
+      "title": "Level別必要EXP生成条件",
+      "status": "Approved",
+      "text": "Lv1→2の必要EXPを10とし、以後は直前の必要EXPを30%増加させ、各段階で四捨五入して整数化する。Level1→2から49→50まで49遷移をEXP-LV-50-1.1の明示表として固定し、本番Runtimeでは式計算・補間を行わずLevel別に直接Lookupする。",
+      "rationale": "Humanの明示指示「基礎値10 毎回30%増加 で作って」をTASK-NIP-D01の正式決定として記録する。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-09-11T22:37:43Z",
+      "created_at": "2026-09-11T22:37:43Z",
+      "updated_at": "2026-09-11T22:37:43Z"
+    }
+  ],
   "specifications": [
     {
       "id": "GS-01",
@@ -132,16 +145,18 @@
       "id": "GS-04",
       "title": "経験値とSP",
       "status": "Review",
-      "summary": "ユーザー提供の修正版仕様を基準入力として保存。承認履歴を捏造しない。",
-      "body": "# 経験値とSP\n\n仕様ID：GS-04　版：1.0　作成日：2026-09-11\n\n## 冒険経験値\n\n経験値は冒険中に仮集計し、クエスト成功後の帰還確定時に付与する。戦闘勝利の再生時には永続経験値を変更しない。クエスト失敗・冒険放棄では仮集計経験値を破棄する。\n\n受給対象は、クエスト終了時点でパーティに所属し、生存している冒険者とする。終了時に蘇生済みなら対象、戦闘不能なら対象外。途中離脱者は含めない。この判定は途中加入・離脱機能そのものの追加を意味しない。\n\n```text\n1人あたり付与経験値 = floor(冒険の付与対象経験値合計 / 受給対象人数)\n```\n\n均等配分し、端数を特定の冒険者へ追加配分しない。対象人数0では付与しない。\n\n## Level上昇\n\n1. 現在の経験値に配分経験値を加える。\n2. 次Levelに必要な経験値に到達したら、その必要量を消費する。\n3. Levelを1上げ、現在ジョブの成長処理とSP付与を行う。\n4. 余剰経験値が次の必要量に達していれば繰り返す。\n5. 最大Level到達後の余剰経験値を破棄する。\n\n成長に使うジョブは経験値確定時のジョブとする。帰還確定処理の途中に転職操作を挟まない。\n\n必要経験値はLevel別の設定データを参照する。資料から全Levelの確定テーブルを特定できないため、独自の等差・指数式で補完しない。設定が存在しないLevelを進行可能として扱わない。\n\n## SPと習得\n\n| 設定項目 | 現在値 |\n|---|---:|\n| 初期SP | 0 |\n| 1Level上昇時のSP | 1 |\n| Active習得費用の標準値 | 1 |\n| Passive習得費用の標準値 | 1 |\n\nSPはActiveとPassiveで共用する。個別マスターに習得費用がある場合はその値を使う。習得条件の7能力値をすべて満たし、必要SPを持ち、未習得である場合に習得できる。\n\n習得条件に必要な能力値は消費しない。費用SPの減算と習得IDの追加を一体で確定する。習得済みの同じIDを再購入させない。\n\n習得済み一覧と、実際に戦闘へ持ち込む選択済み一覧を区別する。AIが使えるActiveは選択済みActiveから解決する。Passiveは有効装備一覧に入れたものだけを適用する。同一Passive系列の重複装備は拒否する。\n\n現在の戦闘用選択枠はActive5件、Passive5件。習得の取り消しとSP返還、選択枠の操作はGS-34「スキル習得・選択・リスペック」に従う。\n\n## 参照元\n\n- `development-project-data/DEV-V9-REORG-019.json`\n- `development-project-data/SKL-0001.json`\n- `Export/system/adventure_settings.json`\n",
+      "summary": "修正版GS-04を基準に、TASK-NIP-D01をユーザー明示条件「基礎値10・毎回30%増加」で改定し、EXP-LV-50-1.1をDevelopment Dataとして確定。",
+      "body": "# 経験値とSP\n\n仕様ID：GS-04　版：1.0　作成日：2026-09-11\n\n## 冒険経験値\n\n経験値は冒険中に仮集計し、クエスト成功後の帰還確定時に付与する。戦闘勝利の再生時には永続経験値を変更しない。クエスト失敗・冒険放棄では仮集計経験値を破棄する。\n\n受給対象は、クエスト終了時点でパーティに所属し、生存している冒険者とする。終了時に蘇生済みなら対象、戦闘不能なら対象外。途中離脱者は含めない。この判定は途中加入・離脱機能そのものの追加を意味しない。\n\n```text\n1人あたり付与経験値 = floor(冒険の付与対象経験値合計 / 受給対象人数)\n```\n\n均等配分し、端数を特定の冒険者へ追加配分しない。対象人数0では付与しない。\n\n## Level上昇\n\n1. 現在の経験値に配分経験値を加える。\n2. 次Levelに必要な経験値に到達したら、その必要量を消費する。\n3. Levelを1上げ、現在ジョブの成長処理とSP付与を行う。\n4. 余剰経験値が次の必要量に達していれば繰り返す。\n5. 最大Level到達後の余剰経験値を破棄する。\n\n成長に使うジョブは経験値確定時のジョブとする。帰還確定処理の途中に転職操作を挟まない。\n\n必要経験値はLevel別の設定データを参照する。独自の等差・指数式で補完しない。設定が存在しないLevelを進行可能として扱わない。\n\nTASK-NIP-D01で本番設定版 `EXP-LV-50-1.1` を確定した。ユーザー明示条件によりLevel1→2の必要EXPを10とし、以後は直前の必要EXPを基準に30%増加させ、各段階で四捨五入して整数化する。算出規則はD01データ作成時だけに使用し、本番RuntimeではLevel1→2から49→50までの次の明示値を直接Lookupする。式・補間・未記載LevelのFallback生成は行わない。\n\n```text\nLv1→2 = 10\n次の必要EXP = round_half_up(直前の必要EXP × 1.30)\n```\n\n| 現在Level | 次Level | 必要EXP |\n|---:|---:|---:|\n| 1 | 2 | 10 |\n| 2 | 3 | 13 |\n| 3 | 4 | 17 |\n| 4 | 5 | 22 |\n| 5 | 6 | 29 |\n| 6 | 7 | 38 |\n| 7 | 8 | 49 |\n| 8 | 9 | 64 |\n| 9 | 10 | 83 |\n| 10 | 11 | 108 |\n| 11 | 12 | 140 |\n| 12 | 13 | 182 |\n| 13 | 14 | 237 |\n| 14 | 15 | 308 |\n| 15 | 16 | 400 |\n| 16 | 17 | 520 |\n| 17 | 18 | 676 |\n| 18 | 19 | 879 |\n| 19 | 20 | 1143 |\n| 20 | 21 | 1486 |\n| 21 | 22 | 1932 |\n| 22 | 23 | 2512 |\n| 23 | 24 | 3266 |\n| 24 | 25 | 4246 |\n| 25 | 26 | 5520 |\n| 26 | 27 | 7176 |\n| 27 | 28 | 9329 |\n| 28 | 29 | 12128 |\n| 29 | 30 | 15766 |\n| 30 | 31 | 20496 |\n| 31 | 32 | 26645 |\n| 32 | 33 | 34639 |\n| 33 | 34 | 45031 |\n| 34 | 35 | 58540 |\n| 35 | 36 | 76102 |\n| 36 | 37 | 98933 |\n| 37 | 38 | 128613 |\n| 38 | 39 | 167197 |\n| 39 | 40 | 217356 |\n| 40 | 41 | 282563 |\n| 41 | 42 | 367332 |\n| 42 | 43 | 477532 |\n| 43 | 44 | 620792 |\n| 44 | 45 | 807030 |\n| 45 | 46 | 1049139 |\n| 46 | 47 | 1363881 |\n| 47 | 48 | 1773045 |\n| 48 | 49 | 2304959 |\n| 49 | 50 | 2996447 |\n## SPと習得\n\n| 設定項目 | 現在値 |\n|---|---:|\n| 初期SP | 0 |\n| 1Level上昇時のSP | 1 |\n| Active習得費用の標準値 | 1 |\n| Passive習得費用の標準値 | 1 |\n\nSPはActiveとPassiveで共用する。個別マスターに習得費用がある場合はその値を使う。習得条件の7能力値をすべて満たし、必要SPを持ち、未習得である場合に習得できる。\n\n習得条件に必要な能力値は消費しない。費用SPの減算と習得IDの追加を一体で確定する。習得済みの同じIDを再購入させない。\n\n習得済み一覧と、実際に戦闘へ持ち込む選択済み一覧を区別する。AIが使えるActiveは選択済みActiveから解決する。Passiveは有効装備一覧に入れたものだけを適用する。同一Passive系列の重複装備は拒否する。\n\n現在の戦闘用選択枠はActive5件、Passive5件。習得の取り消しとSP返還、選択枠の操作はGS-34「スキル習得・選択・リスペック」に従う。\n\n## 参照元\n\n- `development-project-data/DEV-V9-REORG-019.json`\n- `development-project-data/SKL-0001.json`\n- `Export/system/adventure_settings.json`\n",
       "depends_on": [],
-      "decision_refs": [],
+      "decision_refs": [
+        "DEC-NIP-D01-EXP-1.1"
+      ],
       "contract_ids": [],
-      "revision": 1,
+      "revision": 3,
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-09-11T00:00:00Z",
-      "updated_at": "2026-09-11T00:00:00Z",
+      "updated_at": "2026-09-11T22:37:43Z",
       "source_path": "基準仕様/04_経験値とSP.md",
       "source_sha256": "e6e638e9c7511d787e4fb668c2f65c72bc5cc58cf2273b7008b23c979aff606f",
       "input_authority": "user_provided_current_specification",
@@ -1221,15 +1236,16 @@
       "id": "TASK-NIP-D01",
       "title": "Level別必要EXP表",
       "box_id": "BOX-NIP-DECISIONS",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 3,
       "depends_on": [
         "TASK-NIP-F01"
       ],
       "implementation_steps": [
-        "Level1→2から49→50までの必要EXPを確定する。",
-        "全49遷移を明示テーブルにし、未記載Levelを通さない。等差/指数の提案値は本番採用しない。",
-        "採用内容・設定版・根拠を記録し、影響する仕様の該当境界だけを明示更新してから依存タスクへ渡す。"
+        "ユーザー明示条件としてLevel1→2の必要EXPを10に固定する。",
+        "以後は直前値を基準に30%増加し、各段階で四捨五入してLevel49→50までの49遷移を算出する。",
+        "算出結果を全49遷移の明示テーブルとして固定し、本番Runtimeでは式計算せず直接Lookupする。未記載Levelを通さない。",
+        "採用内容・設定版・根拠を記録し、影響するGS-04の該当境界だけを明示更新して依存タスクへ渡す。"
       ],
       "acceptance_examples": [
         "曖昧な選択肢が残らず、数値表または具体的な入力/期待出力がある。",
@@ -1244,13 +1260,13 @@
         "at": ""
       },
       "created_at": "2026-09-11T00:00:00Z",
-      "updated_at": "2026-09-11T00:00:00Z",
+      "updated_at": "2026-09-11T22:37:43Z",
       "decision_type": "データ作成",
       "affected_tasks": [
         "TASK-NIP-04-02"
       ],
       "implementation_note": "ルールの新規決定はユーザー判断、明示仕様から決められる型・検証実装は実装担当が進める。未決のまま確定済みと記録しない。",
-      "body": "実装手順\n1. Level1→2から49→50までの必要EXPを確定する。\n2. 全49遷移を明示テーブルにし、未記載Levelを通さない。等差/指数の提案値は本番採用しない。\n3. 採用内容・設定版・根拠を記録し、影響する仕様の該当境界だけを明示更新してから依存タスクへ渡す。\n\n完了条件\n1. 曖昧な選択肢が残らず、数値表または具体的な入力/期待出力がある。\n2. 影響先に渡す値と版が固定され、未採用案が本番設定へ混在していない。"
+      "body": "実装手順\n1. ユーザー明示条件としてLevel1→2の必要EXPを10に固定する。\n2. 以後は直前値×1.30を各段階で四捨五入し、49→50まで算出する。\n3. 49遷移を明示テーブルに固定し、本番Runtimeは式ではなく直接Lookupする。未記載Levelは進行不可。\n4. 採用内容・設定版・根拠をGS-04へ反映して依存タスクへ渡す。\n\n完了条件\n1. 曖昧な選択肢が残らず、全49遷移の具体値がある。\n2. 影響先に渡す値と版が固定され、旧EXP-LV-50-1.0が本番設定として混在していない。\n\nD01確定結果（改定）\n- 設定版: EXP-LV-50-1.1（EXP-LV-50-1.0を置換）\n- 基礎値: Lv1→2 = 10\n- 増加率: 毎回30%\n- 整数化: 各段階でROUND_HALF_UP（四捨五入）\n- 適用範囲: Level1→2〜49→50の49遷移\n- Runtime契約: 現在Levelをキーにrequired_expを直接Lookup。式・補間・Fallback生成は禁止。\n- Development Data artifact SHA-256: 258cc4ce11ab62f0817c5e4b0a9b38c8bbb901553e8e501553209fd2578a5ad7\n- 累積必要EXP: Lv10=325, Lv20=4918, Lv30=68279, Lv40=941831, Lv50=12984551\n- 本TaskはDEVELOPMENT_ONLY。Game/Studio/Export/Save/Buildは変更しない。\n"
     },
     {
       "id": "TASK-NIP-D02",
@@ -6157,6 +6173,29 @@
         "mode": ""
       },
       "blocking": false
+    },
+    {
+      "id": "CHECK-NIP-D01-EXP",
+      "title": "D01 Level別必要EXP表受入",
+      "target_type": "Task",
+      "target_id": "TASK-NIP-D01",
+      "status": "Passed",
+      "result": "EXP-LV-50-1.1で基礎値10・毎回30%増加を49遷移へ明示展開。各段階四捨五入、欠落Levelなし、Runtime式補完なし。",
+      "evidence": "TASK-NIP-D01_EXP-LV-50-1.1.json SHA256=258cc4ce11ab62f0817c5e4b0a9b38c8bbb901553e8e501553209fd2578a5ad7; entries=49; from_level=1..49 exact; base=10; growth=30%; rounding=ROUND_HALF_UP_each_step; all required_exp positive integers; cumulative Lv10=325, Lv20=4918, Lv30=68279, Lv40=941831, Lv50=12984551; D01 is DEVELOPMENT_ONLY so Source/Export/Build unchanged.",
+      "created_at": "2026-09-11T22:21:11Z",
+      "updated_at": "2026-09-11T22:37:43Z",
+      "gate": "General",
+      "checked_by": "AI",
+      "checked_at": "2026-09-11T22:14:00Z",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "CHECK-NIP-D01-EXP",
+        "resolved_at": "2026-09-11T22:14:00Z",
+        "reason": "D01 revised acceptance criteria satisfied by user-fixed EXP rule",
+        "mode": ""
+      },
+      "blocking": false
     }
   ],
   "history": [
@@ -6171,6 +6210,18 @@
       "at": "2026-09-11T20:56:48Z",
       "action": "complete_task",
       "summary": "TASK-NIP-F01 Done。CurrentをGKS-B910 / GA-B486.241へ固定し、Source/Export/仕様hashとGS-14 v1.1の戦闘中順序固定を確認。F01はDEVELOPMENT_ONLYのためSource/Export/Buildは変更していない。"
+    },
+    {
+      "id": "HISTORY-NIP-D01-20260911-222111",
+      "at": "2026-09-11T22:21:11Z",
+      "action": "complete_task",
+      "summary": "TASK-NIP-D01 Done。EXP-LV-50-1.0として49遷移を明示固定し、未定義Levelの式/補間/Fallbackを禁止。Development Data artifact SHA256=da186915de77528b953ca352561d0dacea716a9e120e866edb1d2392b51df350。DEVELOPMENT_ONLYのためSource/Export/Build変更なし。"
+    },
+    {
+      "id": "HISTORY-NIP-D01-20260912-071400-REV1",
+      "at": "2026-09-11T22:14:00Z",
+      "action": "revise_task_decision",
+      "summary": "TASK-NIP-D01をユーザー明示条件「基礎値10・毎回30%増加」へ改定。EXP-LV-50-1.1として49遷移を各段階四捨五入で明示固定。旧EXP-LV-50-1.0を置換。Development Data artifact SHA256=258cc4ce11ab62f0817c5e4b0a9b38c8bbb901553e8e501553209fd2578a5ad7。DEVELOPMENT_ONLYのためSource/Export/Build変更なし。"
     }
   ],
   "authority": {
