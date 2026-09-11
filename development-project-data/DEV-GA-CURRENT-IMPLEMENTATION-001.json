@@ -5,7 +5,7 @@
     "name": "修正版34仕様に基づく新規実装計画",
     "status": "Implementing",
     "ai_attention": "Include",
-    "updated_at": "2026-09-11T23:06:12.492Z"
+    "updated_at": "2026-09-11T23:32:32.955Z"
   },
   "project_context": {
     "purpose": "修正版34仕様の全項目を実装し、Studio/Game/Export/Saveで一貫させる。",
@@ -15,7 +15,7 @@
     "architecture_id": "ARC-NIP",
     "work_box_id": "BOX-NIP-DECISIONS",
     "theme": "未確定事項具体化",
-    "goal": "TASK-NIP-D02「MOD抽選・Tier・品質対応」をDEVELOPMENT_ONLYで確定する"
+    "goal": "TASK-NIP-D03「クリティカルのBalance上限」をDEVELOPMENT_ONLYで確定する"
   },
   "source_baseline": {
     "studio_build": "GKS-B910",
@@ -69,6 +69,18 @@
       "approved_at": "2026-09-11T22:37:43Z",
       "created_at": "2026-09-11T22:37:43Z",
       "updated_at": "2026-09-11T22:37:43Z"
+    },
+    {
+      "id": "DEC-NIP-D02-MOD-RARITY-QUALITY-1.0",
+      "title": "MODレア枠・品質対応・Balance可変方針",
+      "status": "Approved",
+      "text": "TASK-NIP-D02は両判断ともAを採用する。能力値MODのレア枠は総MOD数に含む独立枠とし、能力値MOD数を総MOD数から差し引いた残数だけ通常ATTACK/DEFENSE MODを割り当てる。報酬品質はcommon→NORMAL、uncommon→MAGIC、rare→RARE、epic→UNIQUE、legendary→LEGENDARYをCurrent明示対応とし、MYTHICはreward entry/table側のequipment_rarity=MYTHIC明示指定だけで生成する。MOD関連の効果量・確率・重み・件数・上限・Tier値・対応表はBalance/Generator Configから変更可能にしRuntimeへハードコードしない。システム上の一意ID、Schema field、正式enum、抽選順、重複禁止等の構造契約は固定してよい。未指定Configを推測Fallbackしない。",
+      "rationale": "Human明示指示「両方A」「可変にしてハードコードしない」「システム的に固有を求められるものは固定でよい」をD02の正式決定として記録。既存Human確定のRules/Balance分離方針とも一致する。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-09-11T23:28:38Z",
+      "created_at": "2026-09-11T23:28:38Z",
+      "updated_at": "2026-09-11T23:28:38Z"
     }
   ],
   "specifications": [
@@ -263,15 +275,17 @@
       "title": "MODとレアリティ",
       "status": "Review",
       "summary": "ユーザー提供の修正版仕様を基準入力として保存。承認履歴を捏造しない。",
-      "body": "# MODとレアリティ\n\n仕様ID：GS-09　版：1.0　作成日：2026-09-11\n\n## 装備の3段階\n\n| 段階 | 決定する内容 |\n|---|---|\n| BaseItem | 武器・防具・アクセサリの種類、iLv、要求値、保存済み基礎性能 |\n| 完成装備 | BaseItem参照、装備個体ID、レアリティ、付与MOD、Tier、抽選値 |\n| Loot | どの場面で、どの候補・重み・回数から完成装備を入手するか |\n\n## レアリティ\n\n装備レアリティはNORMAL、MAGIC、RARE、UNIQUE、LEGENDARY、MYTHICを使用する。UNIQUE・LEGENDARY・MYTHICはドロップ限定とし、通常の作成・合成から生成しない。\n\n報酬設定の`common / uncommon / rare / epic / legendary`は報酬品質キーである。装備レアリティとの対応は明示的なデータで定義し、名前の類似だけで変換しない。\n\n## MOD定義\n\nMODは、ID、分類、タグ、効果種別、補正先、演算、パラメータ、Balance参照キー、有効状態、Schema版を持つ。対象装備の適合判定は共通のタグ定義を使う。タグ文字列や表示名から効果値を推測しない。\n\n装備条件・Tag判定、数値補正、スキル効果を別の責務として処理する。要求タグが空のMODは、空であることを理由に破損扱いしない。定義された他の適合条件で判定する。\n\n## 通常MOD抽選順序\n\n1. レアリティを決める。\n2. 付与MOD数を決める。\n3. 攻撃枠・防御枠の割り当てを決める。\n4. 各枠のMODカテゴリを決める。\n5. MOD種別を決める。\n6. Tierを決める。\n\n同じ装備個体へ同じMODを重複付与しない。重複候補は再抽選対象とする。異なる装備個体に同じMODが付くことは許可する。\n\n各段階の候補・重み・件数・Tier範囲は設定データに置く。全装備共通の確定抽選率・確定MOD件数は資料から特定できないため、仕様書の例を抽選率として実装しない。候補不足や不正設定は生成エラーとし、重複を許して埋めない。\n\n## 能力値MODとアクセサリ\n\nSTR等の7基礎能力値MODは限定的なレア枠で扱う。通常MODの基本枠をすべて能力値上昇に置き換えない。アミュレットは通常MODを主体とし、能力値MODはレア枠として扱う。能力値MODをアミュレット専用に限定しない。\n\n## 補正の計算\n\nMODは元のBaseStatに対する独立Contributionとして出力する。基礎値100に相対+20%のMODと相対+10%のPassiveがある場合は、100+20+10=130。MOD反映済み120をPassiveの基礎値として132にしない。\n\n数値、上限、Tier別効果量は設定から取得する。ユニーク効果も登録済みの正式効果・正式処理へ接続する。名称だけのアイデアを実行効果として扱わない。\n\n## 参照元\n\n- `development-project-data/DEV-V9-REORG-019.json / MOD・RARITY・UNIQUE仕様と決定`\n- `development-project-data/DEV-V9-CRITICAL-MODIFIER-POLICY-001.json`\n",
+      "body": "# MODとレアリティ\n\n仕様ID：GS-09　版：1.0　作成日：2026-09-11\n\n## 装備の3段階\n\n| 段階 | 決定する内容 |\n|---|---|\n| BaseItem | 武器・防具・アクセサリの種類、iLv、要求値、保存済み基礎性能 |\n| 完成装備 | BaseItem参照、装備個体ID、レアリティ、付与MOD、Tier、抽選値 |\n| Loot | どの場面で、どの候補・重み・回数から完成装備を入手するか |\n\n## レアリティ\n\n装備レアリティはNORMAL、MAGIC、RARE、UNIQUE、LEGENDARY、MYTHICを使用する。UNIQUE・LEGENDARY・MYTHICはドロップ限定とし、通常の作成・合成から生成しない。\n\n報酬設定の`common / uncommon / rare / epic / legendary`は報酬品質キーである。装備レアリティとの対応は明示的なデータで定義し、名前の類似だけで変換しない。\n\n## MOD定義\n\nMODは、ID、分類、タグ、効果種別、補正先、演算、パラメータ、Balance参照キー、有効状態、Schema版を持つ。対象装備の適合判定は共通のタグ定義を使う。タグ文字列や表示名から効果値を推測しない。\n\n装備条件・Tag判定、数値補正、スキル効果を別の責務として処理する。要求タグが空のMODは、空であることを理由に破損扱いしない。定義された他の適合条件で判定する。\n\n## 通常MOD抽選順序\n\n1. レアリティを決める。\n2. 付与MOD数を決める。\n3. 攻撃枠・防御枠の割り当てを決める。\n4. 各枠のMODカテゴリを決める。\n5. MOD種別を決める。\n6. Tierを決める。\n\n同じ装備個体へ同じMODを重複付与しない。重複候補は再抽選対象とする。異なる装備個体に同じMODが付くことは許可する。\n\n各段階の候補・重み・件数・Tier範囲は設定データに置く。全装備共通の確定抽選率・確定MOD件数は資料から特定できないため、仕様書の例を抽選率として実装しない。候補不足や不正設定は生成エラーとし、重複を許して埋めない。\n\n## 能力値MODとアクセサリ\n\nSTR等の7基礎能力値MODは限定的なレア枠で扱う。通常MODの基本枠をすべて能力値上昇に置き換えない。アミュレットは通常MODを主体とし、能力値MODはレア枠として扱う。能力値MODをアミュレット専用に限定しない。\n\n## 補正の計算\n\nMODは元のBaseStatに対する独立Contributionとして出力する。基礎値100に相対+20%のMODと相対+10%のPassiveがある場合は、100+20+10=130。MOD反映済み120をPassiveの基礎値として132にしない。\n\n数値、上限、Tier別効果量は設定から取得する。ユニーク効果も登録済みの正式効果・正式処理へ接続する。名称だけのアイデアを実行効果として扱わない。\n\n\n## D02確定境界（MOD-RARITY-QUALITY-1.0）\n\nCurrent Baselineのレアリティ重み、レアリティ別MOD件数、ATTACK/DEFENSE上限・割当、MOD候補、Tier重み・Tier値は`MOD-RARITY-QUALITY-1.0`の外部Balance Configから取得する。数値をRuntimeへ直書きしない。システム上の一意ID、Schema field、正式enum、通常MOD抽選順、同一装備内重複禁止などの構造契約は固定してよい。\n\n能力値MODのレア枠は「総MOD数に含む独立枠」を採用する。能力値MODがN件なら通常攻防MODは`総MOD数 - N`件とし、ATTACK/DEFENSE上限は通常MOD側だけへ適用する。能力値MODの出現可否、対象装備、出現率/重み、最大枠数、Tier値はGenerator/Balance Configで明示し、未指定時にRuntime既定値へFallbackしない。\n\n報酬品質から装備レアリティへのCurrent明示対応は`common→NORMAL / uncommon→MAGIC / rare→RARE / epic→UNIQUE / legendary→LEGENDARY`。MYTHICは品質名から暗黙生成せず、報酬entry/tableが`equipment_rarity=MYTHIC`を明示した場合だけ生成する。この対応表自体もConfigデータとして保持し、文字列類似変換を行わない。\n\n## 参照元\n\n- `development-project-data/DEV-V9-REORG-019.json / MOD・RARITY・UNIQUE仕様と決定`\n- `development-project-data/DEV-V9-CRITICAL-MODIFIER-POLICY-001.json`\n",
       "depends_on": [],
-      "decision_refs": [],
+      "decision_refs": [
+        "DEC-NIP-D02-MOD-RARITY-QUALITY-1.0"
+      ],
       "contract_ids": [],
-      "revision": 1,
+      "revision": 2,
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-09-11T00:00:00Z",
-      "updated_at": "2026-09-11T00:00:00Z",
+      "updated_at": "2026-09-11T23:28:38Z",
       "source_path": "基準仕様/09_MODとレアリティ.md",
       "source_sha256": "3d82c04a560e14c16cc741d54a7d77b9ed4fffff5b884ad776db4bbf11d32832",
       "input_authority": "user_provided_current_specification",
@@ -654,15 +668,17 @@
       "title": "報酬とドロップ",
       "status": "Review",
       "summary": "ユーザー提供の修正版仕様を基準入力として保存。承認履歴を捏造しない。",
-      "body": "# 報酬とドロップ\n\n仕様ID：GS-26　版：1.0　作成日：2026-09-11\n\n## 報酬の発生元\n\nBattle、Event、Explorationが報酬結果を生成し、QuestRunが合計を保持する。Quest本体へ一括固定報酬を重複設定しない。帰還時は保存済み結果を受け取る。\n\n報酬entryのkindはgold・equipment・item・stone・material。Goldと数量は非負整数。装備個体以外の同じResourceは`resource_kind + resource_id`で集約する。\n\n## ドロップテーブル\n\nテーブルはID、名称、有効状態、params、groups、entriesを持つ。GroupはID、抽選回数rolls、entriesを持つ。Entryは種類、対象ID、基礎重み、独立抽選確率、品質、補正方式、数量または数量範囲を持つ。\n\n| テーブル形式 | 抽選 |\n|---|---|\n| groupsあり | 各Groupについてrolls回、補正後重みで選択 |\n| entriesのみ・mode=weighted | rolls回の重み付き抽選 |\n| entriesのみ・その他 | 各entryをchance/rateで独立判定 |\n\n重みは候補内での相対値。weight10を10%と解釈しない。独立抽選確率は0〜1。個別テーブルの数量・回数・確率はその定義を使う。\n\n## 補正方式\n\n| scaling_mode | 反映対象 |\n|---|---|\n| none | 難易度による数量・品質補正なし |\n| amount | 数量 |\n| quality | 抽選重み |\n| both | 数量と抽選重み |\n\n現在、補正方式未指定のequipment・stoneはquality、それ以外はamountを使用する。\n\n```text\n難易度数量倍率 = clamp(1 + stone_budget_delta × 0.02, 1, 上限指定なし)\n固有報酬倍率 = max(0, 1 + 明示報酬ボーナス合計)\n最終数量 = 指定丸め(基礎数量 × 難易度数量倍率 × 固有報酬倍率)\n```\n\n現在の数量丸めはfloor。テーブル/設定はfloor・round・ceilを指定できる。難易度補正を無効にした結果では、難易度数量倍率を1とする。\n\n## 品質重み\n\n```text\n補正後重み = 基礎重み × (1 + budget_delta × 品質別係数)\n```\n\n| 品質キー | 現在の係数 / 予算1 |\n|---|---:|\n| common | 0 |\n| uncommon | 0.002 |\n| rare | 0.005 |\n| epic | 0.01 |\n| legendary | 0.02 |\n\n通常報酬テーブルのbudget_deltaにはストーンによる予算増分を使う。例えばdelta10ならrareの重み1.05倍、legendaryは1.2倍。基礎数量100のamount報酬は難易度倍率1.2で120となる。\n\n## 探索結果\n\nMap/Questの環境条件で探索候補を絞り、品質補正後の重みで結果を選ぶ。探索の品質差分は`max(0, effective_enemy_budget - rarity_budget_reference)`。現在のreferenceは0で、品質係数は上表と同じ。\n\n現在の基礎重み1、基礎成功率1、成功率範囲0〜1。個別結果・ストーン等の成功率補正を反映して成功/失敗Branchを確定し、本文、報酬、フラグ、効果、次イベント参照を保存する。\n\n探索の「有効予算から参照値を引く」品質計算と、通常報酬の「ストーン増分」の計算を同じdeltaに置き換えない。\n\n## 結果の固定\n\nテーブルID、契約版、Seed、使用設定、補正Snapshot、抽選履歴、正規化報酬を保存する。帰還画面で抽選や倍率計算を再実行しない。失敗・放棄では途中報酬履歴を残しても正式受取対象は空とする。\n\n確定した装備個体IDを受取ごとに作り直さず、同じRunの複数受取を防ぐ。受入容量不足時は消失させず、GS-27・GS-29の保留処理へ渡す。\n\n## 参照元\n\n- `development-project-data/DEV-V9-REORG-019.json / REWARD`\n- `Export/system/adventure_settings.json / reward_scaling・exploration`\n- `assets/shared/js/adventure-reward-resolver.js`\n- `assets/shared/js/adventure-encounter-resolver.js / explorationWeight`\n- `assets/shared/js/adventure-story-system.js / reward_scaling_snapshot`\n",
+      "body": "# 報酬とドロップ\n\n仕様ID：GS-26　版：1.0　作成日：2026-09-11\n\n## 報酬の発生元\n\nBattle、Event、Explorationが報酬結果を生成し、QuestRunが合計を保持する。Quest本体へ一括固定報酬を重複設定しない。帰還時は保存済み結果を受け取る。\n\n報酬entryのkindはgold・equipment・item・stone・material。Goldと数量は非負整数。装備個体以外の同じResourceは`resource_kind + resource_id`で集約する。\n\n## ドロップテーブル\n\nテーブルはID、名称、有効状態、params、groups、entriesを持つ。GroupはID、抽選回数rolls、entriesを持つ。Entryは種類、対象ID、基礎重み、独立抽選確率、品質、補正方式、数量または数量範囲を持つ。\n\n| テーブル形式 | 抽選 |\n|---|---|\n| groupsあり | 各Groupについてrolls回、補正後重みで選択 |\n| entriesのみ・mode=weighted | rolls回の重み付き抽選 |\n| entriesのみ・その他 | 各entryをchance/rateで独立判定 |\n\n重みは候補内での相対値。weight10を10%と解釈しない。独立抽選確率は0〜1。個別テーブルの数量・回数・確率はその定義を使う。\n\n## 補正方式\n\n| scaling_mode | 反映対象 |\n|---|---|\n| none | 難易度による数量・品質補正なし |\n| amount | 数量 |\n| quality | 抽選重み |\n| both | 数量と抽選重み |\n\n現在、補正方式未指定のequipment・stoneはquality、それ以外はamountを使用する。\n\n```text\n難易度数量倍率 = clamp(1 + stone_budget_delta × 0.02, 1, 上限指定なし)\n固有報酬倍率 = max(0, 1 + 明示報酬ボーナス合計)\n最終数量 = 指定丸め(基礎数量 × 難易度数量倍率 × 固有報酬倍率)\n```\n\n現在の数量丸めはfloor。テーブル/設定はfloor・round・ceilを指定できる。難易度補正を無効にした結果では、難易度数量倍率を1とする。\n\n## 品質重み\n\n```text\n補正後重み = 基礎重み × (1 + budget_delta × 品質別係数)\n```\n\n| 品質キー | 現在の係数 / 予算1 |\n|---|---:|\n| common | 0 |\n| uncommon | 0.002 |\n| rare | 0.005 |\n| epic | 0.01 |\n| legendary | 0.02 |\n\n通常報酬テーブルのbudget_deltaにはストーンによる予算増分を使う。例えばdelta10ならrareの重み1.05倍、legendaryは1.2倍。基礎数量100のamount報酬は難易度倍率1.2で120となる。\n\n\n## D02装備レアリティ対応\n\n装備報酬では品質キーを装備レアリティ名へ暗黙変換しない。Current Baselineは`common→NORMAL / uncommon→MAGIC / rare→RARE / epic→UNIQUE / legendary→LEGENDARY`の明示対応表を`MOD-RARITY-QUALITY-1.0`から参照する。MYTHICは`equipment_rarity=MYTHIC`の明示指定があるentry/tableだけを対象とする。対応表・重み等のBalance値は外部Configで可変とし、Runtimeへ固定値を書かない。未知品質または未定義対応は推測せず生成エラーとする。\n\n## 探索結果\n\nMap/Questの環境条件で探索候補を絞り、品質補正後の重みで結果を選ぶ。探索の品質差分は`max(0, effective_enemy_budget - rarity_budget_reference)`。現在のreferenceは0で、品質係数は上表と同じ。\n\n現在の基礎重み1、基礎成功率1、成功率範囲0〜1。個別結果・ストーン等の成功率補正を反映して成功/失敗Branchを確定し、本文、報酬、フラグ、効果、次イベント参照を保存する。\n\n探索の「有効予算から参照値を引く」品質計算と、通常報酬の「ストーン増分」の計算を同じdeltaに置き換えない。\n\n## 結果の固定\n\nテーブルID、契約版、Seed、使用設定、補正Snapshot、抽選履歴、正規化報酬を保存する。帰還画面で抽選や倍率計算を再実行しない。失敗・放棄では途中報酬履歴を残しても正式受取対象は空とする。\n\n確定した装備個体IDを受取ごとに作り直さず、同じRunの複数受取を防ぐ。受入容量不足時は消失させず、GS-27・GS-29の保留処理へ渡す。\n\n## 参照元\n\n- `development-project-data/DEV-V9-REORG-019.json / REWARD`\n- `Export/system/adventure_settings.json / reward_scaling・exploration`\n- `assets/shared/js/adventure-reward-resolver.js`\n- `assets/shared/js/adventure-encounter-resolver.js / explorationWeight`\n- `assets/shared/js/adventure-story-system.js / reward_scaling_snapshot`\n",
       "depends_on": [],
-      "decision_refs": [],
+      "decision_refs": [
+        "DEC-NIP-D02-MOD-RARITY-QUALITY-1.0"
+      ],
       "contract_ids": [],
-      "revision": 1,
+      "revision": 2,
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-09-11T00:00:00Z",
-      "updated_at": "2026-09-11T00:00:00Z",
+      "updated_at": "2026-09-11T23:28:38Z",
       "source_path": "基準仕様/26_報酬とドロップ.md",
       "source_sha256": "68888db37fd06c651736166b957672889cd447cd28d8450169fecf82edfa19fd",
       "input_authority": "user_provided_current_specification",
@@ -1272,7 +1288,7 @@
       "id": "TASK-NIP-D02",
       "title": "MOD抽選・Tier・品質対応",
       "box_id": "BOX-NIP-DECISIONS",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 4,
       "depends_on": [
         "TASK-NIP-F01"
@@ -1295,7 +1311,7 @@
         "at": ""
       },
       "created_at": "2026-09-11T00:00:00Z",
-      "updated_at": "2026-09-11T00:00:00Z",
+      "updated_at": "2026-09-11T23:28:38Z",
       "decision_type": "データ作成",
       "affected_tasks": [
         "TASK-NIP-09-02",
@@ -6196,6 +6212,29 @@
         "mode": ""
       },
       "blocking": false
+    },
+    {
+      "id": "CHECK-NIP-D02-MOD-RARITY-QUALITY",
+      "title": "D02 MOD抽選・Tier・品質対応受入",
+      "target_type": "Task",
+      "target_id": "TASK-NIP-D02",
+      "status": "Passed",
+      "result": "両Human判断Aを反映。能力値MODは総MOD数内の独立レア枠、品質→レアリティは5品質をNORMAL〜LEGENDARYへ明示対応しMYTHICは明示overrideのみ。Balance値は外部Config可変、Runtime hard-code禁止を契約化。",
+      "evidence": "TASK-NIP-D02_MOD-RARITY-QUALITY-1.0.json SHA256=63f8186bac0a16e10dff1517c261d97d11a29b2044a037e32a0a553c893b5e0e; normal_mod_pool=16; each T1-T5 present; ability candidates=7; pending user decisions=0; quality mapping explicit; unknown/missing config fails closed; DEVELOPMENT_ONLY so Source/Export/Build unchanged.",
+      "created_at": "2026-09-11T23:28:38Z",
+      "updated_at": "2026-09-11T23:28:38Z",
+      "gate": "General",
+      "checked_by": "AI",
+      "checked_at": "2026-09-11T23:28:38Z",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "CHECK-NIP-D02-MOD-RARITY-QUALITY",
+        "resolved_at": "2026-09-11T23:28:38Z",
+        "reason": "D02 acceptance criteria satisfied after Human A/A and configurable-balance decision",
+        "mode": ""
+      },
+      "blocking": false
     }
   ],
   "history": [
@@ -6222,6 +6261,12 @@
       "at": "2026-09-11T22:14:00Z",
       "action": "revise_task_decision",
       "summary": "TASK-NIP-D01をユーザー明示条件「基礎値10・毎回30%増加」へ改定。EXP-LV-50-1.1として49遷移を各段階四捨五入で明示固定。旧EXP-LV-50-1.0を置換。Development Data artifact SHA256=258cc4ce11ab62f0817c5e4b0a9b38c8bbb901553e8e501553209fd2578a5ad7。DEVELOPMENT_ONLYのためSource/Export/Build変更なし。"
+    },
+    {
+      "id": "HISTORY-NIP-D02-20260912-082838",
+      "at": "2026-09-11T23:28:38Z",
+      "action": "complete_task",
+      "summary": "TASK-NIP-D02 Done。Human決定A/AをMOD-RARITY-QUALITY-1.0へ固定。Balance数値はConfig可変・Runtime hard-code禁止、構造上の一意ID/Schema/enum/抽選順等のみ固定可。Development Data artifact SHA256=63f8186bac0a16e10dff1517c261d97d11a29b2044a037e32a0a553c893b5e0e。DEVELOPMENT_ONLYのためSource/Export/Build変更なし。"
     }
   ],
   "authority": {
