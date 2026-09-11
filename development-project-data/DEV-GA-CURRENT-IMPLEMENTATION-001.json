@@ -5,7 +5,7 @@
     "name": "修正版34仕様に基づく新規実装計画",
     "status": "Implementing",
     "ai_attention": "Include",
-    "updated_at": "2026-09-11T21:07:28.427Z"
+    "updated_at": "2026-09-11T22:11:40.454Z"
   },
   "project_context": {
     "purpose": "修正版34仕様の全項目を実装し、Studio/Game/Export/Saveで一貫させる。",
@@ -13,9 +13,9 @@
   },
   "current_focus": {
     "architecture_id": "ARC-NIP",
-    "work_box_id": "BOX-NIP-FOUNDATION",
-    "theme": "共通境界と試験用データ",
-    "goal": "TASK-NIP-F02をCurrent GKS-B910 / GA-B486.241に対してSOURCE_UPDATEで実装する"
+    "work_box_id": "BOX-NIP-DECISIONS",
+    "theme": "未確定事項具体化",
+    "goal": "TASK-NIP-D01「Level別必要EXP表」をDEVELOPMENT_ONLYで確定する"
   },
   "source_baseline": {
     "studio_build": "GKS-B910",
@@ -1191,7 +1191,7 @@
       "id": "TASK-NIP-F02",
       "title": "共通境界と試験用データを定義する",
       "box_id": "BOX-NIP-FOUNDATION",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 2,
       "depends_on": [
         "TASK-NIP-F01"
@@ -1214,7 +1214,7 @@
         "at": ""
       },
       "created_at": "2026-09-11T00:00:00Z",
-      "updated_at": "2026-09-11T00:00:00Z",
+      "updated_at": "2026-09-11T21:33:58Z",
       "body": "実装手順\n1. Battle/QuestRun/SaveのID、Schema版、Snapshot構造、RNG用途別入口を定義する。フィールド名の新設は既存契約確認後に決める。\n2. 後述の共通契約C01〜C06をモジュール間の入力/出力に割り当て、表示層からのドメイン書込を禁止する。\n3. 固定Seed・乱数列注入・永続書込失敗注入が可能なテスト治具を用意する。試験専用数値を本番Exportと分離する。\n\n完了条件\n1. 同一初期状態/設定版/Seedの結果を比較できる。\n2. RNG消費と保存回数を計測でき、試験fixtureが本番データに混ざらない。"
     },
     {
@@ -6131,6 +6131,29 @@
         "resolved_by": "CHECK-NIP-F01-BASELINE",
         "resolved_at": "2026-09-11T20:56:48Z",
         "reason": "F01 acceptance criteria satisfied",
+        "mode": ""
+      },
+      "blocking": false
+    },
+    {
+      "id": "CHECK-NIP-F02-FOUNDATION",
+      "title": "F02 共通境界・試験治具受入",
+      "target_type": "Task",
+      "target_id": "TASK-NIP-F02",
+      "status": "Passed",
+      "result": "C01-C06境界、用途別RNG計測/注入、永続書込計測/失敗注入、固定Seed再現性、fixture本番分離を確認。",
+      "evidence": "tools/development/f02-foundation-acceptance.js PASS; same initial state/settings/seed produced stable QuestRun/C04 snapshot; RNG consumption classified and measured; persistence attempts/successes measured and injected write failure left prior value intact; public Game/Studio entrypoints do not load runtime-boundary-fixtures.js; battle Tick loop does not consume BATTLE_ORDER RNG; Source Full Gate PASS 27/27 before final project-state synchronization.",
+      "created_at": "2026-09-11T21:33:58Z",
+      "updated_at": "2026-09-11T21:33:58Z",
+      "gate": "General",
+      "checked_by": "AI",
+      "checked_at": "2026-09-11T21:33:58Z",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "CHECK-NIP-F02-FOUNDATION",
+        "resolved_at": "2026-09-11T21:33:58Z",
+        "reason": "F02 acceptance criteria satisfied",
         "mode": ""
       },
       "blocking": false
