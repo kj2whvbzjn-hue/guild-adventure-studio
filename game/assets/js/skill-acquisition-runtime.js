@@ -82,25 +82,32 @@
     const branch=kind==='skill'?'skill':kind==='passive'?'passive':null;if(!branch)throw new Error(`unsupported skill-point spend kind: ${kind}`);
     return Number(character.skillPointSpend?.[branch]?.[target])||0;
   }
-  function preview(character,record,kind,balanceValue){
+  function passiveSelectionCheck(character,record,options){
+    const policy=options&&typeof options==='object'?options:{};if(!policy)return{ok:true};
+    const maxOwned=policy.maxOwned==null?null:integer(policy.maxOwned,'passive.maxOwned',{min:1});if(maxOwned!=null&&character.passiveIds.length>=maxOwned)return{ok:false,reason:'PASSIVE_SLOT_CAPACITY_REACHED',capacity:maxOwned,count:character.passiveIds.length};
+    if(typeof policy.validateAfterAdd==='function'){try{const result=policy.validateAfterAdd([...character.passiveIds,idOf(record)]);if(result===false||result?.ok===false)return{ok:false,reason:result?.reason||'PASSIVE_SELECTION_INVALID',detail:result?.detail||''};}catch(error){return{ok:false,reason:'PASSIVE_SELECTION_INVALID',detail:String(error?.message||error)};}}
+    return{ok:true};
+  }
+  function preview(character,record,kind,balanceValue,options){
     normalizeCharacterState(character);const id=idOf(record);if(!id)return{ok:false,reason:'ID_REQUIRED'};
     const owned=kind==='skill'?character.skills:character.passiveIds;if(owned.includes(id))return{ok:false,reason:kind==='skill'?'SKILL_ALREADY_OWNED':'PASSIVE_ALREADY_OWNED',id};
     const requirements=requirementCheck(character,record,kind);if(!requirements.ok)return{ok:false,reason:'ABILITY_REQUIREMENT_NOT_MET',id,...requirements};
+    if(kind==='passive'){const selection=passiveSelectionCheck(character,record,options);if(!selection.ok)return{...selection,id};}
     const cost=acquisitionCost(record,kind,balanceValue),before=character.skillPoints;if(before<cost)return{ok:false,reason:'SKILL_POINTS_SHORTAGE',id,cost,skillPointsBefore:before,skillPointsAfter:before,...requirements};
     return{ok:true,id,kind,cost,skillPointsBefore:before,skillPointsAfter:before-cost,...requirements};
   }
-  function acquire(character,record,kind,balanceValue){
-    const result=preview(character,record,kind,balanceValue);if(!result.ok)return{...result,changed:false};
+  function acquire(character,record,kind,balanceValue,options){
+    const result=preview(character,record,kind,balanceValue,options);if(!result.ok)return{...result,changed:false};
     character.skillPoints=result.skillPointsAfter;
     if(kind==='skill')character.skills.push(result.id);else character.passiveIds.push(result.id);
     character.skillPointSpend[kind][result.id]=result.cost;
     return{...result,changed:true,skillPointsSpent:result.cost};
   }
   function acquireSkill(character,skill,balance){return acquire(character,skill,'skill',balance);}
-  function acquirePassive(character,passive,balance){return acquire(character,passive,'passive',balance);}
+  function acquirePassive(character,passive,balance,options){return acquire(character,passive,'passive',balance,options);}
   function grantLevelUpSkillPoints(character,balanceValue,{levels=1}={}){
     normalizeCharacterState(character);const balance=normalizeBalance(balanceValue),levelCount=integer(levels,'levels',{min:1}),gained=balance.skill_points_per_level*levelCount,before=character.skillPoints;character.skillPoints=before+gained;
     return{ok:true,changed:gained>0,gained,skillPointsBefore:before,skillPointsAfter:character.skillPoints,levels:levelCount};
   }
-  return Object.freeze({STATS,normalizeBalance,normalizeSkillPointSpend,normalizeCharacterState,skillRequirements,passiveRequirements,requirementCheck,acquisitionCost,spentSkillPoints,previewAcquireSkill:(c,r,b)=>preview(c,r,'skill',b),previewAcquirePassive:(c,r,b)=>preview(c,r,'passive',b),acquireSkill,acquirePassive,grantLevelUpSkillPoints});
+  return Object.freeze({STATS,normalizeBalance,normalizeSkillPointSpend,normalizeCharacterState,skillRequirements,passiveRequirements,requirementCheck,acquisitionCost,spentSkillPoints,previewAcquireSkill:(c,r,b)=>preview(c,r,'skill',b),previewAcquirePassive:(c,r,b,o)=>preview(c,r,'passive',b,o),acquireSkill,acquirePassive,grantLevelUpSkillPoints});
 });
