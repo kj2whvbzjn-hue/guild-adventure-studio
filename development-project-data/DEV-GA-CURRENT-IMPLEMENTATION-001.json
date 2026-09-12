@@ -5,24 +5,24 @@
     "name": "修正版34仕様に基づく新規実装計画",
     "status": "Implementing",
     "ai_attention": "Include",
-    "updated_at": "2026-09-12T20:35:54.891Z"
+    "updated_at": "2026-09-12T20:46:55.477Z"
   },
   "project_context": {
     "purpose": "修正版34仕様の全項目を実装し、Studio/Game/Export/Saveで一貫させる。",
-    "summary": "TASK-NIP-F01〜F04、D01/D02/D03/D05〜D14、TASK-NIP-01-01、TASK-NIP-03-01、TASK-NIP-07-01、TASK-NIP-08-01完了。F04でFormal Runtime Gate、GS-01で開始前パーティ検証、GS-03で転職Save Transactionを確認。GS-07は全13種×11iLv=143件と範囲外/未知種拒否、保存済み性能参照、盾・矢筒非攻撃経路を確認。GS-08は3種×4部位×11iLv=132件と部位単位加算を確認。次はTASK-NIP-13-01へ進む。"
+    "summary": "TASK-NIP-F01〜F04、D01/D02/D03/D05〜D14、TASK-NIP-01-01、TASK-NIP-03-01、TASK-NIP-07-01、TASK-NIP-08-01、TASK-NIP-13-01完了。GS-13はRange対象集合、RANDOM復元抽選の既定2回、後衛攻撃者倍率、前衛全滅時の生存後衛強制前進、COVER対象Rangeと同priority固定戦闘順を共通Resolverへ統合。次はTASK-NIP-17-01へ進む。"
   },
   "current_focus": {
     "architecture_id": "ARC-NIP",
-    "work_box_id": "BOX-NIP-13",
-    "theme": "隊列と対象範囲",
-    "goal": "TASK-NIP-13-01「隊列と対象範囲：ドメイン処理を実装する」をSOURCE_UPDATEで実装する"
+    "work_box_id": "BOX-NIP-17",
+    "theme": "スキルデータと使用条件",
+    "goal": "TASK-NIP-17-01「スキルデータと使用条件：ドメイン処理を実装する」をSOURCE_UPDATEで実装する"
   },
   "source_baseline": {
-    "studio_build": "GKS-B911",
-    "game_build": "GA-B486.242",
-    "source_label": "guild-adventure-studio-sub(20260912-123944).zip / SHA256 fe7d26c4d6a5176d3a1656118da2757f9c014d616f923b40f108826916a715ff",
+    "studio_build": "GKS-B914",
+    "game_build": "GA-B486.245",
+    "source_label": "GKS-B914-77e72440998d / target source tree SHA256 77e72440998d051b5b4c0d89fae1d35c3205e5843988067be7c339fba2527e10",
     "source_role": "current_baseline",
-    "recorded_at": "2026-09-12T13:10:00Z"
+    "recorded_at": "2026-09-12T20:55:00Z"
   },
   "lifecycle": {
     "status": "Active",
@@ -55,7 +55,22 @@
       "updated_at": ""
     }
   ],
-  "implementation_records": [],
+  "implementation_records": [
+    {
+      "id": "IMPL-NIP-13-01-GKS-B914-001",
+      "studio_build": "GKS-B914",
+      "game_build": "GA-B486.245",
+      "work_box_ids": [
+        "BOX-NIP-13"
+      ],
+      "task_ids": [
+        "TASK-NIP-13-01"
+      ],
+      "result": "Applied",
+      "evidence": "assets/shared/js/formation-target-resolver.jsへGS-13の対象集合/RANDOM既定2回等を実装しGame/Studio Runtimeへ反映。COVER同priorityはbattleTieRoll固定順。Quick 12/12、適用後Full 27/27 PASS。artifact_id=GKS-B914-77e72440998d。削除なし・Game Data変更なし。",
+      "recorded_at": "2026-09-12T20:42:00Z"
+    }
+  ],
   "discussions": [],
   "decisions": [
     {
@@ -2155,7 +2170,7 @@
       "id": "TASK-NIP-13-01",
       "title": "隊列と対象範囲：ドメイン処理を実装する",
       "box_id": "BOX-NIP-13",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 23,
       "depends_on": [
         "TASK-NIP-F03",
@@ -2180,7 +2195,7 @@
         "at": ""
       },
       "created_at": "2026-09-11T00:00:00Z",
-      "updated_at": "2026-09-11T00:00:00Z",
+      "updated_at": "2026-09-12T20:42:00Z",
       "decision_policy": "未決値は検証済みの明示入力・試験fixtureで分離し、欠落する本番設定は拒否する。未決境界を除く確定処理を実装できる。",
       "spec_refs": [
         "GS-13"
@@ -6438,6 +6453,52 @@
         "reason": "",
         "mode": ""
       }
+    },
+    {
+      "id": "CHECK-NIP-13-01-GS13-DOMAIN",
+      "title": "GS-13 隊列と対象範囲ドメイン受入",
+      "target_type": "Task",
+      "target_id": "TASK-NIP-13-01",
+      "status": "Passed",
+      "result": "SINGLE/FRONT/BACK/RANDOM/ALL対象集合、RANDOM既定2回の復元抽選、後衛攻撃者倍率、前衛全滅時強制前進、COVER適用Rangeを共通Resolverで確認。",
+      "evidence": "Node fixture: SINGLE前衛のみ、BACK前後両方、RANDOM未指定2回で同一対象重複可、後衛SINGLE 100→50 / ALL 100→100、死亡後衛を前進対象外。Runtime/Studio COVERはSINGLE/BACK/RANDOMのみ、同priorityはbattleTieRoll固定順で選択。",
+      "created_at": "2026-09-12T20:42:00Z",
+      "updated_at": "2026-09-12T20:42:00Z",
+      "gate": "General",
+      "checked_by": "AI",
+      "checked_at": "2026-09-12T20:42:00Z",
+      "resolves_check_ids": [],
+      "blocking": false,
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      }
+    },
+    {
+      "id": "CHECK-NIP-13-01-SOURCE-GATE",
+      "title": "TASK-NIP-13-01 SOURCE_UPDATE適用後Gate",
+      "target_type": "Task",
+      "target_id": "TASK-NIP-13-01",
+      "status": "Passed",
+      "result": "正確なGA-B486.244 / GKS-B913 baselineへ差分SOURCE_UPDATEをoverlayし、Full 27/27 PASS。",
+      "evidence": "artifact_id=GKS-B914-77e72440998d; target_source_tree_sha256=77e72440998d051b5b4c0d89fae1d35c3205e5843988067be7c339fba2527e10; Quick 12/12 PASS; applied Full 27/27 PASS; deleted=0.",
+      "created_at": "2026-09-12T20:55:00Z",
+      "updated_at": "2026-09-12T20:55:00Z",
+      "gate": "General",
+      "checked_by": "AI",
+      "checked_at": "2026-09-12T20:55:00Z",
+      "resolves_check_ids": [],
+      "blocking": false,
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      }
     }
   ],
   "history": [
@@ -6546,6 +6607,15 @@
       "summary": "GKS-B912 / GA-B486.243。全機能共用Save Transaction、Backup/Main二段書込と失敗時復旧、直列化、保存成功後副作用境界を実装。外部受入試験TASK_NIP_F03_SAVE_TRANSACTION_OK。Quick 12/12、Full 27/27、Release 29/29、SOURCE_UPDATE適用後Full 27/27 PASS。Artifact GKS-B912-23f30da0c3a3、target tree SHA256=23f30da0c3a3b0ed69286210a8f6a22c3b9462c92b3e4b1b243fa2c189c8aaeb。",
       "actor": "AI-from-current-authority",
       "at": "2026-09-12T13:20:00Z"
+    },
+    {
+      "id": "HISTORY-NIP-13-01-20260912-204200",
+      "entity_type": "Task",
+      "entity_id": "TASK-NIP-13-01",
+      "action": "Completed",
+      "summary": "GA-B486.245 / GKS-B914でGS-13共通ResolverとGame/Studio接続を更新。次はTASK-NIP-17-01。",
+      "actor": "AI-from-current-authority",
+      "at": "2026-09-12T20:42:00Z"
     }
   ],
   "authority": {
