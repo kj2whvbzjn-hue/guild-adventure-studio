@@ -5,17 +5,17 @@
     "name": "修正版34仕様に基づく新規実装計画",
     "status": "Implementing",
     "ai_attention": "Include",
-    "updated_at": "2026-09-12T12:54:35.003Z"
+    "updated_at": "2026-09-12T13:33:19.121Z"
   },
   "project_context": {
     "purpose": "修正版34仕様の全項目を実装し、Studio/Game/Export/Saveで一貫させる。",
-    "summary": "TASK-NIP-F01/F02/D01/D02/D03/D05/D06/D07/D08/D09/D10/D11/D12/D13/D14完了。MagicDefense誤混入は除去済み。D14は初期Skillなし/SP0を維持し、Party→Equipment→AI→Stone→Quest→Warehouse/Reward→Skill/Passiveの7段階Tutorialを確定。次はTASK-NIP-F03のSource実装へ進む。"
+    "summary": "TASK-NIP-F01/F02/D01/D02/D03/D05〜D14/F03完了。MagicDefense誤混入は修正版仕様・計画から除去済み。F03で全機能共用の直列Save Transaction、2-slot Backup/Main復旧、保存成功後副作用境界を実装。次はTASK-NIP-F04へ進む。"
   },
   "current_focus": {
     "architecture_id": "ARC-NIP",
     "work_box_id": "BOX-NIP-FOUNDATION",
     "theme": "共通基盤実装",
-    "goal": "TASK-NIP-F03「全機能共用の保存トランザクションを作る」をSOURCE_UPDATEで実装する"
+    "goal": "TASK-NIP-F04「設定検証と正式実行入口を準備する」をSOURCE_UPDATEで実装する"
   },
   "source_baseline": {
     "studio_build": "GKS-B911",
@@ -1911,7 +1911,7 @@
       "id": "TASK-NIP-F03",
       "title": "全機能共用の保存トランザクションを作る",
       "box_id": "BOX-NIP-FOUNDATION",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 17,
       "depends_on": [
         "TASK-NIP-F02"
@@ -1929,12 +1929,12 @@
       "work_type": "SOURCE_UPDATE",
       "requires_human_approval": false,
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "AI-from-current-authority",
+        "at": "2026-09-12T13:20:00Z"
       },
       "created_at": "2026-09-11T00:00:00Z",
-      "updated_at": "2026-09-11T00:00:00Z",
+      "updated_at": "2026-09-12T13:20:00Z",
       "body": "実装手順\n1. 状態複製→操作案適用→全体検証→直列書込→成功通知の入口を作る。外部副作用は保存成功後に行う。\n2. 前正常Save/Backupの保持と本Save切替の失敗点を列挙する。localStorageの3個目の巨大一時コピーを前提にせず、ステージ状態はメモリで構築する。\n3. 実ストレージの原子性に合わせた復旧手順を定義し、途中失敗と再起動に対する一意な正常状態の選択規則を実装する。\n\n完了条件\n1. 容量不足/Backup書込失敗/本Save書込失敗の各点で前正常状態を復旧できる。\n2. 並行操作が更新を失わず、未確定中間状態を正常Saveとして読まない。"
     },
     {
@@ -6537,6 +6537,15 @@
       "summary": "TUTORIAL-ONBOARDING-1.0を確定。次はF03 Source実装。",
       "actor": "AI-from-current-authority",
       "at": "2026-09-12T13:10:00Z"
+    },
+    {
+      "id": "HISTORY-NIP-F03-20260912-132000",
+      "entity_type": "Task",
+      "entity_id": "TASK-NIP-F03",
+      "action": "Completed",
+      "summary": "GKS-B912 / GA-B486.243。全機能共用Save Transaction、Backup/Main二段書込と失敗時復旧、直列化、保存成功後副作用境界を実装。外部受入試験TASK_NIP_F03_SAVE_TRANSACTION_OK。Quick 12/12、Full 27/27、Release 29/29、SOURCE_UPDATE適用後Full 27/27 PASS。Artifact GKS-B912-23f30da0c3a3、target tree SHA256=23f30da0c3a3b0ed69286210a8f6a22c3b9462c92b3e4b1b243fa2c189c8aaeb。",
+      "actor": "AI-from-current-authority",
+      "at": "2026-09-12T13:20:00Z"
     }
   ],
   "authority": {
