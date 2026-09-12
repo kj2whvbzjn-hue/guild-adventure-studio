@@ -562,35 +562,25 @@ function currentSaveBoundaryDescriptor(snapshot=data){const Boundary=window.GKRu
 function writeAutoSaveSnapshot(snapshot){
  if(saveCommitInProgress)throw new Error('Save commit is already in progress.');
  saveCommitInProgress=true;
- const payload=JSON.stringify(snapshot),previous=localStorage.getItem(SAVE_KEY),previousBackup=localStorage.getItem(SAVE_BACKUP_KEY);
- let mainSwitched=false;
  try{
-  const stageRecord=buildSaveStageRecord(payload);
-  const verifiedPayload=verifySaveStageRecord(stageRecord);
+  const payload=JSON.stringify(snapshot),stageRecord=buildSaveStageRecord(payload),verifiedPayload=verifySaveStageRecord(stageRecord);
   if(verifiedPayload!==payload)throw new Error('Save Integrity: staged payload changed before commit.');
-  if(previous!==null){
-   validateSavePayload(previous);
-   saveBoundaryWrite('set',SAVE_BACKUP_KEY,previous,'autosave_backup');
-   if(localStorage.getItem(SAVE_BACKUP_KEY)!==previous)throw new Error('Save Integrity: backup verification failed.');
-  }
-  saveBoundaryWrite('set',SAVE_KEY,verifiedPayload,'autosave_main_commit');
-  mainSwitched=true;
-  const committed=localStorage.getItem(SAVE_KEY);
-  if(committed!==verifiedPayload)throw new Error('Save Integrity: committed payload verification failed.');
-  validateSavePayload(committed);
-  return snapshot;
- }catch(error){
-  if(mainSwitched){
-   try{
-    if(previous===null)saveBoundaryWrite('remove',SAVE_KEY,null,'autosave_main_rollback');else saveBoundaryWrite('set',SAVE_KEY,previous,'autosave_main_rollback');
-   }catch(rollbackError){console.error('Save rollback failed',rollbackError);}
-  }
-  try{
-   if(previousBackup===null)saveBoundaryWrite('remove',SAVE_BACKUP_KEY,null,'autosave_backup_rollback');else saveBoundaryWrite('set',SAVE_BACKUP_KEY,previousBackup,'autosave_backup_rollback');
-  }catch(backupRollbackError){console.error('Save backup rollback failed',backupRollbackError);}
-  throw error;
+  const Boundary=window.GKRuntimeBoundaryContracts;
+  if(Boundary?.commitTwoSlotSnapshot){Boundary.commitTwoSlotSnapshot({payload:verifiedPayload,mainKey:SAVE_KEY,backupKey:SAVE_BACKUP_KEY,read:key=>localStorage.getItem(key),write:(operation,key,value,phase)=>saveBoundaryWrite(operation,key,value,phase),validatePayload:validateSavePayload});return snapshot;}
+  const previous=localStorage.getItem(SAVE_KEY),previousBackup=localStorage.getItem(SAVE_BACKUP_KEY);let mainSwitched=false;
+  try{if(previous!==null){validateSavePayload(previous);saveBoundaryWrite('set',SAVE_BACKUP_KEY,previous,'autosave_backup');if(localStorage.getItem(SAVE_BACKUP_KEY)!==previous)throw new Error('Save Integrity: backup verification failed.');}saveBoundaryWrite('set',SAVE_KEY,verifiedPayload,'autosave_main_commit');mainSwitched=true;const committed=localStorage.getItem(SAVE_KEY);if(committed!==verifiedPayload)throw new Error('Save Integrity: committed payload verification failed.');validateSavePayload(committed);return snapshot;}
+  catch(error){if(mainSwitched){try{if(previous===null)saveBoundaryWrite('remove',SAVE_KEY,null,'autosave_main_rollback');else saveBoundaryWrite('set',SAVE_KEY,previous,'autosave_main_rollback')}catch(rollbackError){console.error('Save rollback failed',rollbackError)}}try{if(previousBackup===null)saveBoundaryWrite('remove',SAVE_BACKUP_KEY,null,'autosave_backup_rollback');else saveBoundaryWrite('set',SAVE_BACKUP_KEY,previousBackup,'autosave_backup_rollback')}catch(backupRollbackError){console.error('Save backup rollback failed',backupRollbackError)}throw error;}
  }finally{saveCommitInProgress=false;}
 }
+function validatePersistentTransactionState(snapshot){const payload=JSON.stringify(snapshot);validateSavePayload(payload);normalizeLoadedSave(JSON.parse(payload));return{ok:true,save_version:SAVE_VERSION,payload_bytes:new TextEncoder().encode(payload).byteLength}}
+let persistentSaveTransactionCoordinator=null;
+function getPersistentSaveTransactionCoordinator(){
+ if(persistentSaveTransactionCoordinator)return persistentSaveTransactionCoordinator;const Boundary=window.GKRuntimeBoundaryContracts;if(!Boundary?.createSerialTransactionCoordinator)throw new Error('Save Transaction coordinator is unavailable.');
+ persistentSaveTransactionCoordinator=Boundary.createSerialTransactionCoordinator({readState:()=>data,cloneState:clone,prepareState:proposed=>buildAutoSaveSnapshot(proposed),validateState:validatePersistentTransactionState,commitState:prepared=>writeAutoSaveSnapshot(prepared),publishState:committed=>{data=committed;return data},createTransactionRecord:({transactionId,source,proposed,validationResult,committed})=>Boundary.createSaveTransaction({transactionId,descriptor:currentSaveBoundaryDescriptor(committed),sourceVersion:String(source?.updatedAt||source?.saveVersion||''),proposedState:proposed,validationResult,committedState:committed,recoverablePreviousState:source})});return persistentSaveTransactionCoordinator;
+}
+function runPersistentTransaction(operation,mutate,{afterCommit=null,transactionId=''}={}){return getPersistentSaveTransactionCoordinator().enqueue({operation,transactionId,mutate,afterCommit})}
+function currentPersistentTransactionState(){const coordinator=getPersistentSaveTransactionCoordinator();return{pending:coordinator.pendingCount(),last_transaction:coordinator.lastTransaction()}}
+function inspectCurrentAutoSaveSlots(){const Boundary=window.GKRuntimeBoundaryContracts;if(!Boundary?.inspectTwoSlotState)return null;const validateCandidate=raw=>{const root=parseSaveRoot(raw),version=Number(root.saveVersion);if(version===SAVE_VERSION){validateSavePayload(raw);return true}if(!SAVE_MIGRATIONS[version])throw new Error(`Save Migration: Version ${version} から ${SAVE_VERSION} への対応Migrationがありません。`);migrateSaveToCurrent(raw);return true};return Boundary.inspectTwoSlotState({mainKey:SAVE_KEY,backupKey:SAVE_BACKUP_KEY,read:key=>localStorage.getItem(key),validatePayload:validateCandidate})}
 function commitPersistentState(){
  const current=buildAutoSaveSnapshot(data);
  data=writeAutoSaveSnapshot(current);
@@ -707,7 +697,7 @@ function safeReturnFromSaveRecovery(){
 }
 function setSaveLoadOperationBusy(busy){saveLoadOperationInProgress=Boolean(busy);for(const id of ['titleStart','titleContinue','titleRestoreBackup']){const button=$(id);if(button)button.disabled=saveLoadOperationInProgress}refreshTitleBackupRecovery();return saveLoadOperationInProgress}
 window.GKGameSaveRecovery=Object.freeze({current:currentSaveRecoveryState,show:showSaveRecovery,hide:hideSaveRecovery,retry:retrySaveRecovery,safeReturn:safeReturnFromSaveRecovery,backupInfo:currentAutoSaveBackupInfo,restoreBackup:restoreAutoSaveBackup});
-window.GKGameSaveCore=Object.freeze({mode:'AUTO_SAVE',slotCount:1,slotKey:SAVE_KEY,legacySlotKeys:Object.freeze({...SAVE_LEGACY_KEYS}),tempKey:SAVE_TEMP_KEY,backupKey:SAVE_BACKUP_KEY,migrationBackupKey:SAVE_MIGRATION_BACKUP_KEY,integrityAlgorithm:SAVE_INTEGRITY_ALGORITHM,domainPersistenceBridge:window.GKGameCharacterGuildProgressionSaveBridge||null,inventoryEquipmentPersistenceBridge:window.GKGameInventoryEquipmentSaveBridge||null,skillPassiveAiPersistenceBridge:window.GKGameSkillPassiveAISaveBridge||null,settingsTutorialPersistenceBridge:window.GKGameSettingsTutorialSaveBridge||null,questRunPersistenceBridge:window.GKGameQuestRunSaveBridge||null,recovery:window.GKGameSaveRecovery,newGameInitializationOrder:NEW_GAME_INITIALIZATION_ORDER,requestNewGameOverwriteConfirmation,prepareNewGameSnapshot,commitPreparedNewGame,hasSave:hasAutoSave,load:loadAutoSave,commitPersistentState,autoSave,boundaryDescriptor:currentSaveBoundaryDescriptor});
+window.GKGameSaveCore=Object.freeze({mode:'AUTO_SAVE',slotCount:1,slotKey:SAVE_KEY,legacySlotKeys:Object.freeze({...SAVE_LEGACY_KEYS}),tempKey:SAVE_TEMP_KEY,persistentTempPayload:false,backupKey:SAVE_BACKUP_KEY,migrationBackupKey:SAVE_MIGRATION_BACKUP_KEY,integrityAlgorithm:SAVE_INTEGRITY_ALGORITHM,domainPersistenceBridge:window.GKGameCharacterGuildProgressionSaveBridge||null,inventoryEquipmentPersistenceBridge:window.GKGameInventoryEquipmentSaveBridge||null,skillPassiveAiPersistenceBridge:window.GKGameSkillPassiveAISaveBridge||null,settingsTutorialPersistenceBridge:window.GKGameSettingsTutorialSaveBridge||null,questRunPersistenceBridge:window.GKGameQuestRunSaveBridge||null,recovery:window.GKGameSaveRecovery,newGameInitializationOrder:NEW_GAME_INITIALIZATION_ORDER,requestNewGameOverwriteConfirmation,prepareNewGameSnapshot,commitPreparedNewGame,hasSave:hasAutoSave,load:loadAutoSave,commitPersistentState,autoSave,boundaryDescriptor:currentSaveBoundaryDescriptor,transaction:runPersistentTransaction,transactionState:currentPersistentTransactionState,inspectSlots:inspectCurrentAutoSaveSlots});
 function storeAdventureQuestRun(run,{startedAt=new Date().toISOString()}={}){if(!window.GKAdventureStorySystem)throw new Error('Adventure Story System is not loaded');return GKAdventureStorySystem.startQuestRunPlayback(data,run,{startedAt})}
 function currentAdventureQuestRun(){return window.GKAdventureStorySystem?GKAdventureStorySystem.activeQuestRun(data):null}
 function resumeAdventurePlayback(nowMs=Date.now()){return window.GKAdventureStorySystem?GKAdventureStorySystem.resumeQuestRun(data,nowMs):null}

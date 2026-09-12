@@ -110,6 +110,52 @@
     probe?.afterWrite?.(info);return true;
   }
 
+  function restoreStorageValue(read,write,key,previous,phase){
+    const current=read(key);if(current===previous)return false;
+    if(previous==null)write('remove',key,null,phase);else write('set',key,previous,phase);
+    if(read(key)!==previous)throw new Error(`Save Transaction: rollback verification failed for ${key}.`);
+    return true;
+  }
+  function commitTwoSlotSnapshot({payload,mainKey,backupKey,read,write,validatePayload}={}){
+    if(typeof payload!=='string'||!payload.length)throw new Error('Save Transaction: payload is required.');
+    const main=nonEmpty(mainKey,'Save Transaction mainKey'),backup=nonEmpty(backupKey,'Save Transaction backupKey');
+    if(typeof read!=='function'||typeof write!=='function'||typeof validatePayload!=='function')throw new Error('Save Transaction: storage callbacks are required.');
+    validatePayload(payload);
+    const previousMain=read(main),previousBackup=read(backup),rollbackErrors=[];
+    try{
+      if(previousMain!==null){validatePayload(previousMain);write('set',backup,previousMain,'autosave_backup');if(read(backup)!==previousMain)throw new Error('Save Transaction: backup verification failed.');}
+      write('set',main,payload,'autosave_main_commit');const committed=read(main);if(committed!==payload)throw new Error('Save Transaction: committed payload verification failed.');validatePayload(committed);
+      return Object.freeze({committed:true,main_key:main,backup_key:backup,had_previous_main:previousMain!==null,previous_main:previousMain,previous_backup:previousBackup,committed_payload:payload});
+    }catch(error){
+      for(const [key,previous,phase] of [[main,previousMain,'autosave_main_rollback'],[backup,previousBackup,'autosave_backup_rollback']]){try{restoreStorageValue(read,write,key,previous,phase)}catch(rollbackError){rollbackErrors.push({key,error:String(rollbackError?.message||rollbackError)})}}
+      if(rollbackErrors.length){const wrapped=new Error(`Save Transaction: commit failed and rollback was incomplete (${rollbackErrors.map(row=>`${row.key}: ${row.error}`).join(' / ')}).`);wrapped.code='SAVE_TRANSACTION_ROLLBACK_FAILED';wrapped.cause=error;wrapped.rollback_errors=clone(rollbackErrors);throw wrapped;}
+      throw error;
+    }
+  }
+  function inspectTwoSlotState({mainKey,backupKey,read,validatePayload}={}){
+    const main=nonEmpty(mainKey,'Save Transaction mainKey'),backup=nonEmpty(backupKey,'Save Transaction backupKey');if(typeof read!=='function'||typeof validatePayload!=='function')throw new Error('Save Transaction: inspection callbacks are required.');
+    const inspect=key=>{const raw=read(key);if(raw===null)return{key,present:false,valid:false,raw:null,error:''};try{validatePayload(raw);return{key,present:true,valid:true,raw,error:''}}catch(error){return{key,present:true,valid:false,raw,error:String(error?.message||error)}}};
+    const mainState=inspect(main),backupState=inspect(backup);let status='EMPTY',normal_key='',recovery_key='';
+    if(mainState.valid){status='MAIN_VALID';normal_key=main;}else if(backupState.valid){status='RECOVERY_REQUIRED';recovery_key=backup;}else if(mainState.present||backupState.present)status='INVALID';
+    return Object.freeze({status,normal_key,recovery_key,main:Object.freeze({...mainState}),backup:Object.freeze({...backupState})});
+  }
+  function createSerialTransactionCoordinator({readState,cloneState=clone,prepareState=value=>value,validateState=()=>({ok:true}),commitState,publishState=()=>{},createTransactionRecord=null}={}){
+    if(typeof readState!=='function'||typeof cloneState!=='function'||typeof prepareState!=='function'||typeof validateState!=='function'||typeof commitState!=='function'||typeof publishState!=='function')throw new Error('Save Transaction coordinator callbacks are required.');
+    let tail=Promise.resolve(),sequence=0,pending=0,lastTransaction=null;
+    const execute=async request=>{
+      const operation=String(request?.operation||'mutation').trim()||'mutation',transactionId=String(request?.transactionId||`C05-TX-${++sequence}`),source=cloneState(readState()),proposed=cloneState(source);
+      if(typeof request?.mutate!=='function')throw new Error('Save Transaction mutate callback is required.');
+      const mutationResult=await request.mutate(proposed),prepared=await prepareState(proposed,{operation,transactionId,source:cloneState(source),mutationResult}),validationResult=await validateState(prepared,{operation,transactionId,source:cloneState(source),proposed:cloneState(proposed),mutationResult});
+      if(validationResult===false||validationResult?.ok===false){const error=new Error(`Save Transaction validation failed: ${operation}`);error.code='SAVE_TRANSACTION_VALIDATION_FAILED';error.validation_result=clone(validationResult);throw error;}
+      const committed=await commitState(prepared,{operation,transactionId,source:cloneState(source),mutationResult,validationResult:clone(validationResult)});await publishState(committed,{operation,transactionId,mutationResult});
+      if(typeof createTransactionRecord==='function')lastTransaction=await createTransactionRecord({operation,transactionId,source:cloneState(source),proposed:cloneState(prepared),validationResult:clone(validationResult),committed:cloneState(committed),mutationResult});
+      if(typeof request.afterCommit==='function'){try{await request.afterCommit({operation,transactionId,state:cloneState(committed),mutationResult,transaction:lastTransaction})}catch(error){const wrapped=new Error(`Save Transaction post-commit effect failed: ${operation} (${error?.message||error}).`);wrapped.code='SAVE_POST_COMMIT_EFFECT_FAILED';wrapped.committed=true;wrapped.cause=error;throw wrapped;}}
+      return Object.freeze({ok:true,operation,transaction_id:transactionId,state:cloneState(committed),mutation_result:clone(mutationResult),transaction:lastTransaction});
+    };
+    const enqueue=request=>{pending++;const run=tail.then(()=>execute(request),()=>execute(request));tail=run.then(()=>undefined,()=>undefined);return run.finally(()=>{pending=Math.max(0,pending-1)})};
+    return Object.freeze({enqueue,whenIdle:()=>tail,pendingCount:()=>pending,lastTransaction:()=>clone(lastTransaction)});
+  }
+
   function assertDomainOwner(contractId,owner){const id=String(contractId||'').toUpperCase(),allowed=DOMAIN_OWNERS[id];if(!allowed)throw new Error(`Unknown contract id: ${id}`);const name=nonEmpty(owner,'owner');if(!allowed.includes(name))throw new Error(`${id} domain write owner is not allowed: ${name}`);return true;}
   function createBattleSnapshot(input={}){
     const actors=requiredArray(input.actors,'BattleSnapshot.actors').map((row,index)=>{if(!isObject(row))throw new Error(`BattleSnapshot.actors[${index}] object is required.`);return clone(row);});
@@ -147,5 +193,5 @@
   }
   function createMasterValidationResult({schemaVersion,masterId,ok,errors=[]}={}){return Object.freeze({contract:'C06',schema_version:CONTRACTS.C06.schema_version,master_schema_version:nonEmpty(schemaVersion,'MasterValidation.schemaVersion'),master_id:nonEmpty(masterId,'MasterValidation.masterId'),ok:ok===true,errors:Object.freeze(clone(Array.isArray(errors)?errors:[]))});}
 
-  return Object.freeze({CONTRACTS,RNG_PURPOSES,DOMAIN_OWNERS,clone,stable,stableEqual,createMetrics,createRngProbe,createPersistenceProbe,installInstrumentation,draw,runtimeDraw,persistenceWrite,assertDomainOwner,createBattleSnapshot,createActionReservation,createResolvedHit,createQuestRunSnapshot,createSaveDescriptor,createSaveTransaction,createMasterValidationResult});
+  return Object.freeze({CONTRACTS,RNG_PURPOSES,DOMAIN_OWNERS,clone,stable,stableEqual,createMetrics,createRngProbe,createPersistenceProbe,installInstrumentation,draw,runtimeDraw,persistenceWrite,commitTwoSlotSnapshot,inspectTwoSlotState,createSerialTransactionCoordinator,assertDomainOwner,createBattleSnapshot,createActionReservation,createResolvedHit,createQuestRunSnapshot,createSaveDescriptor,createSaveTransaction,createMasterValidationResult});
 });
