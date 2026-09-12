@@ -329,7 +329,7 @@ window.GKGameFormalConfig=Object.freeze({bridge:formalGameBridge,jobs:formalJobC
 window.GKGameEquipmentRuntime=Object.freeze({bridge:formalEquipmentBridge,slots:CHARACTER_EQUIPMENT_SLOTS,slotLabels:CHARACTER_EQUIPMENT_SLOT_LABEL,slotLabel:equipmentSlotLabel,weaponStyles:CHARACTER_WEAPON_STYLES,weaponStyle:characterWeaponStyle,normalizeRecord:normalizeFormalEquipmentRecord,definition:equipmentDefinition,requirementCheck:equipmentRequirementCheck,requirementFailureLabel:equipmentRequirementFailureLabel,bonusLabel:equipmentBonusLabel,requirementLabel:equipmentRequirementLabel,normalizeCharacterState:normalizeCharacterEquipmentState,equipmentContribution:characterEquipmentContribution,equipTargets:equipmentEquipTargets,previewEquip:previewCharacterEquipmentEquip,modifierDisplay:equipmentModifierDisplayRows,basicAttackProfiles:characterBasicAttackProfiles,bowQuiverMissingSlot,bowQuiverActionRequirementReason,equipmentTagIds:characterEquipmentTagIds,combatCapabilities:characterCombatCapabilities,canDualWield:characterCanDualWield,replaceModifierSourceCatalog:replaceFormalModifierSourceCatalog,modifierContributions:characterFormalModifierContributions,load:loadFormalEquipmentDefinitions});
 const NEW_GAME_INITIALIZATION_ORDER=Object.freeze(['guild','progress_flags','starter_characters','party','inventory_equipment','skill_passive_ai','integrity','first_auto_save']);
 function createEmptyPersistentState(now=new Date().toISOString()){
- return{saveVersion:SAVE_VERSION,schemaRevision:'1.7.0',gameVersion:APP_RUNTIME_GAME_BUILD,createdAt:now,updatedAt:now,characters:[],aiPrograms:[],aiLayouts:[],aiPresets:[],partyIds:[],selectedQuestId:'',inventory:[],guild:{gold:0,victories:0,defeats:0,lastBattle:null},flags:{},quest_progress:{completed_quest_ids:[],unlocked_quest_ids:[]},quest_resources:{},adventure:{quest_runs:[],active_quest_run_id:'',history_limit:20,stone_selection_by_quest:{}},gameSettings:{},tutorialProgress:{}};
+ return{saveVersion:SAVE_VERSION,schemaRevision:'1.7.0',gameVersion:APP_RUNTIME_GAME_BUILD,createdAt:now,updatedAt:now,characters:[],aiPrograms:[],aiLayouts:[],aiPresets:[],partyIds:[],selectedQuestId:'',inventory:[],guild:{gold:0,victories:0,defeats:0,lastBattle:null},flags:{},quest_progress:{completed_quest_ids:[],unlocked_quest_ids:[]},quest_resources:{},adventure:{quest_runs:[],active_quest_run_id:'',history_limit:20,stone_selection_by_quest:{}},starter_equipment_instances:[],gameSettings:{},tutorialProgress:{}};
 }
 let data=createEmptyPersistentState();let selectedId=null;
 const $=id=>document.getElementById(id), clone=o=>JSON.parse(JSON.stringify(o)), uid=()=>`C-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,7)}`;
@@ -360,8 +360,15 @@ function initializeNewGameStarterCharacters(candidate,cfg,now){
 function initializeNewGameParty(candidate,cfg,created){
  candidate.partyIds=cfg.party_member_indexes.map(index=>created[index]?.id).filter(Boolean).slice(0,partyMaxSize());
 }
+function issueNewGameEquipmentInstanceId(){
+ if(globalThis.crypto&&typeof globalThis.crypto.randomUUID==='function')return globalThis.crypto.randomUUID();
+ return`${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
+}
 function initializeNewGameInventoryAndEquipment(candidate,cfg){
  candidate.inventory=[...cfg.starter_inventory_ids];candidate.characters.forEach((character,index)=>applyStarterEquipmentConfiguration(character,cfg.starter_roster[index]?.starter_equipment||{},`game_runtime.new_game.starter_roster[${index}].starter_equipment`));
+ if(!window.GKNewGameDomain)throw new Error('New Game Domainを読み込めません。');
+ candidate.starter_equipment_instances=GKNewGameDomain.buildStarterEquipmentInstances(candidate.characters,cfg.starter_roster,{issueId:issueNewGameEquipmentInstanceId,equipmentExists:id=>formalEquipmentCatalog.has(String(id||''))});
+ GKNewGameDomain.validateStarterEquipmentInstances(candidate.characters,cfg.starter_roster,candidate.starter_equipment_instances,{equipmentExists:id=>formalEquipmentCatalog.has(String(id||''))});
 }
 function initializeNewGameSkillPassiveAi(candidate){
  candidate.characters=candidate.characters.map(initializeCharacterSkillPassiveAiState);candidate.aiPrograms=[];candidate.aiLayouts=[];candidate.aiPresets=[];

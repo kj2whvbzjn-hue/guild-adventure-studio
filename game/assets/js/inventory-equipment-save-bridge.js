@@ -24,7 +24,8 @@
       if(!isObject(character.equipment))throw new Error(`Inventory / Equipment Save Bridge: characters[${index}].equipment object is required.`);
       return{characterId,equipment:clone(character.equipment),weaponStyle:character.weaponStyle==null?null:String(character.weaponStyle)};
     });
-    return{inventory:clone(save.inventory),characterEquipment};
+    const starterEquipmentInstances=Array.isArray(save.starter_equipment_instances)?clone(save.starter_equipment_instances):[];
+    return{inventory:clone(save.inventory),starterEquipmentInstances,characterEquipment};
   }
   function assertCapturedPreserved(expected,after){
     const actual=capture(after);
