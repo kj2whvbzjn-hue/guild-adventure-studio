@@ -1,16 +1,16 @@
-/* Shared runtime/data configuration — GA-B486.250 / GKS-B919 */
+/* Shared runtime/data configuration — GA-B486.251 / GKS-B920 */
 window.GA_PROJECT_CONFIG = Object.freeze({
-  gameBuild: "GA-B486.250",
-  studioBuild: "GKS-B919",
-  skillExportUrl: '../Export/skill/skills.json?v=486250b919',
-  equipmentExportUrl: '../Export/equipment/equipment.json?v=486250b919',
-  jobExportUrl: '../Export/master/jobs.json?v=486250b919',
-  adventureSettingsExportUrl: '../Export/system/adventure_settings.json?v=486250b919',
-  aiNodeExportUrl: '../Export/ai/ai_nodes.json?v=486250b919',
-  aiTargetSelectorExportUrl: '../Export/ai/ai_target_selectors.json?v=486250b919',
-  aiProgramExportUrl: '../Export/ai/ai_programs.json?v=486250b919',
-  aiProgramLayoutExportUrl: '../Export/ai/ai_program_layouts.json?v=486250b919',
-  aiProgramRuntimeExportUrl: '../Export/ai/ai_program_runtime.json?v=486250b919',
+  gameBuild: "GA-B486.251",
+  studioBuild: "GKS-B920",
+  skillExportUrl: '../Export/skill/skills.json?v=486251b920',
+  equipmentExportUrl: '../Export/equipment/equipment.json?v=486251b920',
+  jobExportUrl: '../Export/master/jobs.json?v=486251b920',
+  adventureSettingsExportUrl: '../Export/system/adventure_settings.json?v=486251b920',
+  aiNodeExportUrl: '../Export/ai/ai_nodes.json?v=486251b920',
+  aiTargetSelectorExportUrl: '../Export/ai/ai_target_selectors.json?v=486251b920',
+  aiProgramExportUrl: '../Export/ai/ai_programs.json?v=486251b920',
+  aiProgramLayoutExportUrl: '../Export/ai/ai_program_layouts.json?v=486251b920',
+  aiProgramRuntimeExportUrl: '../Export/ai/ai_program_runtime.json?v=486251b920',
   productionEnvironment: 'production',
   validationEnvironment: 'validation'
 });
