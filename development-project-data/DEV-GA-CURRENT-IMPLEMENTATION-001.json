@@ -5,30 +5,30 @@
     "name": "修正版34仕様に基づく新規実装計画",
     "status": "Implementing",
     "ai_attention": "Include",
-    "updated_at": "2026-09-12T23:42:19.364Z"
+    "updated_at": "2026-09-12T23:55:38.669Z"
   },
   "project_context": {
     "purpose": "修正版34仕様の全項目を実装し、Studio/Game/Export/Saveで一貫させる。",
-    "summary": "TASK-NIP-F01〜F04、D01/D02/D03/D05〜D14、TASK-NIP-01-01、02-01、03-01、07-01、08-01、13-01、17-01、23-01、28-01、29-01、30-01完了。GS-02は成長値gからfloor(g/10)+端数確率で7能力を成長させ、Level/SP/使用Job/growthHistoryを同一Save Transactionで確定するCharacter Growth Domainへ切替。次はTASK-NIP-03-02へ進む。",
+    "summary": "TASK-NIP-F01〜F04、D01/D02/D03/D05〜D14、TASK-NIP-01-01、02-01、03-01/03-02、07-01、08-01、13-01、17-01、23-01、28-01、29-01、30-01完了。GS-03は正式Job Masterを共通Job Resolverで検証し、成長・作成/雇用候補・転職を同一定義へ接続。転職はギルド編集可能状態を事前/確定直前に再検証し、Jobと履歴だけをSave Transactionで一体保存。次はTASK-NIP-05-01へ進む。",
     "current_focus": {
       "architecture_id": "ARC-NIP",
-      "work_box_id": "BOX-NIP-03",
-      "theme": "ジョブと転職",
-      "goal": "TASK-NIP-03-02「ジョブと転職：実サービス接続・本番データ・受入試験」をSOURCE_UPDATEで実装する"
+      "work_box_id": "BOX-NIP-05",
+      "theme": "雇用と解雇",
+      "goal": "TASK-NIP-05-01「雇用と解雇：ドメイン処理を実装する」をSOURCE_UPDATEで実装する"
     }
   },
   "current_focus": {
     "architecture_id": "ARC-NIP",
-    "work_box_id": "BOX-NIP-02",
-    "theme": "能力値と成長",
-    "goal": "TASK-NIP-02-01「能力値と成長：ドメイン処理を実装する」をSOURCE_UPDATEで実装する"
+    "work_box_id": "BOX-NIP-05",
+    "theme": "雇用と解雇",
+    "goal": "TASK-NIP-05-01「雇用と解雇：ドメイン処理を実装する」をSOURCE_UPDATEで実装する"
   },
   "source_baseline": {
-    "studio_build": "GKS-B914",
-    "game_build": "GA-B486.245",
-    "source_label": "GKS-B914-77e72440998d / target source tree SHA256 77e72440998d051b5b4c0d89fae1d35c3205e5843988067be7c339fba2527e10",
+    "studio_build": "GKS-B920",
+    "game_build": "GA-B486.251",
+    "source_label": "GKS-B920-5245ad6ced71 / target source tree SHA256 5245ad6ced714ae6130f2eebc0b969dc219a56c6fe384e28e19259d930e9c8c4",
     "source_role": "current_baseline",
-    "recorded_at": "2026-09-12T20:55:00Z"
+    "recorded_at": "2026-09-12T23:50:06Z"
   },
   "lifecycle": {
     "status": "Active",
@@ -75,6 +75,20 @@
       "result": "Applied",
       "evidence": "assets/shared/js/formation-target-resolver.jsへGS-13の対象集合/RANDOM既定2回等を実装しGame/Studio Runtimeへ反映。COVER同priorityはbattleTieRoll固定順。Quick 12/12、適用後Full 27/27 PASS。artifact_id=GKS-B914-77e72440998d。削除なし・Game Data変更なし。",
       "recorded_at": "2026-09-12T20:42:00Z"
+    },
+    {
+      "id": "IMPL-NIP-03-02-GKS-B920-001",
+      "studio_build": "GKS-B920",
+      "game_build": "GA-B486.251",
+      "work_box_ids": [
+        "BOX-NIP-03"
+      ],
+      "task_ids": [
+        "TASK-NIP-03-02"
+      ],
+      "result": "Applied",
+      "evidence": "assets/shared/js/job-transfer-domain.jsを追加し、Formal Job Master 7件/各成長値合計60のFail Closed検証、共通Job解決、ギルド編集状態Gate、転職Transaction接続を実装。往復転職でGold/SP/能力/Skill/Passive/装備/AI不変、魔術師転職後STR成長g=4を確認。Source Quick 12/12、適用後Full 27/27 PASS。artifact_id=GKS-B920-5245ad6ced71。削除なし・Game Data変更なし。",
+      "recorded_at": "2026-09-12T23:50:06Z"
     }
   ],
   "discussions": [],
@@ -2506,7 +2520,7 @@
       "id": "TASK-NIP-03-02",
       "title": "ジョブと転職：実サービス接続・本番データ・受入試験",
       "box_id": "BOX-NIP-03",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 30,
       "depends_on": [
         "TASK-NIP-03-01",
@@ -2532,7 +2546,7 @@
         "at": ""
       },
       "created_at": "2026-09-11T00:00:00Z",
-      "updated_at": "2026-09-11T00:00:00Z",
+      "updated_at": "2026-09-12T23:50:06Z",
       "decision_dependencies": [],
       "spec_refs": [
         "GS-03"
@@ -6508,6 +6522,52 @@
         "reason": "",
         "mode": ""
       }
+    },
+    {
+      "id": "CHECK-NIP-03-02-GS03-ACCEPTANCE",
+      "title": "GS-03 実サービス接続受入",
+      "target_type": "Task",
+      "target_id": "TASK-NIP-03-02",
+      "status": "Passed",
+      "result": "正式7Job/合計60、往復転職の非Job状態保持、費用0、転職後成長が新Job定義を参照、未知Job/戦闘中/冒険中拒否、Save Transaction接続を確認。",
+      "evidence": "TASK-NIP-03-02_ACCEPTANCE_RESULT.txt",
+      "created_at": "2026-09-12T23:50:06Z",
+      "updated_at": "2026-09-12T23:50:06Z",
+      "gate": "General",
+      "checked_by": "AI",
+      "checked_at": "2026-09-12T23:50:06Z",
+      "resolves_check_ids": [],
+      "blocking": false,
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      }
+    },
+    {
+      "id": "CHECK-NIP-03-02-SOURCE-GATE",
+      "title": "TASK-NIP-03-02 SOURCE_UPDATE適用後Gate",
+      "target_type": "Task",
+      "target_id": "TASK-NIP-03-02",
+      "status": "Passed",
+      "result": "正確なGA-B486.250 / GKS-B919 baselineへ差分SOURCE_UPDATEをoverlayし、Full 27/27 PASS。",
+      "evidence": "artifact_id=GKS-B920-5245ad6ced71; target_source_tree_sha256=5245ad6ced714ae6130f2eebc0b969dc219a56c6fe384e28e19259d930e9c8c4; Source Quick 12/12 PASS; applied Full 27/27 PASS; deleted=0.",
+      "created_at": "2026-09-12T23:50:06Z",
+      "updated_at": "2026-09-12T23:50:06Z",
+      "gate": "General",
+      "checked_by": "AI",
+      "checked_at": "2026-09-12T23:50:06Z",
+      "resolves_check_ids": [],
+      "blocking": false,
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      }
     }
   ],
   "history": [
@@ -6634,6 +6694,15 @@
       "summary": "GA-B486.246 / GKS-B915現行Sourceを検証。前Boxのflag反映、任意Slot候補0継続、必須Slot候補0失敗、Box並替え後も安定ID維持を専用fixtureでPASS。既存Quest/Random Event回帰もPASS。Source差分なし・Build据置。次はTASK-NIP-28-01。",
       "actor": "AI-from-current-authority",
       "at": "2026-09-12T22:42:00Z"
+    },
+    {
+      "id": "HISTORY-NIP-03-02-20260913",
+      "entity_type": "Task",
+      "entity_id": "TASK-NIP-03-02",
+      "action": "Completed",
+      "summary": "GA-B486.251 / GKS-B920でGS-03共通Job Resolverと転職実サービス接続を完了。適用後Full 27/27 PASS。次はTASK-NIP-05-01。",
+      "actor": "AI-from-current-authority",
+      "at": "2026-09-12T23:50:06Z"
     }
   ],
   "authority": {
