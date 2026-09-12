@@ -5,17 +5,17 @@
     "name": "修正版34仕様に基づく新規実装計画",
     "status": "Implementing",
     "ai_attention": "Include",
-    "updated_at": "2026-09-12T08:06:18.755Z"
+    "updated_at": "2026-09-12T09:23:18.705Z"
   },
   "project_context": {
     "purpose": "修正版34仕様の全項目を実装し、Studio/Game/Export/Saveで一貫させる。",
-    "summary": "TASK-NIP-F01/F02/D01/D02/D03/D05/D06/D07/D08/D09完了。MagicDefense誤混入は修正版仕様・計画から除去済み。D09はMonster魔法命中をINT+DEX比、魔法抵抗をMND+AGI比で仮想装備性能へ接続し、既存GS-22丸め規則まで確定。次はTASK-NIP-D10へ進む。"
+    "summary": "TASK-NIP-F01/F02/D01/D02/D03/D05/D06/D07/D08/D09/D10完了。D10は施設4種・Player AIをLv1から全開放し、Guild EXP/Level・倉庫容量・所属人数上限を外部Config可変の暫定Baselineとして確定。次はTASK-NIP-D11へ進む。"
   },
   "current_focus": {
     "architecture_id": "ARC-NIP",
     "work_box_id": "BOX-NIP-DECISIONS",
     "theme": "未確定事項具体化",
-    "goal": "TASK-NIP-D10「Guild進行と解放・容量」をDEVELOPMENT_ONLYで確定する"
+    "goal": "TASK-NIP-D11「所持品Stack・容量・価格」をDEVELOPMENT_ONLYで確定する"
   },
   "source_baseline": {
     "studio_build": "GKS-B910",
@@ -153,6 +153,18 @@
       "approved_at": "2026-09-12T07:58:35Z",
       "created_at": "2026-09-12T07:58:35Z",
       "updated_at": "2026-09-12T07:58:35Z"
+    },
+    {
+      "id": "DEC-NIP-D10-GUILD-PROGRESSION-1.0",
+      "title": "Guild進行・初期解放・容量のCurrent暫定Baseline",
+      "status": "Approved",
+      "text": "施設4種（酒場・訓練所・倉庫・掲示板）とPlayer AI機能はすべてGuild Level1から利用可能とし、Guild進行による段階解放を行わない。数値はすべて外部Config GUILD-PROGRESSION-1.0で可変とする。Current暫定値は初期Level1/最大Level5、次Level必要EXP=100/300/1000/3000、成功Quest帰還Guild EXP=10・失敗/放棄=0、倉庫容量=500/1000/2000/5000/10000、所属人数上限=20/30/50/100/100。施設required_guild_levelとPlayer AI required_guild_levelはCurrentすべて1。施設Level/強化や施設からの直接戦闘能力補正は追加しない。数値欠落時にコード内の暫定値へ暗黙Fallbackしない。",
+      "rationale": "Human明示指示「全部最初から」「数値は全て可変にするので暫定値はそれでいい」に基づく。既存候補容量値をCurrent暫定値として採用し、Guild Level/EXPの不足値もBalance調整可能な外部Config値として暫定Baseline化する。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-09-12T09:04:00Z",
+      "created_at": "2026-09-12T09:04:00Z",
+      "updated_at": "2026-09-12T09:04:00Z"
     }
   ],
   "specifications": [
@@ -799,20 +811,22 @@
       "id": "GS-28",
       "title": "ギルドと施設",
       "status": "Review",
-      "summary": "ユーザー提供の修正版仕様を基準入力として保存。承認履歴を捏造しない。",
-      "body": "# ギルドと施設\n\n仕様ID：GS-28　版：1.0　作成日：2026-09-11\n\n## ギルド\n\nギルドは所属冒険者、パーティ、Gold、ギルドLevel、解放状態、倉庫を管理する。施設は管理・育成・出撃の入口を提供する。施設を建てる・利用するだけで攻撃力やHPを直接上昇させない。\n\n## 施設\n\n| 施設 | 機能 |\n|---|---|\n| 酒場 | 雇用、冒険者確認、パーティ編成、転職、解雇 |\n| 訓練所 | Level・能力値確認、Active/Passive習得、選択状態、リスペック、AI編集 |\n| 倉庫 | 装備・ストーン・素材の保管、所持品との移動、整理 |\n| 掲示板 | Quest一覧、詳細、難易度、報酬情報、出撃準備 |\n\n施設はこの4種。施設Level、施設強化、施設ごとの戦闘補正は設けない。\n\n## ギルドLevel\n\n用途は施設の段階解放、倉庫容量の段階増加、依頼解放条件。施設は`required_guild_level`を持ち、現在ギルドLevelと比較する。容量は倉庫施設の強化Levelでなく、ギルドLevel定義に従う。\n\n## 解放条件\n\n雇用可能な冒険者種別はゲーム進行・共通フラグで解放する。雇用人数上限とは別管理とする。Storyの本文を検索して解放を判定しない。\n\n施設・キャラクター・AI機能の条件は共通の解放データと判定処理に集約する。各画面で別々の閾値を持たない。未解放の機能は条件を表示し、操作を成立させない。\n\n## 保存\n\nギルドID、Level、経験値、Gold、解放・進行状態、所属冒険者ID、パーティ、倉庫を保存する。Goldは非負整数。習得・雇用・帰還などの処理が成功した時点で関連更新と一緒に保存する。\n\n## 未定義の調整値\n\nギルド最大Level、必要ギルド経験値、ギルド経験値の獲得条件、施設別解放Level、Level別倉庫容量、所属人数上限の増加条件、AI機能の解放段階は、資料から現在値を確定できない。これらは設定項目として保持し、候補値を確定値として補完しない。\n\n## 参照元\n\n- `development-project-data/DEV-V9-REORG-019.json / GUILD・各施設決定`\n",
+      "summary": "TASK-NIP-D10により施設・AIの初期全開放とGuild EXP/Level・容量の外部Config暫定Baselineを確定。",
+      "body": "# ギルドと施設\n\n仕様ID：GS-28　版：1.1　作成日：2026-09-11\n\n## ギルド\n\nギルドは所属冒険者、パーティ、Gold、ギルドLevel、解放状態、倉庫を管理する。施設は管理・育成・出撃の入口を提供する。施設を建てる・利用するだけで攻撃力やHPを直接上昇させない。\n\n## 施設\n\n| 施設 | 機能 |\n|---|---|\n| 酒場 | 雇用、冒険者確認、パーティ編成、転職、解雇 |\n| 訓練所 | Level・能力値確認、Active/Passive習得、選択状態、リスペック、AI編集 |\n| 倉庫 | 装備・ストーン・素材の保管、所持品との移動、整理 |\n| 掲示板 | Quest一覧、詳細、難易度、報酬情報、出撃準備 |\n\n施設はこの4種。施設Level、施設強化、施設ごとの戦闘補正は設けない。\n\nTASK-NIP-D10では4施設をすべてGuild Level1から利用可能とする。施設ごとの`required_guild_level`は外部Configで保持し、Current Baselineはすべて1。画面へ数値を直書きせず、共通の解放判定をUIとドメイン入口の両方で使用する。\n\n## ギルドLevel\n\nGuild Levelは長期進行と容量参照に使用する。施設やPlayer AI機能を段階解放する用途には使用しない。Quest・冒険者種別など既存のStory/進行フラグによる解放契約は別に維持し、Guild Levelの追加Gateを重ねない。\n\nGuild進行のCurrent暫定値は設定版`GUILD-PROGRESSION-1.0`から取得する。すべてBalance Config値でありRuntimeへハードコードしない。\n\n| Guild Level | 次Level必要Guild EXP | 倉庫容量 | 所属人数上限 |\n|---:|---:|---:|---:|\n| 1 | 100 | 500 | 20 |\n| 2 | 300 | 1000 | 30 |\n| 3 | 1000 | 2000 | 50 |\n| 4 | 3000 | 5000 | 100 |\n| 5 | 最大 | 10000 | 100 |\n\nCurrent暫定の初期Guild Levelは1、最大Guild Levelは5。必要EXP以上になったら必要量を消費して1Level上げ、余剰EXPは次Levelへ持ち越す。複数Level分を満たす場合は繰り返す。最大Levelへ到達した時点で余剰Guild EXPは破棄して0とし、最大Level到達後に新たに得るGuild EXPも加算しない。これらの数値はConfigから変更可能とする。\n\n## Guild EXP\n\nCurrent暫定値では、成功したQuestの帰還確定時にGuild EXPを10付与し、失敗・放棄では0とする。付与時点は報酬・経験値・進行差分と同じ帰還確定処理。Playbackや戦闘勝利表示では永続Guild EXPを変更しない。\n\nSUCCESS/FAILURE/ABANDONごとの付与量は`GUILD-PROGRESSION-1.0`の外部Config値であり、10/0/0をRuntimeへ固定しない。\n\n## 解放条件\n\nPlayer AI編集・Formal AIのプレイヤー向け機能はCurrent BaselineですべてGuild Level1から使用可能とし、Guild進行による段階解放を行わない。AI側の機能種別やNode種別を画面ごとの独自閾値で隠さない。\n\n雇用可能な冒険者種別はゲーム進行・共通フラグで解放する。雇用人数上限とは別管理とする。Storyの本文を検索して解放を判定しない。\n\n施設・キャラクター・AI機能の条件は共通の解放データと判定処理に集約する。Current BaselineでGuild Level1から利用可能な機能も、設定値1を共通Resolverへ渡して判定する。\n\n## 容量\n\n倉庫容量と所属人数上限はGuild Level別のConfig表から取得する。倉庫施設の強化Levelや施設Levelは作らない。Levelが上がったときは新しい上限を使用するが、Level上昇自体を理由に所持品や冒険者を自動生成・削除しない。\n\nCurrent暫定値は上表のとおり。Guild Level5では所属人数上限100を維持し、倉庫容量だけ10000へ増える。容量値は後からBalance Configだけで変更できる。\n\n## 保存\n\nギルドID、Level、現在Guild EXP、Gold、解放・進行状態、所属冒険者ID、パーティ、倉庫を保存する。Goldは非負整数。Guild EXP付与、Level上昇、習得・雇用・帰還などの永続変更は関連更新と一緒に保存する。\n\n## D10設定境界\n\n`GUILD-PROGRESSION-1.0`は、初期/最大Guild Level、Level別必要EXP、Run結果別Guild EXP、施設要求Level、AI要求Level、Level別倉庫容量、Level別所属人数上限を保持する。数値はすべて外部設定で可変とし、システム上必要なID・Field・結果種別・解放判定契約だけを固定する。設定欠落時に上記暫定値をコード内Fallbackとして補わない。\n\n## 参照元\n\n- `development-project-data/DEV-V9-REORG-019.json / GUILD・各施設決定`\n- `TASK-NIP-D10 / GUILD-PROGRESSION-1.0`\n",
       "depends_on": [],
-      "decision_refs": [],
+      "decision_refs": [
+        "DEC-NIP-D10-GUILD-PROGRESSION-1.0"
+      ],
       "contract_ids": [],
-      "revision": 1,
+      "revision": 2,
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-09-11T00:00:00Z",
-      "updated_at": "2026-09-11T00:00:00Z",
+      "updated_at": "2026-09-12T09:04:00Z",
       "source_path": "基準仕様/28_ギルドと施設.md",
-      "source_sha256": "61a396f1f17ce522e89d75ccd397f6c32183a10e7874d866b05062b0a786d2f5",
+      "source_sha256": "507c3f9dd61c85f7fd2ba6343b593b4ebba27b815e86ac60c86307694a3c2bf2",
       "input_authority": "user_provided_current_specification",
-      "spec_version": "1.0",
+      "spec_version": "1.1",
       "acceptance_criteria": "",
       "system_node_id": "",
       "source_candidate_id": "",
@@ -1658,7 +1672,7 @@
       "id": "TASK-NIP-D10",
       "title": "Guild進行と解放・容量",
       "box_id": "BOX-NIP-DECISIONS",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 12,
       "depends_on": [
         "TASK-NIP-F01"
@@ -1676,12 +1690,12 @@
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": false,
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-09-12T09:04:00Z"
       },
       "created_at": "2026-09-11T00:00:00Z",
-      "updated_at": "2026-09-11T00:00:00Z",
+      "updated_at": "2026-09-12T09:04:00Z",
       "decision_type": "データ作成",
       "affected_tasks": [
         "TASK-NIP-28-02",
@@ -1689,7 +1703,8 @@
         "TASK-NIP-29-02"
       ],
       "implementation_note": "ルールの新規決定はユーザー判断、明示仕様から決められる型・検証実装は実装担当が進める。未決のまま確定済みと記録しない。",
-      "body": "実装手順\n1. Guild EXP/Level、施設・AI解放、所属人数・倉庫容量の各表を決める。\n2. 初期状態から全施設利用までの進行経路を検査し、施設強化や直接能力補正は追加しない。\n3. 採用内容・設定版・根拠を記録し、影響する仕様の該当境界だけを明示更新してから依存タスクへ渡す。\n\n完了条件\n1. 曖昧な選択肢が残らず、数値表または具体的な入力/期待出力がある。\n2. 影響先に渡す値と版が固定され、未採用案が本番設定へ混在していない。"
+      "body": "実装手順\n1. Guild EXP/Level、施設・AI解放、所属人数・倉庫容量の各表を決める。\n2. 初期状態から全施設利用までの進行経路を検査し、施設強化や直接能力補正は追加しない。\n3. 採用内容・設定版・根拠を記録し、影響する仕様の該当境界だけを明示更新してから依存タスクへ渡す。\n\n完了条件\n1. 曖昧な選択肢が残らず、数値表または具体的な入力/期待出力がある。\n2. 影響先に渡す値と版が固定され、未採用案が本番設定へ混在していない。",
+      "result_summary": "GUILD-PROGRESSION-1.0確定。施設4種・Player AIはLv1から全開放。Guild Level/EXP、倉庫容量、所属人数上限は全て外部Config可変の暫定Baseline。"
     },
     {
       "id": "TASK-NIP-D11",
@@ -6406,6 +6421,11 @@
       "id": "HISTORY-NIP-D09-20260912",
       "at": "2026-09-12T07:58:35Z",
       "message": "TASK-NIP-D09完了。Human選択Aを採用し、Monster魔法命中=仮想主武器×INT+DEX比、魔法抵抗=仮想防具4部位×MND+AGI比としてGS-22 v1.1へ該当境界だけ反映。"
+    },
+    {
+      "id": "HISTORY-NIP-D10-20260912",
+      "at": "2026-09-12T09:04:00Z",
+      "message": "TASK-NIP-D10完了。Human指示により施設4種・Player AIをLv1から全開放。GUILD-PROGRESSION-1.0でGuild EXP/Level・倉庫容量・所属人数上限を外部Config可変の暫定Baselineとして確定。Development Data SHA256=fb32e6744832add1f99613c76f98430865a6d8365304ba6f700ae2767e41f192。GS-28 v1.1へ該当境界だけ反映。"
     }
   ],
   "authority": {
