@@ -5,11 +5,17 @@
     "name": "修正版34仕様に基づく新規実装計画",
     "status": "Implementing",
     "ai_attention": "Include",
-    "updated_at": "2026-09-12T22:39:09.241Z"
+    "updated_at": "2026-09-12T23:12:14.510Z"
   },
   "project_context": {
     "purpose": "修正版34仕様の全項目を実装し、Studio/Game/Export/Saveで一貫させる。",
-    "summary": "TASK-NIP-F01〜F04、D01/D02/D03/D05〜D14、TASK-NIP-01-01、TASK-NIP-03-01、TASK-NIP-07-01、TASK-NIP-08-01、TASK-NIP-13-01、TASK-NIP-17-01完了。GS-17は正式Effect/Trigger検証、EQUIPMENT_TAGSのallTags/anyTagsと複数条件ANDを共通評価器へ統合し、習得条件・使用装備条件・状況条件を分離。Game実行はruntimeContractsのみを入力としauthoring fallbackを除去。TASK-NIP-23-01完了。GS-23は現行SourceのQuest Box逐次実行・到達時Random Event抽選・required_flags反映・任意/必須候補0処理・安定Box IDが完了条件を満たすことを専用fixtureと既存回帰で確認。Source差分不要のためBuild据置。次はTASK-NIP-28-01へ進む。"
+    "summary": "TASK-NIP-F01〜F04、D01/D02/D03/D05〜D14、TASK-NIP-01-01、03-01、07-01、08-01、13-01、17-01、23-01、28-01、29-01完了。GS-29は装備個体とResource Stackを分離したInventory/Warehouse Domainを追加し、容量・Stack上限・所有者・数量を移動前検証、成功時のみ単一next_stateを返す。次はTASK-NIP-30-01へ進む。",
+    "current_focus": {
+      "architecture_id": "ARC-NIP",
+      "work_box_id": "BOX-NIP-30",
+      "theme": "セーブとニューゲーム",
+      "goal": "TASK-NIP-30-01「セーブとニューゲーム：ドメイン処理を実装する」をSOURCE_UPDATEで実装する"
+    }
   },
   "current_focus": {
     "architecture_id": "ARC-NIP",
@@ -2311,7 +2317,7 @@
       "id": "TASK-NIP-28-01",
       "title": "ギルドと施設：ドメイン処理を実装する",
       "box_id": "BOX-NIP-28",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 26,
       "depends_on": [
         "TASK-NIP-F03",
@@ -2336,7 +2342,7 @@
         "at": ""
       },
       "created_at": "2026-09-11T00:00:00Z",
-      "updated_at": "2026-09-11T00:00:00Z",
+      "updated_at": "2026-09-13T07:55:00+09:00",
       "decision_policy": "未決値は検証済みの明示入力・試験fixtureで分離し、欠落する本番設定は拒否する。未決境界を除く確定処理を実装できる。",
       "spec_refs": [
         "GS-28"
@@ -2351,13 +2357,14 @@
         "GS-28の入力/期待値fixtureと実行結果"
       ],
       "rollback": "変更単位のコミットを戻す。Save形式変更がある場合は旧コードで新形式を開かず、変換前Backupと対応コードを対で復旧する。",
-      "body": "実装手順\n1. 酒場・訓練所・倉庫・掲示板を機能入口にし、施設利用条件を共通Resolverへまとめる。\n2. Guild EXP/Levelと施設解放・所属/倉庫容量・AI解放を設定参照にする。未定義値を画面に固定しない。\n3. 施設強化や施設からの直接戦闘能力上昇を加えず、未解放操作をドメイン入口でも拒否する。\n\n完了条件\n1. 施設未解放は画面非活性だけでなく直接コマンドも拒否する。\n2. Guild表示を開くだけで冒険者の戦闘能力値が増えない。\n3. D10の境界値直前/到達/直後で同じ解放結果を画面とRuntimeが返す。"
+      "body": "実装手順\n1. 酒場・訓練所・倉庫・掲示板を機能入口にし、施設利用条件を共通Resolverへまとめる。\n2. Guild EXP/Levelと施設解放・所属/倉庫容量・AI解放を設定参照にする。未定義値を画面に固定しない。\n3. 施設強化や施設からの直接戦闘能力上昇を加えず、未解放操作をドメイン入口でも拒否する。\n\n完了条件\n1. 施設未解放は画面非活性だけでなく直接コマンドも拒否する。\n2. Guild表示を開くだけで冒険者の戦闘能力値が増えない。\n3. D10の境界値直前/到達/直後で同じ解放結果を画面とRuntimeが返す。",
+      "result_summary": "GS-28共通Guild Progression Domain実装済み。施設入口・解放・倉庫容量・所属人数・Player AI解放をConfig参照化し、未解放はドメイン入口で拒否。GA-B486.247 / GKS-B916。"
     },
     {
       "id": "TASK-NIP-29-01",
       "title": "所持品と倉庫：ドメイン処理を実装する",
       "box_id": "BOX-NIP-29",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 27,
       "depends_on": [
         "TASK-NIP-F03",
@@ -2382,7 +2389,7 @@
         "at": ""
       },
       "created_at": "2026-09-11T00:00:00Z",
-      "updated_at": "2026-09-11T00:00:00Z",
+      "updated_at": "2026-09-13T07:55:00+09:00",
       "decision_policy": "未決値は検証済みの明示入力・試験fixtureで分離し、欠落する本番設定は拒否する。未決境界を除く確定処理を実装できる。",
       "spec_refs": [
         "GS-29"
@@ -2397,7 +2404,8 @@
         "GS-29の入力/期待値fixtureと実行結果"
       ],
       "rollback": "変更単位のコミットを戻す。Save形式変更がある場合は旧コードで新形式を開かず、変換前Backupと対応コードを対で復旧する。",
-      "body": "実装手順\n1. 装備は個体ID、その他はresource_kind+resource_idで管理し、所持品と倉庫の容量を別設定とする。\n2. 移動・装備付替え・返却の前に所有者/数量/空き容量を検証し、移動元減算と移動先加算を同時に確定する。\n3. 受入不可を明示結果として返し、Overflowや自動破棄を作らない。売却価格・Stack上限はD11の設定を読む。\n\n完了条件\n1. 同じresource_idでもkindが違えば別Stackとなり、装備2個を1Stackへまとめない。\n2. 倉庫満杯で移動元の数量を減らさず、保存失敗でも片側だけ変化しない。\n3. 不正な負数量、重複個体、所有者不一致は操作開始前に拒否する。"
+      "body": "実装手順\n1. 装備は個体ID、その他はresource_kind+resource_idで管理し、所持品と倉庫の容量を別設定とする。\n2. 移動・装備付替え・返却の前に所有者/数量/空き容量を検証し、移動元減算と移動先加算を同時に確定する。\n3. 受入不可を明示結果として返し、Overflowや自動破棄を作らない。売却価格・Stack上限はD11の設定を読む。\n\n完了条件\n1. 同じresource_idでもkindが違えば別Stackとなり、装備2個を1Stackへまとめない。\n2. 倉庫満杯で移動元の数量を減らさず、保存失敗でも片側だけ変化しない。\n3. 不正な負数量、重複個体、所有者不一致は操作開始前に拒否する。",
+      "result_summary": "GS-29 Inventory/Warehouse Domain実装。装備個体とResource Stackを分離し、容量・Stack上限・所有者・数量を移動前検証。成功時のみ単一next_stateを返し、満杯/不正入力で片側更新しない。GA-B486.248 / GKS-B917。"
     },
     {
       "id": "TASK-NIP-30-01",
