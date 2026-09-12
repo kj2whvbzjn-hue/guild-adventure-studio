@@ -5,17 +5,17 @@
     "name": "修正版34仕様に基づく新規実装計画",
     "status": "Implementing",
     "ai_attention": "Include",
-    "updated_at": "2026-09-12T09:23:18.705Z"
+    "updated_at": "2026-09-12T09:29:03.089Z"
   },
   "project_context": {
     "purpose": "修正版34仕様の全項目を実装し、Studio/Game/Export/Saveで一貫させる。",
-    "summary": "TASK-NIP-F01/F02/D01/D02/D03/D05/D06/D07/D08/D09/D10完了。D10は施設4種・Player AIをLv1から全開放し、Guild EXP/Level・倉庫容量・所属人数上限を外部Config可変の暫定Baselineとして確定。次はTASK-NIP-D11へ進む。"
+    "summary": "TASK-NIP-F01/F02/D01/D02/D03/D05/D06/D07/D08/D09/D10/D11完了。MagicDefense誤混入は除去済み。D11で所持品Stack20・容量20・全売却単価1 Goldを外部Config可変のCurrent暫定値として確定。次はTASK-NIP-D12へ進む。"
   },
   "current_focus": {
     "architecture_id": "ARC-NIP",
     "work_box_id": "BOX-NIP-DECISIONS",
     "theme": "未確定事項具体化",
-    "goal": "TASK-NIP-D11「所持品Stack・容量・価格」をDEVELOPMENT_ONLYで確定する"
+    "goal": "TASK-NIP-D12「Save対応版とMigration対象」をDEVELOPMENT_ONLYで確定する"
   },
   "source_baseline": {
     "studio_build": "GKS-B910",
@@ -165,6 +165,18 @@
       "approved_at": "2026-09-12T09:04:00Z",
       "created_at": "2026-09-12T09:04:00Z",
       "updated_at": "2026-09-12T09:04:00Z"
+    },
+    {
+      "id": "DEC-NIP-D11-INVENTORY-ECONOMY-1.0",
+      "title": "所持品Stack・容量・売却価格のCurrent暫定Baseline",
+      "status": "Approved",
+      "text": "プレイヤー所持品のCurrent容量を20枠、Stack可能Resourceの標準Stack上限を20、売却可能なequipment/item/stone/materialのCurrent売却単価をすべて1単位1 Goldとする。装備個体はStackせず1個1枠。Stack品は数量×設定単価、装備個体は1個×設定単価で売却額を計算する。Gold自体は売却対象外。装備中・ロック中は既存仕様どおり売却不可。容量・Stack上限・売却価格はすべてINVENTORY-ECONOMY-1.0の外部Configで可変とし、Runtimeへ20/1を直書きしない。Config欠落・不正時にCurrent値へ暗黙Fallbackしない。倉庫容量はGUILD-PROGRESSION-1.0を使用する。",
+      "rationale": "Human明示指示「所持品Stack 20・容量20・価格全て1 全て可変にする」に基づく。システム上必要な非Stack装備個体、売却不可状態、通貨Gold非売却の境界は既存GS-29を維持する。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-09-12T09:30:00Z",
+      "created_at": "2026-09-12T09:30:00Z",
+      "updated_at": "2026-09-12T09:30:00Z"
     }
   ],
   "specifications": [
@@ -836,20 +848,22 @@
       "id": "GS-29",
       "title": "所持品と倉庫",
       "status": "Review",
-      "summary": "ユーザー提供の修正版仕様を基準入力として保存。承認履歴を捏造しない。",
-      "body": "# 所持品と倉庫\n\n仕様ID：GS-29　版：1.0　作成日：2026-09-11\n\n## 所有状態\n\n| 状態 | 管理単位 |\n|---|---|\n| プレイヤー所持品 | 共通所持品の枠・数量 |\n| ギルド倉庫 | 倉庫の枠・数量 |\n| 装備中 | 冒険者IDと装備スロット |\n| 冒険中の仮入手品 | QuestRunの報酬結果 |\n\n同じ装備個体は同時に1つの所有状態だけを持つ。冒険中に冒険者個別Inventoryへ拾得物を正式格納しない。冒険者間のリアルタイム受け渡しを設けない。\n\n## スタックと容量\n\n同じ種類の素材等は数量をまとめて1枠とする。スタック上限が定義されていれば、それを超える分に必要な枠を計算する。個体差のある装備は1個1枠で、同名でもスタックしない。\n\n所持品上限、倉庫上限、種類別スタック上限は設定から取得する。資料にない容量・上限を固定しない。\n\n## 倉庫との移動\n\n倉庫画面で預ける・引き出すを操作する。数量・所有者・移動先容量を検証し、元の減算と先の加算を一体で確定する。容量不足時は全移動を中止し、一部を消失させない。\n\n## 装備交換\n\n装備条件、持ち方、対象スロット、所持状態、取り外し品の返却先容量を検証する。装備した個体は所持品から外し、外した個体は同じIDのまま戻す。両手持ち品は返却1個として数える。\n\n## 成功帰還の受取\n\nRun全体の確定報酬から必要な追加枠を算出する。既存素材スタックへ入る分を考慮し、装備個体の枠を別に数える。\n\n受入不能なら帰還を保留して整理画面を表示する。報酬を消失させず、整理後に同じRunの受取を再開する。報酬を一部付与してから容量エラーにしない。\n\n## 解雇時\n\n装備返却に必要な容量を先に検証し、不足時は解雇を中止する。解雇専用の無制限一時保管枠は設けない。\n\n## 売却・破棄\n\n売却と破棄の両方を提供する。装備中・ロック中の品は対象にできない。高レアリティ品と一括操作では対象・数量・結果を確認する。\n\n売却は定義済み価格からGoldを計算して、品の削除と同時に反映する。破棄はGoldを付与しない。価格未設定の品を独自価格で売却しない。\n\n## 表示\n\n一覧・詳細・比較・装備・解除・ロック・売却・破棄を操作できる。装備詳細には要求値、保存性能、MOD、装備部位を示し、装備不可理由を能力値ごとに表示する。比較表示は共通の戦闘値計算を利用する。\n\n## 参照元\n\n- `development-project-data/DEV-V9-REORG-019.json / INVENTORY・INVENTORY-UI・RECRUIT`\n",
+      "summary": "TASK-NIP-D11で所持品容量20・Stack上限20・売却可能品の単価1 GoldをCurrent暫定値として確定。数値はINVENTORY-ECONOMY-1.0の外部Config可変。",
+      "body": "# 所持品と倉庫\n\n仕様ID：GS-29　版：1.1　作成日：2026-09-11\n\n## 所有状態\n\n| 状態 | 管理単位 |\n|---|---|\n| プレイヤー所持品 | 共通所持品の枠・数量 |\n| ギルド倉庫 | 倉庫の枠・数量 |\n| 装備中 | 冒険者IDと装備スロット |\n| 冒険中の仮入手品 | QuestRunの報酬結果 |\n\n同じ装備個体は同時に1つの所有状態だけを持つ。冒険中に冒険者個別Inventoryへ拾得物を正式格納しない。冒険者間のリアルタイム受け渡しを設けない。\n\n## スタックと容量\n\n同じ種類の素材等は数量をまとめて1枠とする。スタック上限が定義されていれば、それを超える分に必要な枠を計算する。個体差のある装備は1個1枠で、同名でもスタックしない。\n\n所持品上限、倉庫上限、種類別スタック上限は設定から取得する。資料にない容量・上限を固定しない。\n\nTASK-NIP-D11でCurrent暫定値を`INVENTORY-ECONOMY-1.0`として確定する。プレイヤー所持品の容量は20枠、Stack可能Resourceの標準Stack上限は20。装備個体はStackせず1個1枠のままとする。これらの数値は外部Configから取得し、Runtimeへ直書きしない。倉庫容量はGS-28 / `GUILD-PROGRESSION-1.0`のGuild Level別設定を使用し、所持品容量20を倉庫へ流用しない。\n\nStack上限を超える受取・移動では必要枠数を計算して容量を検証する。満杯時の自動破棄、無制限Overflow、一部だけの自動受取を追加しない。\n\n## 倉庫との移動\n\n倉庫画面で預ける・引き出すを操作する。数量・所有者・移動先容量を検証し、元の減算と先の加算を一体で確定する。容量不足時は全移動を中止し、一部を消失させない。\n\n## 装備交換\n\n装備条件、持ち方、対象スロット、所持状態、取り外し品の返却先容量を検証する。装備した個体は所持品から外し、外した個体は同じIDのまま戻す。両手持ち品は返却1個として数える。\n\n## 成功帰還の受取\n\nRun全体の確定報酬から必要な追加枠を算出する。既存素材スタックへ入る分を考慮し、装備個体の枠を別に数える。\n\n受入不能なら帰還を保留して整理画面を表示する。報酬を消失させず、整理後に同じRunの受取を再開する。報酬を一部付与してから容量エラーにしない。\n\n## 解雇時\n\n装備返却に必要な容量を先に検証し、不足時は解雇を中止する。解雇専用の無制限一時保管枠は設けない。\n\n## 売却・破棄\n\n売却と破棄の両方を提供する。装備中・ロック中の品は対象にできない。高レアリティ品と一括操作では対象・数量・結果を確認する。\n\n売却は定義済み価格からGoldを計算して、品の削除と同時に反映する。破棄はGoldを付与しない。価格未設定の品を独自価格で売却しない。\n\n`INVENTORY-ECONOMY-1.0`のCurrent暫定売却価格は、売却可能な`equipment / item / stone / material`をすべて1単位あたり1 Goldとする。Stack品を数量`q`だけ売却した場合は`q × 1`、装備個体1件は1 Gold。Goldそのものは売却対象にしない。装備中・ロック中を売却不可とする既存条件は維持する。価格はResource kind / IDごとの外部Configで変更可能とし、Current値1をRuntimeへハードコードしない。Config欠落・不正時に1 Goldへ暗黙Fallbackしない。\n\n## 表示\n\n一覧・詳細・比較・装備・解除・ロック・売却・破棄を操作できる。装備詳細には要求値、保存性能、MOD、装備部位を示し、装備不可理由を能力値ごとに表示する。比較表示は共通の戦闘値計算を利用する。\n\n## 参照元\n\n- `development-project-data/DEV-V9-REORG-019.json / INVENTORY・INVENTORY-UI・RECRUIT`\n- `TASK-NIP-D11 / INVENTORY-ECONOMY-1.0`\n",
       "depends_on": [],
-      "decision_refs": [],
+      "decision_refs": [
+        "DEC-NIP-D11-INVENTORY-ECONOMY-1.0"
+      ],
       "contract_ids": [],
-      "revision": 1,
+      "revision": 2,
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-09-11T00:00:00Z",
-      "updated_at": "2026-09-11T00:00:00Z",
+      "updated_at": "2026-09-12T09:30:00Z",
       "source_path": "基準仕様/29_所持品と倉庫.md",
-      "source_sha256": "7eae184a38cae64e65ebf0228c0c2fc5623665651c2ecb821cb9073c8b82d5b2",
+      "source_sha256": "20bad12bc30157c8e5872ef831fff1ae15c8796361b65bd2683c5c4f7dcbb031",
       "input_authority": "user_provided_current_specification",
-      "spec_version": "1.0",
+      "spec_version": "1.1",
       "acceptance_criteria": "",
       "system_node_id": "",
       "source_candidate_id": "",
@@ -1710,7 +1724,7 @@
       "id": "TASK-NIP-D11",
       "title": "所持品Stack・容量・価格",
       "box_id": "BOX-NIP-DECISIONS",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 13,
       "depends_on": [
         "TASK-NIP-F01"
@@ -1728,19 +1742,20 @@
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": false,
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-09-12T09:30:00Z"
       },
       "created_at": "2026-09-11T00:00:00Z",
-      "updated_at": "2026-09-11T00:00:00Z",
+      "updated_at": "2026-09-12T09:30:00Z",
       "decision_type": "データ作成",
       "affected_tasks": [
         "TASK-NIP-29-02",
         "TASK-NIP-05-02"
       ],
       "implementation_note": "ルールの新規決定はユーザー判断、明示仕様から決められる型・検証実装は実装担当が進める。未決のまま確定済みと記録しない。",
-      "body": "実装手順\n1. 所持容量、Stack上限、売却価格と対象を決める。\n2. 装備個体とResource Stackを区別して上限を指定する。満杯時の自動破棄/Overflowは採用しない。\n3. 採用内容・設定版・根拠を記録し、影響する仕様の該当境界だけを明示更新してから依存タスクへ渡す。\n\n完了条件\n1. 曖昧な選択肢が残らず、数値表または具体的な入力/期待出力がある。\n2. 影響先に渡す値と版が固定され、未採用案が本番設定へ混在していない。"
+      "body": "実装手順\n1. 所持容量、Stack上限、売却価格と対象を決める。\n2. 装備個体とResource Stackを区別して上限を指定する。満杯時の自動破棄/Overflowは採用しない。\n3. 採用内容・設定版・根拠を記録し、影響する仕様の該当境界だけを明示更新してから依存タスクへ渡す。\n\n完了条件\n1. 曖昧な選択肢が残らず、数値表または具体的な入力/期待出力がある。\n2. 影響先に渡す値と版が固定され、未採用案が本番設定へ混在していない。",
+      "result_summary": "INVENTORY-ECONOMY-1.0確定。所持品Stack20・容量20・売却可能品の単価1 GoldをCurrent暫定値とし、全数値を外部Config可変とする。"
     },
     {
       "id": "TASK-NIP-D12",
@@ -6426,6 +6441,11 @@
       "id": "HISTORY-NIP-D10-20260912",
       "at": "2026-09-12T09:04:00Z",
       "message": "TASK-NIP-D10完了。Human指示により施設4種・Player AIをLv1から全開放。GUILD-PROGRESSION-1.0でGuild EXP/Level・倉庫容量・所属人数上限を外部Config可変の暫定Baselineとして確定。Development Data SHA256=fb32e6744832add1f99613c76f98430865a6d8365304ba6f700ae2767e41f192。GS-28 v1.1へ該当境界だけ反映。"
+    },
+    {
+      "id": "HISTORY-NIP-D11-20260912",
+      "at": "2026-09-12T09:30:00Z",
+      "message": "TASK-NIP-D11完了。Human指示により所持品Stack20・容量20・売却可能品の単価1 GoldをINVENTORY-ECONOMY-1.0の外部Config可変Current暫定値として確定。Development Data SHA256=eaf378aa59034a6e026fe5e22924b1513c8b988917092be16677771ce1550138。GS-29 v1.1へ該当境界だけ反映。"
     }
   ],
   "authority": {
