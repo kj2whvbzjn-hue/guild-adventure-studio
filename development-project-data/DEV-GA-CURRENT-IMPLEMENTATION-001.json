@@ -5,24 +5,24 @@
     "name": "修正版34仕様に基づく新規実装計画",
     "status": "Implementing",
     "ai_attention": "Include",
-    "updated_at": "2026-09-12T12:39:10.762Z"
+    "updated_at": "2026-09-12T12:54:35.003Z"
   },
   "project_context": {
     "purpose": "修正版34仕様の全項目を実装し、Studio/Game/Export/Saveで一貫させる。",
-    "summary": "TASK-NIP-F01/F02/D01/D02/D03/D05/D06/D07/D08/D09/D10/D11/D12/D13完了。MagicDefense誤混入は除去済み。D13はSuno制作前提のBGM 5系統、SE正式Asset ID、既定音量・速度・演出軽減値を確定。次はTASK-NIP-D14へ進む。"
+    "summary": "TASK-NIP-F01/F02/D01/D02/D03/D05/D06/D07/D08/D09/D10/D11/D12/D13/D14完了。MagicDefense誤混入は除去済み。D14は初期Skillなし/SP0を維持し、Party→Equipment→AI→Stone→Quest→Warehouse/Reward→Skill/Passiveの7段階Tutorialを確定。次はTASK-NIP-F03のSource実装へ進む。"
   },
   "current_focus": {
     "architecture_id": "ARC-NIP",
-    "work_box_id": "BOX-NIP-DECISIONS",
-    "theme": "未確定事項具体化",
-    "goal": "TASK-NIP-D14「Tutorial段階と導入データ」をDEVELOPMENT_ONLYで確定する"
+    "work_box_id": "BOX-NIP-FOUNDATION",
+    "theme": "共通基盤実装",
+    "goal": "TASK-NIP-F03「全機能共用の保存トランザクションを作る」をSOURCE_UPDATEで実装する"
   },
   "source_baseline": {
-    "studio_build": "GKS-B910",
-    "game_build": "GA-B486.241",
-    "source_label": "guild-adventure-studio-sub(20260911-203442).zip / SHA256 194d7ab65f5cacdc6b3be084ffc896c313d02a654ea9abb6bf1437d832f894ce",
+    "studio_build": "GKS-B911",
+    "game_build": "GA-B486.242",
+    "source_label": "guild-adventure-studio-sub(20260912-123944).zip / SHA256 fe7d26c4d6a5176d3a1656118da2757f9c014d616f923b40f108826916a715ff",
     "source_role": "current_baseline",
-    "recorded_at": "2026-09-11T20:56:48Z"
+    "recorded_at": "2026-09-12T13:10:00Z"
   },
   "lifecycle": {
     "status": "Active",
@@ -201,6 +201,18 @@
       "approved_at": "2026-09-12T12:25:00Z",
       "created_at": "2026-09-12T12:25:00Z",
       "updated_at": "2026-09-12T12:25:00Z"
+    },
+    {
+      "id": "DEC-NIP-D14-TUTORIAL-ONBOARDING-1.0",
+      "title": "初回Tutorial 7段階と初戦導線",
+      "status": "Approved",
+      "text": "TUTORIAL-ONBOARDING-1.0を採用する。順序はParty→Equipment→AI→Stone→Quest→Warehouse/Reward→Active/Passive。初期Skill/Passive/AI Bindingの自動付与と初期SP0を変更しない。初戦前に現在パーティ全員へ通常攻撃Actionへ到達できるFormal AIを設定する。初期Stoneは追加せず0個選択で進行可能。Skill段階はSPと能力条件が成立して正式Skill/Passiveが習得可能になった時点で有効化する。",
+      "rationale": "GS-30/GS-33とCurrent Formal AIを接続し、未定義の初期Skill・SP・Stone付与を追加せず初戦へ到達させる。D14はrequires_human_approval=falseのデータ作成Taskで、既存7題材を具体化する。",
+      "source_discussion_ids": [],
+      "approved_by": "AI-from-current-authority",
+      "approved_at": "2026-09-12T13:10:00Z",
+      "created_at": "2026-09-12T13:10:00Z",
+      "updated_at": "2026-09-12T13:10:00Z"
     }
   ],
   "specifications": [
@@ -970,20 +982,22 @@
       "id": "GS-33",
       "title": "チュートリアルとヘルプ",
       "status": "Review",
-      "summary": "ユーザー提供の修正版仕様を基準入力として保存。承認履歴を捏造しない。",
-      "body": "# チュートリアルとヘルプ\n\n仕様ID：GS-33　版：1.0　作成日：2026-09-11\n\n## 初回チュートリアル\n\n初回プレイに必須の段階式チュートリアルを実施する。一度に全機能の説明を出さず、実際の画面操作に合わせて短い案内を表示する。\n\n| 対象 | 案内する操作 |\n|---|---|\n| パーティ | 冒険者選択、編成、前衛・後衛 |\n| Quest | 詳細確認、出撃開始 |\n| 装備 | 詳細、要求値、装備・解除 |\n| Active・Passive | 習得条件、SP、戦闘用選択、有効状態 |\n| ストーン | 任意投入、難易度変化、消費 |\n| AI | 条件・対象・行動の編集 |\n| 倉庫・報酬 | 預け入れ・引き出し、帰還受取、容量整理 |\n\n案内のために独自の装備・成長・戦闘・報酬処理を作らない。通常の画面・機能を操作し、その成功結果から段階完了を判定する。\n\n## スキップ\n\nチュートリアル全体を完全Skipする操作は提供しない。会話の既読Skipと、チュートリアル完了を同一状態として扱わない。\n\n## 進行保存\n\n現在段階と完了済み内容をSaveへ保持する。Loadで完了済み操作の報酬や初期アイテムを再付与しない。中断から戻った場合は保存段階から案内を再開する。\n\n## ヘルプ\n\n学習済みの内容はHelpから再閲覧できる。閲覧だけでゲーム状態を変更しない。具体的な説明本文・演出・段階ID・解放条件はデータとして作成する。\n\n段階数と全体の固定順序は資料に定義がないため、上表をそのまま必須の実行順として実装しない。\n\n## 参照元\n\n- `development-project-data/DEV-V9-REORG-019.json / TUTORIAL・SAVE`\n",
+      "summary": "D14で初回Tutorial 7段階、初戦AI導線、Stone初期0、Skill段階Activationを具体化。",
+      "body": "# チュートリアルとヘルプ\n\n仕様ID：GS-33　版：1.1　作成日：2026-09-11\n\n## 初回チュートリアル\n\n初回プレイに必須の段階式チュートリアルを実施する。一度に全機能の説明を出さず、実際の画面操作に合わせて短い案内を表示する。\n\n| 対象 | 案内する操作 |\n|---|---|\n| パーティ | 冒険者選択、編成、前衛・後衛 |\n| Quest | 詳細確認、出撃開始 |\n| 装備 | 詳細、要求値、装備・解除 |\n| Active・Passive | 習得条件、SP、戦闘用選択、有効状態 |\n| ストーン | 任意投入、難易度変化、消費 |\n| AI | 条件・対象・行動の編集 |\n| 倉庫・報酬 | 預け入れ・引き出し、帰還受取、容量整理 |\n\n案内のために独自の装備・成長・戦闘・報酬処理を作らない。通常の画面・機能を操作し、その成功結果から段階完了を判定する。\n\n## スキップ\n\nチュートリアル全体を完全Skipする操作は提供しない。会話の既読Skipと、チュートリアル完了を同一状態として扱わない。\n\n## 進行保存\n\n現在段階と完了済み内容をSaveへ保持する。Loadで完了済み操作の報酬や初期アイテムを再付与しない。中断から戻った場合は保存段階から案内を再開する。\n\n## ヘルプ\n\n学習済みの内容はHelpから再閲覧できる。閲覧だけでゲーム状態を変更しない。具体的な説明本文・演出・段階ID・解放条件はデータとして作成する。\n\n## D14確定境界：初回Tutorial 7段階\n\n初回Tutorialは`TUTORIAL-ONBOARDING-1.0`の7段階を順番に進める。段階ID・順番・完了条件・表示本文はConfigから取得し、画面コードへ固定しない。段階完了は通常機能の成功結果を受け取って保存する。Tutorial専用の装備、Skill、SP、Stone、報酬を付与しない。\n\n| 順 | 段階ID | 題材 | 完了条件 |\n|---:|---|---|---|\n| 1 | TUT-PARTY-01 | パーティ | 現在パーティの編成・前衛/後衛設定を正常保存する |\n| 2 | TUT-EQUIPMENT-02 | 装備 | 装備詳細と要求値を確認し、同じ装備個体について正常な解除→再装備を完了する |\n| 3 | TUT-AI-03 | AI | 現在パーティ全員に有効なFormal AIを保存し、初戦用として通常攻撃Actionを到達可能にする |\n| 4 | TUT-STONE-04 | ストーン | Quest準備でStone欄を確認し、0個選択でも出撃可能な任意要素であることを確認する |\n| 5 | TUT-QUEST-05 | Quest | 利用可能なFormal Questを選択し、正常なQuestRun開始を成立させる |\n| 6 | TUT-WAREHOUSE-REWARD-06 | 倉庫・報酬 | 成功Runの帰還受取を確定し、その後に倉庫画面を開く |\n| 7 | TUT-SKILL-07 | Active・Passive | 習得可能なSP・能力条件に到達後、Active/Passive両画面を確認し、現在習得可能な正式SkillまたはPassiveを1件正常習得する。Activeを習得した場合は戦闘選択まで完了する |\n\n### 初戦AI\n\nニューゲーム時の冒険者へSkill・Passive・AI Bindingを自動付与しない。初期Skillなし、初期SP0を維持する。TUT-AI-03では正式AI編集機能を使い、Skillを必要としない通常攻撃Actionを初戦用に設定する。CurrentのFormal AI参照例として`AIP-0001 / AIL-0001`の通常攻撃Programを利用できるが、Tutorial開始だけを理由に自動Bindingしない。\n\nQuest開始前のTutorial判定では、現在パーティ全員についてFormal AI Bindingが有効で、通常攻撃Actionが到達可能であることを確認する。Skillを未習得であることを失敗理由にしない。\n\n### Stoneと初期所持\n\nニューゲームの装備外初期InventoryはGS-30どおり空のままとする。Tutorial用Stoneを追加しない。Stoneを1個も持っていない場合でもTUT-STONE-04を進行でき、Stoneは任意投入で、選択したStoneはQuest開始成立時に消費されることを表示する。\n\n### Skill段階の開始条件\n\nTUT-SKILL-07は、現在パーティのいずれかがSPを1以上持ち、正式Master上でその時点の能力値条件とSP条件を満たすActiveまたはPassiveが1件以上存在するときに操作可能にする。それ以前は未完了のまま待機し、初期Skill付与やSP付与でTutorialを迂回しない。\n\n### Help\n\n各段階の完了後、その段階の説明をHelpから再閲覧可能にする。Help閲覧はTutorial完了状態やゲーム状態を変更しない。\n\n## 参照元\n\n- `development-project-data/DEV-V9-REORG-019.json / TUTORIAL・SAVE`\n",
       "depends_on": [],
-      "decision_refs": [],
+      "decision_refs": [
+        "DEC-NIP-D14-TUTORIAL-ONBOARDING-1.0"
+      ],
       "contract_ids": [],
-      "revision": 1,
+      "revision": 2,
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-09-11T00:00:00Z",
-      "updated_at": "2026-09-11T00:00:00Z",
+      "updated_at": "2026-09-12T13:10:00Z",
       "source_path": "基準仕様/33_チュートリアルとヘルプ.md",
-      "source_sha256": "9854fb4e36c0c5df719545e4356d802afbe6412a37b247d04b50cca319e71bb5",
+      "source_sha256": "e5eab3c38d21d102351d2b8bb48a1c28ccba2b32a570a0adaee054d6bf9b41b6",
       "input_authority": "user_provided_current_specification",
-      "spec_version": "1.0",
+      "spec_version": "1.1",
       "acceptance_criteria": "",
       "system_node_id": "",
       "source_candidate_id": "",
@@ -1861,7 +1875,7 @@
       "id": "TASK-NIP-D14",
       "title": "Tutorial段階と導入データ",
       "box_id": "BOX-NIP-DECISIONS",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 16,
       "depends_on": [
         "TASK-NIP-F01"
@@ -1879,18 +1893,19 @@
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": false,
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "AI-from-current-authority",
+        "at": "2026-09-12T13:10:00Z"
       },
       "created_at": "2026-09-11T00:00:00Z",
-      "updated_at": "2026-09-11T00:00:00Z",
+      "updated_at": "2026-09-12T13:10:00Z",
       "decision_type": "データ作成",
       "affected_tasks": [
         "TASK-NIP-33-02"
       ],
       "implementation_note": "ルールの新規決定はユーザー判断、明示仕様から決められる型・検証実装は実装担当が進める。未決のまま確定済みと記録しない。",
-      "body": "実装手順\n1. 7題材のID、順番、完了条件、本文と初期AIからの初戦導線を確定する。\n2. 初期Skillなし/SP0を保持して習得可能になる時点へ誘導する。未定義の初期Skill付与で迂回しない。\n3. 採用内容・設定版・根拠を記録し、影響する仕様の該当境界だけを明示更新してから依存タスクへ渡す。\n\n完了条件\n1. 曖昧な選択肢が残らず、数値表または具体的な入力/期待出力がある。\n2. 影響先に渡す値と版が固定され、未採用案が本番設定へ混在していない。"
+      "body": "実装手順\n1. 7題材のID、順番、完了条件、本文と初期AIからの初戦導線を確定する。\n2. 初期Skillなし/SP0を保持して習得可能になる時点へ誘導する。未定義の初期Skill付与で迂回しない。\n3. 採用内容・設定版・根拠を記録し、影響する仕様の該当境界だけを明示更新してから依存タスクへ渡す。\n\n完了条件\n1. 曖昧な選択肢が残らず、数値表または具体的な入力/期待出力がある。\n2. 影響先に渡す値と版が固定され、未採用案が本番設定へ混在していない。",
+      "result_summary": "TUTORIAL-ONBOARDING-1.0確定。7段階のID/順序/本文/完了条件、初期Skillなし・SP0を維持した通常攻撃Formal AIからの初戦導線、Stone初期0、Skill段階の習得可能時Activationを固定。"
     },
     {
       "id": "TASK-NIP-F03",
@@ -6400,6 +6415,29 @@
         "mode": ""
       },
       "blocking": false
+    },
+    {
+      "id": "CHECK-NIP-D14-TUTORIAL-ONBOARDING",
+      "title": "D14 Tutorial段階と導入データ受入",
+      "target_type": "Task",
+      "target_id": "TASK-NIP-D14",
+      "status": "Passed",
+      "result": "7題材のID/順番/完了条件/本文を具体化し、初期Skillなし・SP0・初期Stoneなしを維持した初戦導線を確定。",
+      "evidence": "TASK-NIP-D14_TUTORIAL-ONBOARDING-1.0.json SHA256=a4028a8738f4fec10dccb80c3725a67119b9f5d5a66df71aeb26dd288f5d2dc7; GS-33 v1.1 SHA256=e5eab3c38d21d102351d2b8bb48a1c28ccba2b32a570a0adaee054d6bf9b41b6; Fresh Current GKS-B911/GA-B486.242 Quick 12/12 PASS evidence_sha256=2096bc14e161a8c7636acf01016892d8bc26ff9b58070e6f080b131602eeebfd; DEVELOPMENT_ONLY so Source/Export/Build unchanged.",
+      "created_at": "2026-09-12T13:10:00Z",
+      "updated_at": "2026-09-12T13:10:00Z",
+      "gate": "General",
+      "checked_by": "AI",
+      "checked_at": "2026-09-12T13:10:00Z",
+      "resolves_check_ids": [],
+      "blocking": false,
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      }
     }
   ],
   "history": [
@@ -6490,6 +6528,15 @@
       "summary": "AUDIO-PRESENTATION-1.0を確定。実音源は後段32-02で受入。",
       "actor": "AI-by-human-delegation",
       "at": "2026-09-12T12:25:00Z"
+    },
+    {
+      "id": "HISTORY-NIP-D14-20260912-131000",
+      "entity_type": "Task",
+      "entity_id": "TASK-NIP-D14",
+      "action": "Completed",
+      "summary": "TUTORIAL-ONBOARDING-1.0を確定。次はF03 Source実装。",
+      "actor": "AI-from-current-authority",
+      "at": "2026-09-12T13:10:00Z"
     }
   ],
   "authority": {
