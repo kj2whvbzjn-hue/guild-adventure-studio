@@ -5,17 +5,17 @@
     "name": "修正版34仕様に基づく新規実装計画",
     "status": "Implementing",
     "ai_attention": "Include",
-    "updated_at": "2026-09-12T01:06:32.117Z"
+    "updated_at": "2026-09-12T05:40:37.123Z"
   },
   "project_context": {
     "purpose": "修正版34仕様の全項目を実装し、Studio/Game/Export/Saveで一貫させる。",
-    "summary": "TASK-NIP-F01/F02/D01/D02/D03完了。Fresh CurrentはGKS-B911 / GA-B486.242。D03でCritical Rate上限100%・Critical追加Damage上限700%をCurrent Balanceとして外部Config所有へ固定。次はTASK-NIP-D04へ進む。"
+    "summary": "TASK-NIP-F01/F02/D01/D02/D03/D05完了。MagicDefense誤混入を修正版仕様・計画から除去しD04を削除済み。D05で競合かばうはpriority降順、同priorityは戦闘開始時に1回だけ決定して戦闘中固定する処理順で解決すると確定。次はTASK-NIP-D06へ進む。"
   },
   "current_focus": {
     "architecture_id": "ARC-NIP",
     "work_box_id": "BOX-NIP-DECISIONS",
     "theme": "未確定事項具体化",
-    "goal": "TASK-NIP-D04「混在防具のMagicDefense集約」をDEVELOPMENT_ONLYで確定する"
+    "goal": "TASK-NIP-D06「同Tick境界の優先」をDEVELOPMENT_ONLYで確定する"
   },
   "source_baseline": {
     "studio_build": "GKS-B910",
@@ -93,6 +93,18 @@
       "approved_at": "2026-09-11T23:35:35Z",
       "created_at": "2026-09-11T23:35:35Z",
       "updated_at": "2026-09-11T23:35:35Z"
+    },
+    {
+      "id": "DEC-NIP-D05-COVER-PRIORITY-1.0",
+      "title": "競合かばうの優先規則",
+      "status": "Approved",
+      "text": "複数の有効なかばう候補は整数priorityの高い順で解決する。同priorityではGS-14で戦闘開始時に1回だけ決定し、その戦闘終了まで固定する処理順の早い候補を優先する。同priority解決のための再抽選、登録sequence、名称、配置順による優先は使わない。解決時点で無効な候補は除外して同じ順序の次候補へ進み、実際に対象置換した1件だけUSESを消費する。有効候補がなければ元対象を維持する。",
+      "rationale": "ユーザー判断により、同priority時は「処理順」を使用すると確定。処理順はGS-14の戦闘開始時1回決定・戦闘中固定の順序をそのまま参照し、Tick/Hit/かばう競合ごとの再抽選は行わない。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-09-12T05:16:15Z",
+      "created_at": "2026-09-12T05:16:15Z",
+      "updated_at": "2026-09-12T05:16:15Z"
     }
   ],
   "specifications": [
@@ -360,7 +372,7 @@
       "title": "ダメージと防御",
       "status": "Review",
       "summary": "ユーザー提供の修正版仕様を基準入力として保存。承認履歴を捏造しない。",
-      "body": "# ダメージと防御\n\n仕様ID：GS-12　版：1.0　作成日：2026-09-11\n\n## 基礎ダメージ\n\n| 攻撃種別 | 基礎式 |\n|---|---|\n| 通常物理攻撃 | 攻撃武器の有効攻撃力×1.00 |\n| 物理スキル | 有効攻撃力×`power / 100` |\n| 魔法スキル | 魔法上昇率×`power`×`(1 + magic_weapon_bonus / 100)` |\n| 正式な固定Damage効果 | 契約に指定された`power` |\n\n魔法の`power`は魔法威力、物理の`power`は攻撃力に対する百分率。魔法上昇率の未補正値は1として扱う。PHYSICAL_DAMAGE・MAGIC_DAMAGEの独立Contributionをそれぞれの基礎量へ加える。魔法武器補正をHealに使わない。\n\n## 直接ダメージの処理順\n\n1. GS-11のクリティカル先行・命中判定を行う。\n2. 攻撃種別の基礎ダメージと有効補正を計算する。\n3. 適用対象のダメージ抵抗・魔法防御による割合軽減を行う。\n4. クリティカルなら追加倍率を適用する。\n5. 元素属性がある場合は属性別shareへ分割し、属性ごとの耐性で軽減して合計する。\n6. 攻撃者の隊列とRangeに応じた倍率を適用する。\n7. 乱数幅が設定されていなければ等倍。最終値を`max(0, floor(値))`として`finalDamage`を確定する。\n8. Block判定と軽減を行う。\n9. BARRIERで吸収し、残余をHPダメージ候補にする。\n10. 致死候補では致死耐えの割込みを解決し、HPを確定する。\n11. 実HP減少量を使ってダメージ参照効果を解決する。\n12. 戦闘不能・後続効果・誘発効果を処理する。\n\n## 抵抗と属性\n\n百分率で表すダメージ抵抗・属性耐性は0〜75%の範囲で扱い、`Damage × (1 - Resistance/100)`とする。\n\n元素属性はFIRE・ICE・LIGHTNING・WIND。複数属性はダメージの内訳を表す。\n\n```text\n属性ごとの量 = 属性分割前Damage × share / 100\n属性軽減後合計 = Σ(属性ごとの量 × (1 - 対応属性耐性 / 100))\n```\n\nshareをすべて指定した場合は合計100%。一部省略なら残りを省略属性へ等分する。負値・超過・無効属性を拒否する。\n\n例：Damage100、FIRE50%・ICE50%、火耐性20%・氷耐性0%なら40+50=90。属性を2つ持つことを理由にDamage200にしない。\n\n## 魔法防御\n\n```text\nMagicDefense = armor_iLv × MND_requirement_coefficient × K\nMagicDamageReduction = MagicDefense / (MagicDefense + 100)\n防御軽減後魔法Damage = 防御軽減前魔法Damage × (1 - MagicDamageReduction)\n```\n\nKの現在値は1で、設定から取得する。参照するMND係数は防具種の要求MND係数。キャラクターMNDの直接値、魔法命中抵抗、属性耐性とは別に扱う。\n\n**未定義の境界：** 異なるiLv・種別の防具を混在装備した場合の`armor_iLv`とMND係数の集約方法は資料に定義がない。合計・平均・鎧のみのいずれかを推測して追加しない。この集約方法は魔法防御実装時の要決定項目とする。\n\n## Block\n\n物理・魔法の直接Hitを対象とし、Miss・DOT・反射を自動で対象へ追加しない。各Hit独立で判定する。\n\n```text\n成功：Block後Damage = floor(finalDamage × (1 - block_damage_cut_rate))\n不成立：Block後Damage = finalDamage\n```\n\nBlockはBARRIERより前。初期盾の軽減率30%、`finalDamage=101`ならBlock後70。\n\n## BARRIERとHP\n\nBARRIERは有効な残量をFIFOで消費し、吸収しきれない量だけをHPへ渡す。HPの下限は0。致死耐えを含むHP確定後、`実HP減少量 = 適用前HP - 適用後HP`を求める。\n\n例：HP20、BARRIER10、Block後Damage100なら、吸収10、HP減少20。オーバーキル分70は吸収・反射の計算基準にしない。\n\n## 吸収・反射\n\nHP吸収・MP吸収は実HP減少量に効果率を掛けて切り上げ、最大値を超えない。反射は実HP減少量に効果率を掛けて切り捨てる。反射へ抵抗を再適用せず、反射から再反射を起こさない。これらは正式効果が付与されている場合に限り実行する。\n\n## 参照元\n\n- `development-project-data/DEV-V9-REORG-019.json / BATTLE-001〜003`\n- `development-project-data/SKL-0001.json / DEC-SKL-MAGIC-DEFENSE-001`\n- `development-project-data/DEV-V9-CRITICAL-MODIFIER-POLICY-001.json`\n- `game/assets/js/tag-skill-runtime.js / calculateCurrentSkillBaseDamage`\n",
+      "body": "# ダメージと防御\n\n仕様ID：GS-12　版：1.0　作成日：2026-09-11\n\n## 基礎ダメージ\n\n| 攻撃種別 | 基礎式 |\n|---|---|\n| 通常物理攻撃 | 攻撃武器の有効攻撃力×1.00 |\n| 物理スキル | 有効攻撃力×`power / 100` |\n| 魔法スキル | 魔法上昇率×`power`×`(1 + magic_weapon_bonus / 100)` |\n| 正式な固定Damage効果 | 契約に指定された`power` |\n\n魔法の`power`は魔法威力、物理の`power`は攻撃力に対する百分率。魔法上昇率の未補正値は1として扱う。PHYSICAL_DAMAGE・MAGIC_DAMAGEの独立Contributionをそれぞれの基礎量へ加える。魔法武器補正をHealに使わない。\n\n## 直接ダメージの処理順\n\n1. GS-11のクリティカル先行・命中判定を行う。\n2. 攻撃種別の基礎ダメージと有効補正を計算する。\n3. 適用対象のダメージ抵抗による割合軽減を行う。\n4. クリティカルなら追加倍率を適用する。\n5. 元素属性がある場合は属性別shareへ分割し、属性ごとの耐性で軽減して合計する。\n6. 攻撃者の隊列とRangeに応じた倍率を適用する。\n7. 乱数幅が設定されていなければ等倍。最終値を`max(0, floor(値))`として`finalDamage`を確定する。\n8. Block判定と軽減を行う。\n9. BARRIERで吸収し、残余をHPダメージ候補にする。\n10. 致死候補では致死耐えの割込みを解決し、HPを確定する。\n11. 実HP減少量を使ってダメージ参照効果を解決する。\n12. 戦闘不能・後続効果・誘発効果を処理する。\n\n## 抵抗と属性\n\n百分率で表すダメージ抵抗・属性耐性は0〜75%の範囲で扱い、`Damage × (1 - Resistance/100)`とする。\n\n元素属性はFIRE・ICE・LIGHTNING・WIND。複数属性はダメージの内訳を表す。\n\n```text\n属性ごとの量 = 属性分割前Damage × share / 100\n属性軽減後合計 = Σ(属性ごとの量 × (1 - 対応属性耐性 / 100))\n```\n\nshareをすべて指定した場合は合計100%。一部省略なら残りを省略属性へ等分する。負値・超過・無効属性を拒否する。\n\n例：Damage100、FIRE50%・ICE50%、火耐性20%・氷耐性0%なら40+50=90。属性を2つ持つことを理由にDamage200にしない。\n\n## Block\n\n物理・魔法の直接Hitを対象とし、Miss・DOT・反射を自動で対象へ追加しない。各Hit独立で判定する。\n\n```text\n成功：Block後Damage = floor(finalDamage × (1 - block_damage_cut_rate))\n不成立：Block後Damage = finalDamage\n```\n\nBlockはBARRIERより前。初期盾の軽減率30%、`finalDamage=101`ならBlock後70。\n\n## BARRIERとHP\n\nBARRIERは有効な残量をFIFOで消費し、吸収しきれない量だけをHPへ渡す。HPの下限は0。致死耐えを含むHP確定後、`実HP減少量 = 適用前HP - 適用後HP`を求める。\n\n例：HP20、BARRIER10、Block後Damage100なら、吸収10、HP減少20。オーバーキル分70は吸収・反射の計算基準にしない。\n\n## 吸収・反射\n\nHP吸収・MP吸収は実HP減少量に効果率を掛けて切り上げ、最大値を超えない。反射は実HP減少量に効果率を掛けて切り捨てる。反射へ抵抗を再適用せず、反射から再反射を起こさない。これらは正式効果が付与されている場合に限り実行する。\n\n## 参照元\n\n- `development-project-data/DEV-V9-REORG-019.json / BATTLE-001〜003`\n- `development-project-data/DEV-V9-CRITICAL-MODIFIER-POLICY-001.json`\n- `game/assets/js/tag-skill-runtime.js / calculateCurrentSkillBaseDamage`\n",
       "depends_on": [],
       "decision_refs": [],
       "contract_ids": [],
@@ -370,7 +382,7 @@
       "created_at": "2026-09-11T00:00:00Z",
       "updated_at": "2026-09-11T00:00:00Z",
       "source_path": "基準仕様/12_ダメージと防御.md",
-      "source_sha256": "0502bbe4e960341866ba703a414c161a45a993db3575d378ce195b0ebce0ca5c",
+      "source_sha256": "2327a120b70afc053db75b41ceb9ed3a0c45baa06837cc33c32e337cfe54bcf1",
       "input_authority": "user_provided_current_specification",
       "spec_version": "1.0",
       "acceptance_criteria": "",
@@ -383,19 +395,21 @@
       "title": "隊列と対象範囲",
       "status": "Review",
       "summary": "ユーザー提供の修正版仕様を基準入力として保存。承認履歴を捏造しない。",
-      "body": "# 隊列と対象範囲\n\n仕様ID：GS-13　版：1.0　作成日：2026-09-11\n\n## 配置\n\n各陣営の配置は前衛`FRONTLINE`と後衛`BACKLINE`の2列。味方6枠の前後配分はギルドで自由に編集する。戦闘中に任意移動する操作は設けない。\n\n前衛の生存者が0人になった場合、生存している後衛全員を前衛へ強制前進させる。対象候補を次に解決するときは、更新済み隊列を使う。\n\nモンスターはEncounterの指定配置を優先し、指定がないときにモンスターの標準配置を使う。\n\n## 敵向けRange\n\n| Range | 対象集合・選び方 | 攻撃者が後衛の場合のDamage倍率 |\n|---|---|---:|\n| SINGLE | 生存前衛から単体 | 0.5 |\n| FRONT | 生存前衛全員 | 0.5 |\n| BACK | 生存前衛・後衛の両方から単体 | 1.0 |\n| RANDOM | 前衛・後衛を含む有効候補から指定回数抽選。重複可 | 0.5 |\n| ALL | 全有効対象 | 1.0 |\n\n攻撃者が前衛なら隊列倍率1.0。BACKは「後衛全員」でも「後衛限定単体」でもない。対象条件を満たす前衛も選べる。\n\nRANDOMの抽選回数はスキルデータで指定する。現在の生成設定は2回。結果は配列として固定し、同じ個体が複数回選ばれた場合も各回を残す。\n\n対象Rangeはこの5種に限定する。攻撃属性としてのPIERCEとRangeを混同しない。\n\n## 味方向け効果\n\n味方へのHeal・BARRIERは前衛・後衛のどちらも対象にできる。敵向けSINGLEの「前衛のみ」を味方支援へ流用しない。防御側が後衛であることだけを理由に被Damageを半減しない。\n\n## 対象固定\n\nAI判断時点では対象予約にすぎない。実行開始時に使用条件・対象条件・Rangeを検証し、基準対象と展開済み最終対象集合を固定する。\n\n詠唱完了時は固定対象から無効になったものだけを除外する。新しい対象を補充しない。RANDOMを引き直さない。以後の各Hitも無効対象を除外し、他の有効対象は継続する。\n\n## かばう\n\n- SINGLE・BACK、およびRANDOMの各抽選を対象とする。\n- FRONT・ALLには適用しない。\n- RANDOMの重複選出も1回ずつ判定する。\n- 有効なかばう効果の条件・寿命・使用回数に従って、被攻撃対象をかばう側へ置換する。\n- かばう対象にできない攻撃を単体Hitへ分解して、かばうを成立させない。\n\nかばうは`PERSISTENT / USES / DURATION`の正式寿命を持つ。複数のかばう候補が同時成立した場合の優先規則は、個別Contractで確定させる。名称や配置順による独自優先を足さない。\n\n## 参照元\n\n- `development-project-data/DEV-V9-FORMATION-RANGE-001.json / SPEC-FRM-001 Rev2`\n- `development-project-data/DEV-V9-REORG-019.json / BATTLE-002`\n- `assets/shared/config/skill-ai-generation-rules.json`\n",
+      "body": "# 隊列と対象範囲\n\n仕様ID：GS-13　版：1.1　作成日：2026-09-11\n\n## 配置\n\n各陣営の配置は前衛`FRONTLINE`と後衛`BACKLINE`の2列。味方6枠の前後配分はギルドで自由に編集する。戦闘中に任意移動する操作は設けない。\n\n前衛の生存者が0人になった場合、生存している後衛全員を前衛へ強制前進させる。対象候補を次に解決するときは、更新済み隊列を使う。\n\nモンスターはEncounterの指定配置を優先し、指定がないときにモンスターの標準配置を使う。\n\n## 敵向けRange\n\n| Range | 対象集合・選び方 | 攻撃者が後衛の場合のDamage倍率 |\n|---|---|---:|\n| SINGLE | 生存前衛から単体 | 0.5 |\n| FRONT | 生存前衛全員 | 0.5 |\n| BACK | 生存前衛・後衛の両方から単体 | 1.0 |\n| RANDOM | 前衛・後衛を含む有効候補から指定回数抽選。重複可 | 0.5 |\n| ALL | 全有効対象 | 1.0 |\n\n攻撃者が前衛なら隊列倍率1.0。BACKは「後衛全員」でも「後衛限定単体」でもない。対象条件を満たす前衛も選べる。\n\nRANDOMの抽選回数はスキルデータで指定する。現在の生成設定は2回。結果は配列として固定し、同じ個体が複数回選ばれた場合も各回を残す。\n\n対象Rangeはこの5種に限定する。攻撃属性としてのPIERCEとRangeを混同しない。\n\n## 味方向け効果\n\n味方へのHeal・BARRIERは前衛・後衛のどちらも対象にできる。敵向けSINGLEの「前衛のみ」を味方支援へ流用しない。防御側が後衛であることだけを理由に被Damageを半減しない。\n\n## 対象固定\n\nAI判断時点では対象予約にすぎない。実行開始時に使用条件・対象条件・Rangeを検証し、基準対象と展開済み最終対象集合を固定する。\n\n詠唱完了時は固定対象から無効になったものだけを除外する。新しい対象を補充しない。RANDOMを引き直さない。以後の各Hitも無効対象を除外し、他の有効対象は継続する。\n\n## かばう\n\n- SINGLE・BACK、およびRANDOMの各抽選を対象とする。\n- FRONT・ALLには適用しない。\n- RANDOMの重複選出も1回ずつ判定する。\n- 有効なかばう効果の条件・寿命・使用回数に従って、被攻撃対象をかばう側へ置換する。\n- かばう対象にできない攻撃を単体Hitへ分解して、かばうを成立させない。\n\nかばうは`PERSISTENT / USES / DURATION`の正式寿命を持つ。`priority`はかばう効果に設定された整数値で、戦闘開始時に決定する処理順とは別に扱う。複数のかばう候補が同時成立した場合は`priority`の高い候補を優先し、同`priority`ではGS-14で戦闘開始時に1回だけ決定してその戦闘中固定する処理順の早い候補を優先する。ここで処理順を再抽選しない。解決時点で死亡・寿命満了・`USES=0`・条件不成立などにより無効な候補は除外し、同じ優先規則で次の有効候補を採用する。`USES`は実際に被攻撃対象を置換した1件だけ消費する。名称・配置順・登録sequenceによる独自優先を足さない。\n\n## 参照元\n\n- `development-project-data/DEV-V9-FORMATION-RANGE-001.json / SPEC-FRM-001 Rev2`\n- `development-project-data/DEV-V9-REORG-019.json / BATTLE-002`\n- `assets/shared/config/skill-ai-generation-rules.json`\n",
       "depends_on": [],
-      "decision_refs": [],
+      "decision_refs": [
+        "DEC-NIP-D05-COVER-PRIORITY-1.0"
+      ],
       "contract_ids": [],
-      "revision": 1,
+      "revision": 2,
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-09-11T00:00:00Z",
-      "updated_at": "2026-09-11T00:00:00Z",
+      "updated_at": "2026-09-12T05:16:15Z",
       "source_path": "基準仕様/13_隊列と対象範囲.md",
-      "source_sha256": "4221a597de991d6f49b30ac7cf364bae5ee0600435f1373b5e6c1eaa5bc0292f",
+      "source_sha256": "5201c26fc2a1d8ff0b214b08f9c3c06f61ec519453738624f8ce68a1c0295cda",
       "input_authority": "user_provided_current_specification",
-      "spec_version": "1.0",
+      "spec_version": "1.1",
       "acceptance_criteria": "",
       "system_node_id": "",
       "source_candidate_id": "",
@@ -1408,7 +1422,7 @@
       "id": "TASK-NIP-D05",
       "title": "競合かばうの優先",
       "box_id": "BOX-NIP-DECISIONS",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 7,
       "depends_on": [
         "TASK-NIP-F01"
@@ -1431,14 +1445,14 @@
         "at": ""
       },
       "created_at": "2026-09-11T00:00:00Z",
-      "updated_at": "2026-09-11T00:00:00Z",
+      "updated_at": "2026-09-12T05:16:15Z",
       "decision_type": "ルール決定",
       "affected_tasks": [
         "TASK-NIP-13-02",
         "TASK-NIP-12-02"
       ],
       "implementation_note": "ルールの新規決定はユーザー判断、明示仕様から決められる型・検証実装は実装担当が進める。未決のまま確定済みと記録しない。",
-      "body": "実装手順\n1. 複数有効保護者と同priority時の優先、候補無効化後の扱いを決める。\n2. priorityと同値解決の規則を明文化する。新たな抽選を採用する場合も戦闘処理順の再抽選とは分離する。\n3. 採用内容・設定版・根拠を記録し、影響する仕様の該当境界だけを明示更新してから依存タスクへ渡す。\n\n完了条件\n1. 曖昧な選択肢が残らず、数値表または具体的な入力/期待出力がある。\n2. 影響先に渡す値と版が固定され、未採用案が本番設定へ混在していない。"
+      "body": "実装手順\n1. 複数有効保護者と同priority時の優先、候補無効化後の扱いを決める。\n2. priorityと同値解決の規則を明文化する。新たな抽選を採用する場合も戦闘処理順の再抽選とは分離する。\n3. 採用内容・設定版・根拠を記録し、影響する仕様の該当境界だけを明示更新してから依存タスクへ渡す。\n\n完了条件\n1. 曖昧な選択肢が残らず、数値表または具体的な入力/期待出力がある。\n2. 影響先に渡す値と版が固定され、未採用案が本番設定へ混在していない。\n\nD05確定結果\n- 設定版: COVER-PRIORITY-1.0\n- priority: かばう効果が持つ整数設定値。戦闘開始時の処理順とは別。\n- 優先: priority降順。\n- 同priority: GS-14の戦闘開始時に1回だけ決定し、戦闘中固定する処理順の早い候補。\n- 再抽選: Tick/Hit/かばう競合のいずれでも行わない。\n- 無効候補: 解決時点で除外し、同じ順位規則の次の有効候補へ進む。\n- USES: 実際に対象置換した1件だけ消費。\n- 候補なし: 元対象を維持。\n- 禁止: 登録sequence、名称、配置順、新規乱数による同値解決。\n- Development Data artifact SHA-256: f0b92b1447f7fcd3cccd2f58a227584eb01afb2077daa4cf6135808609681632\n- 本TaskはDEVELOPMENT_ONLY。Game/Studio/Export/Save/Buildは変更しない。\n"
     },
     {
       "id": "TASK-NIP-D06",
@@ -1971,7 +1985,7 @@
       "implementation_steps": [
         "重装6/3/1、軽装3/1/6、ローブ1/6/3のVIT/MND/AGI係数を使用する。",
         "HP/MPは要求VIT/MNDに鎧20・他10を掛け、回避=reqAGI、魔法命中抵抗=reqAGI+reqMNDを部位ごとに生成する。",
-        "各部位の保存性能を出力し、合計側は実装備だけを加算する。魔法防御の集約値は別契約へ分ける。"
+        "各部位の保存性能を出力し、合計側は実装備だけを加算する。"
       ],
       "acceptance_examples": [
         "iLv1重装鎧はHP120・MP60・回避1・魔法命中抵抗4となる。",
@@ -2002,7 +2016,7 @@
         "GS-08の入力/期待値fixtureと実行結果"
       ],
       "rollback": "変更単位のコミットを戻す。Save形式変更がある場合は旧コードで新形式を開かず、変換前Backupと対応コードを対で復旧する。",
-      "body": "実装手順\n1. 重装6/3/1、軽装3/1/6、ローブ1/6/3のVIT/MND/AGI係数を使用する。\n2. HP/MPは要求VIT/MNDに鎧20・他10を掛け、回避=reqAGI、魔法命中抵抗=reqAGI+reqMNDを部位ごとに生成する。\n3. 各部位の保存性能を出力し、合計側は実装備だけを加算する。魔法防御の集約値は別契約へ分ける。\n\n完了条件\n1. iLv1重装鎧はHP120・MP60・回避1・魔法命中抵抗4となる。\n2. 同じiLv1重装4部位でHP300・MP150・回避4・魔法命中抵抗16となる。\n3. 1部位だけ装備した魔法命中抵抗4を4倍して16にしない。"
+      "body": "実装手順\n1. 重装6/3/1、軽装3/1/6、ローブ1/6/3のVIT/MND/AGI係数を使用する。\n2. HP/MPは要求VIT/MNDに鎧20・他10を掛け、回避=reqAGI、魔法命中抵抗=reqAGI+reqMNDを部位ごとに生成する。\n3. 各部位の保存性能を出力し、合計側は実装備だけを加算する。\n\n完了条件\n1. iLv1重装鎧はHP120・MP60・回避1・魔法命中抵抗4となる。\n2. 同じiLv1重装4部位でHP300・MP150・回避4・魔法命中抵抗16となる。\n3. 1部位だけ装備した魔法命中抵抗4を4倍して16にしない。"
     },
     {
       "id": "TASK-NIP-13-01",
@@ -3561,7 +3575,7 @@
       "implementation_steps": [
         "物理/魔法の基礎式から防御、クリティカル、属性share、隊列、floorまでを純粋計算として分割する。",
         "Block→FIFO BARRIER→致死割込み→HP確定を順序固定で実装し、実HP減少量を唯一の吸収・反射参照値にする。",
-        "抵抗0〜75%、元素share合計100%、吸収ceil・反射floor、反射の再軽減/再反射禁止を検証する。混在防具MagicDefenseはD04確定まで明示入力の境界に留める。"
+        "抵抗0〜75%、元素share合計100%、吸収ceil・反射floor、反射の再軽減/再反射禁止を検証する。"
       ],
       "acceptance_examples": [
         "100DamageのFIRE50/ICE50、耐性20/0は90。属性数を理由に200へ増えない。",
@@ -3592,7 +3606,7 @@
         "GS-12の入力/期待値fixtureと実行結果"
       ],
       "rollback": "変更単位のコミットを戻す。Save形式変更がある場合は旧コードで新形式を開かず、変換前Backupと対応コードを対で復旧する。",
-      "body": "実装手順\n1. 物理/魔法の基礎式から防御、クリティカル、属性share、隊列、floorまでを純粋計算として分割する。\n2. Block→FIFO BARRIER→致死割込み→HP確定を順序固定で実装し、実HP減少量を唯一の吸収・反射参照値にする。\n3. 抵抗0〜75%、元素share合計100%、吸収ceil・反射floor、反射の再軽減/再反射禁止を検証する。混在防具MagicDefenseはD04確定まで明示入力の境界に留める。\n\n完了条件\n1. 100DamageのFIRE50/ICE50、耐性20/0は90。属性数を理由に200へ増えない。\n2. finalDamage101・Block30%は70。HP20・Barrier10・Block後100では実HP減少20となる。\n3. HP1の致死耐え後の実HP減少だけを吸収/反射へ渡し、後続HitではCD中の耐えを再発動しない。"
+      "body": "実装手順\n1. 物理/魔法の基礎式から防御、クリティカル、属性share、隊列、floorまでを純粋計算として分割する。\n2. Block→FIFO BARRIER→致死割込み→HP確定を順序固定で実装し、実HP減少量を唯一の吸収・反射参照値にする。\n3. 抵抗0〜75%、元素share合計100%、吸収ceil・反射floor、反射の再軽減/再反射禁止を検証する。\n\n完了条件\n1. 100DamageのFIRE50/ICE50、耐性20/0は90。属性数を理由に200へ増えない。\n2. finalDamage101・Block30%は70。HP20・Barrier10・Block後100では実HP減少20となる。\n3. HP1の致死耐え後の実HP減少だけを吸収/反射へ渡し、後続HitではCD中の耐えを再発動しない。"
     },
     {
       "id": "TASK-NIP-15-01",
@@ -3798,12 +3812,10 @@
       "execution_order": 60,
       "depends_on": [
         "TASK-NIP-08-01",
-        "TASK-NIP-10-01",
-        "TASK-NIP-12-01"
+        "TASK-NIP-10-01"
       ],
       "implementation_steps": [
         "10へ部位性能を渡し、未装備部位を存在するものとして集計しない。",
-        "12のMagicDefenseと魔法命中抵抗が別フィールドであることを往復検査する。",
         "上記の受入例と基準仕様全節を照合し、保存/Export/表示の該当経路を確認する。差分と試験証跡を添えて完了を記録する。"
       ],
       "acceptance_examples": [
@@ -3836,7 +3848,7 @@
         "GS-08の入力/期待値fixtureと実行結果"
       ],
       "rollback": "変更単位のコミットを戻す。Save形式変更がある場合は旧コードで新形式を開かず、変換前Backupと対応コードを対で復旧する。",
-      "body": "実装手順\n1. 10へ部位性能を渡し、未装備部位を存在するものとして集計しない。\n2. 12のMagicDefenseと魔法命中抵抗が別フィールドであることを往復検査する。\n3. 上記の受入例と基準仕様全節を照合し、保存/Export/表示の該当経路を確認する。差分と試験証跡を添えて完了を記録する。\n\n完了条件\n1. iLv1重装鎧はHP120・MP60・回避1・魔法命中抵抗4となる。\n2. 同じiLv1重装4部位でHP300・MP150・回避4・魔法命中抵抗16となる。\n3. 1部位だけ装備した魔法命中抵抗4を4倍して16にしない。\n4. 関連する本番データが確定し、未決境界を仮値で通す経路がない。"
+      "body": "実装手順\n1. 10へ部位性能を渡し、未装備部位を存在するものとして集計しない。\n2. 上記の受入例と基準仕様全節を照合し、保存/Export/表示の該当経路を確認する。差分と試験証跡を添えて完了を記録する。\n\n完了条件\n1. iLv1重装鎧はHP120・MP60・回避1・魔法命中抵抗4となる。\n2. 同じiLv1重装4部位でHP300・MP150・回避4・魔法命中抵抗16となる。\n3. 1部位だけ装備した魔法命中抵抗4を4倍して16にしない。\n4. 関連する本番データが確定し、未決境界を仮値で通す経路がない。"
     },
     {
       "id": "TASK-NIP-10-02",
@@ -3950,12 +3962,11 @@
         "TASK-NIP-18-01",
         "TASK-NIP-19-01",
         "TASK-NIP-20-01",
-        "TASK-NIP-D04",
         "TASK-NIP-D05"
       ],
       "implementation_steps": [
         "18のBarrierと20の致死割込みを実処理に接続し、各段階の追跡ログを照合する。",
-        "D04の混在防具集約とD05の競合かばうを組み込んで異種装備・複数保護者の戦闘を検証する。",
+        "D05の競合かばうを組み込んで複数保護者の戦闘を検証する。",
         "上記の受入例と基準仕様全節を照合し、保存/Export/表示の該当経路を確認する。差分と試験証跡を添えて完了を記録する。"
       ],
       "acceptance_examples": [
@@ -3975,7 +3986,6 @@
       "created_at": "2026-09-11T00:00:00Z",
       "updated_at": "2026-09-11T00:00:00Z",
       "decision_dependencies": [
-        "TASK-NIP-D04",
         "TASK-NIP-D05"
       ],
       "spec_refs": [
@@ -3991,8 +4001,8 @@
         "GS-12の入力/期待値fixtureと実行結果"
       ],
       "rollback": "変更単位のコミットを戻す。Save形式変更がある場合は旧コードで新形式を開かず、変換前Backupと対応コードを対で復旧する。",
-      "body": "実装手順\n1. 18のBarrierと20の致死割込みを実処理に接続し、各段階の追跡ログを照合する。\n2. D04の混在防具集約とD05の競合かばうを組み込んで異種装備・複数保護者の戦闘を検証する。\n3. 上記の受入例と基準仕様全節を照合し、保存/Export/表示の該当経路を確認する。差分と試験証跡を添えて完了を記録する。\n\n完了条件\n1. 100DamageのFIRE50/ICE50、耐性20/0は90。属性数を理由に200へ増えない。\n2. finalDamage101・Block30%は70。HP20・Barrier10・Block後100では実HP減少20となる。\n3. HP1の致死耐え後の実HP減少だけを吸収/反射へ渡し、後続HitではCD中の耐えを再発動しない。\n4. 関連する本番データが確定し、未決境界を仮値で通す経路がない。",
-      "blocked_reason": "未確定の設定/ルールを解決するタスク: TASK-NIP-D04, TASK-NIP-D05"
+      "body": "実装手順\n1. 18のBarrierと20の致死割込みを実処理に接続し、各段階の追跡ログを照合する。\n2. D05の競合かばうを組み込んで複数保護者の戦闘を検証する。\n3. 上記の受入例と基準仕様全節を照合し、保存/Export/表示の該当経路を確認する。差分と試験証跡を添えて完了を記録する。\n\n完了条件\n1. 100DamageのFIRE50/ICE50、耐性20/0は90。属性数を理由に200へ増えない。\n2. finalDamage101・Block30%は70。HP20・Barrier10・Block後100では実HP減少20となる。\n3. HP1の致死耐え後の実HP減少だけを吸収/反射へ渡し、後続HitではCD中の耐えを再発動しない。\n4. 関連する本番データが確定し、未決境界を仮値で通す経路がない。",
+      "blocked_reason": "未確定の設定/ルールを解決するタスク: TASK-NIP-D05"
     },
     {
       "id": "TASK-NIP-13-02",
@@ -6310,6 +6320,12 @@
       "at": "2026-09-11T23:35:35Z",
       "action": "complete_task",
       "summary": "TASK-NIP-D03 Done。Fresh Currentの既存上限Critical Rate=100%、Critical追加Damage=700%をCRITICAL-BALANCE-LIMITS-1.0としてBaseline化。数値はgame_runtime.critical外部Config可変、Runtime hard-code/暗黙Fallback禁止。基礎追加Damage50%とGS-11式は変更なし。Development Data artifact SHA256=de5afaa336c3d16cbf3d7916470f09349819d77080b2387f21926a32df805c97。DEVELOPMENT_ONLYのためSource/Export/Build変更なし。"
+    },
+    {
+      "id": "HISTORY-NIP-D05-20260912-051615",
+      "at": "2026-09-12T05:16:15Z",
+      "action": "complete_task",
+      "summary": "TASK-NIP-D05 Done。MagicDefense除去済み89タスク体系へ同期。COVER-PRIORITY-1.0としてpriority降順、同priorityはGS-14の戦闘開始時固定処理順を使用し、再抽選/登録sequence優先を禁止。無効候補は次候補へ進み、実際に置換した1件だけUSES消費。Development Data artifact SHA256=f0b92b1447f7fcd3cccd2f58a227584eb01afb2077daa4cf6135808609681632。DEVELOPMENT_ONLYのためSource/Export/Build変更なし。"
     }
   ],
   "authority": {
