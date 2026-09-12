@@ -5,17 +5,17 @@
     "name": "修正版34仕様に基づく新規実装計画",
     "status": "Implementing",
     "ai_attention": "Include",
-    "updated_at": "2026-09-12T09:29:03.089Z"
+    "updated_at": "2026-09-12T12:39:10.762Z"
   },
   "project_context": {
     "purpose": "修正版34仕様の全項目を実装し、Studio/Game/Export/Saveで一貫させる。",
-    "summary": "TASK-NIP-F01/F02/D01/D02/D03/D05/D06/D07/D08/D09/D10/D11完了。MagicDefense誤混入は除去済み。D11で所持品Stack20・容量20・全売却単価1 Goldを外部Config可変のCurrent暫定値として確定。次はTASK-NIP-D12へ進む。"
+    "summary": "TASK-NIP-F01/F02/D01/D02/D03/D05/D06/D07/D08/D09/D10/D11/D12/D13完了。MagicDefense誤混入は除去済み。D13はSuno制作前提のBGM 5系統、SE正式Asset ID、既定音量・速度・演出軽減値を確定。次はTASK-NIP-D14へ進む。"
   },
   "current_focus": {
     "architecture_id": "ARC-NIP",
     "work_box_id": "BOX-NIP-DECISIONS",
     "theme": "未確定事項具体化",
-    "goal": "TASK-NIP-D12「Save対応版とMigration対象」をDEVELOPMENT_ONLYで確定する"
+    "goal": "TASK-NIP-D14「Tutorial段階と導入データ」をDEVELOPMENT_ONLYで確定する"
   },
   "source_baseline": {
     "studio_build": "GKS-B910",
@@ -177,6 +177,30 @@
       "approved_at": "2026-09-12T09:30:00Z",
       "created_at": "2026-09-12T09:30:00Z",
       "updated_at": "2026-09-12T09:30:00Z"
+    },
+    {
+      "id": "DEC-NIP-D12-SAVE-MIGRATION-1.0",
+      "title": "Save対応版と正式Migration対象",
+      "status": "Approved",
+      "text": "Current正式Save Versionは4。Migration判定はsaveVersionを正本とする。正式Migrationはv3→v4、およびv2→v3→v4のみ。各MigrationはsaveVersionだけを更新し、欠損Field生成・未知Field削除・ID置換・既定値補完を行わない。変換後payloadがCurrent厳格Schema/Integrity検証に合格した場合だけCurrent Slotへ確定する。v1以下・v5以上・その他未登録版はLoad拒否。schemaRevisionはMigration経路選択に使用しない。",
+      "rationale": "Fresh Current GKS-B911 / GA-B486.242 の game/assets/js/app-runtime.js に実在する SAVE_VERSION=4、SAVE_LEGACY_KEYS={3,2}、SAVE_MIGRATIONS={2:v2→v3,3:v3→v4}だけを採用し、旧計画のMigration完了状態や未実装変換を引き継がない。",
+      "source_discussion_ids": [],
+      "approved_by": "AI-from-current-authority",
+      "approved_at": "2026-09-12T12:15:00Z",
+      "created_at": "2026-09-12T12:15:00Z",
+      "updated_at": "2026-09-12T12:15:00Z"
+    },
+    {
+      "id": "DEC-NIP-D13-AUDIO-PRESENTATION-1.0",
+      "title": "音響Asset割当と表示設定初期値",
+      "status": "Approved",
+      "text": "AUDIO-PRESENTATION-1.0を採用する。BGMはBGM_TITLE/GUILD/ADVENTURE/BATTLE/STORYの5系統をSunoで制作し、RuntimeはAsset ID参照とする。Current初期値はBGM音量0.60、SE音量0.80、Mute OFF、BGM Crossfade 800ms、戦闘速度1x（候補1x/2x/4x）、演出NORMAL（NORMAL/REDUCED）、画面振動ON。REDUCEDのFlash/Shakeは0.35倍。数値は全てConfig可変。戦闘速度・音量・演出設定は戦闘計算、Seed、Quest結果へ影響させない。実音源ファイルは未納品のためTASK-NIP-32-02で存在・Decode・Hash・Loopを受入し、欠落時にPlaceholderへFallbackしない。",
+      "rationale": "Humanが音源選定をAI推奨へ委任し、BGMはSunoで制作予定と明示したため。既存GS-32の公開設定と「設定値はデータ」「戦闘結果へ影響させない」を維持して具体化した。",
+      "source_discussion_ids": [],
+      "approved_by": "AI-by-human-delegation",
+      "approved_at": "2026-09-12T12:25:00Z",
+      "created_at": "2026-09-12T12:25:00Z",
+      "updated_at": "2026-09-12T12:25:00Z"
     }
   ],
   "specifications": [
@@ -873,20 +897,22 @@
       "id": "GS-30",
       "title": "セーブとニューゲーム",
       "status": "Review",
-      "summary": "ユーザー提供の修正版仕様を基準入力として保存。承認履歴を捏造しない。",
-      "body": "# セーブとニューゲーム\n\n仕様ID：GS-30　版：1.0　作成日：2026-09-11\n\n## セーブ方式\n\nプレイヤーSaveは1SlotのAuto Saveとする。永続状態を変更する操作が正常確定した直後に保存する。同時保存を直列化し、関連する変更は一体で成功または失敗させる。\n\n保存対象はギルド、冒険者、Level・能力値・経験値・履歴、所持品・倉庫・装備、習得ID・実消費SP記録・Active選択枠・Passive、有効AI設定、QuestRun、進行・フラグ、設定、チュートリアル状態。\n\n## 保存処理\n\n1. 変更後状態を一時領域で構築する。\n2. Schema・ID参照・所有状態・数量・編成・各機能の整合性を検証する。\n3. 検証した全状態をシリアライズする。\n4. 直前の正常SaveをBackupとして保持し、本Saveを切り替える。\n5. 全工程が成功した場合だけ保存成功を表示する。\n\n一時領域は中間状態であり、正常Saveとして読ませない。容量不足や書き込み失敗では、前の正常Saveを壊した状態で進行しない。再試行可能なら保存再試行を提供する。\n\n## 読み込みと版\n\n| 状態 | 動作 |\n|---|---|\n| 対応版・整合性正常 | 読み込みを確定 |\n| 版違い・正式Migrationあり | 変換前Backup→変換→整合性検証→成功時のみ確定 |\n| Migrationなし | 読み込み拒否 |\n| 欠損・破損・変換失敗 | 読み込み拒否し、理由と復旧導線を表示 |\n\n未知IDや欠損値を初期値に置き換えて成功扱いしない。Backup復旧でも検証を行う。単に古い形式であることを理由に、未定義の互換変換を作らない。\n\n## ニューゲーム初期値\n\n| 設定 | 現在値 |\n|---|---|\n| 所持Gold | 500 |\n| 初期冒険者 | 下表の6人、ギルド所属済み |\n| パーティ | 初期6人全員 |\n| Level | 全員1 |\n| STR/VIT/AGI/DEX/INT/MND/LUK | 全員各10 |\n| 個体基礎HP/MP | 100 / 30 |\n| SP | 0 |\n| 初期Active・Passive | 指定なし |\n| 初期隊列 | 全員FRONTLINE |\n| 装備外の初期Inventory ID一覧 | 空 |\n\n| 名前 | ジョブ | 初期主武器 | 初期副装備 | 防具4部位 |\n|---|---|---|---|---|\n| アルト | 剣士 | 木の大剣 EQP-0012 | なし | iLv1重装 |\n| セリア | 騎士 | 木の片手剣 EQP-0001 | 木の盾 EQP-0122 | iLv1重装 |\n| ロウ | 盗賊 | 木の短剣 EQP-0023 | なし | iLv1軽装 |\n| フィン | 狩人 | 木の弓 EQP-0067 | 木の矢筒 EQP-0133 | iLv1軽装 |\n| ミナ | 魔術師 | 木の杖 EQP-0089 | なし | iLv1ローブ |\n| エル | 神官 | 木のワンド EQP-0100 | なし | iLv1ローブ |\n\n| 防具種 | 頭 | 鎧 | 手 | 足 |\n|---|---|---|---|---|\n| 重装 | EQP-0155 | EQP-0144 | EQP-0166 | EQP-0177 |\n| 軽装 | EQP-0199 | EQP-0188 | EQP-0210 | EQP-0221 |\n| ローブ | EQP-0243 | EQP-0232 | EQP-0254 | EQP-0265 |\n\n表のIDは装備マスター参照。初期装備として付与するときは各個体の所有を成立させ、同じ装備個体を複数人で共有しない。アルトの大剣はSTR条件により両手持ちになる。初期HP・MPの最大値は、この基礎値に各人の装備補正を加えて求める。\n\nこれらは現在の初期データ値として設定から読み、初期RosterやGoldを画面コードへ固定しない。\n\n## 初期化順序\n\nギルド作成→進行・フラグ初期化→冒険者生成→パーティ編成→所持品・倉庫初期化→スキル・Passive・AI初期状態→整合性検証→初回Save。\n\n既存Saveがある場合は上書き確認を必須とする。初期化途中で失敗しても、未完成の初期状態を正式Saveにしない。\n\n## 冒険復帰\n\nQuestRunを読み込んだら、その開始時刻・Timeline・Snapshotから表示を再開する。Loadを理由にストーン再消費、Battle再計算、報酬再抽選、受取済み報酬の再付与を行わない。\n\n## 参照元\n\n- `development-project-data/DEV-V9-REORG-019.json / SAVE・NEWGAME・SKILL-ACQ`\n- `Export/system/adventure_settings.json / game_runtime`\n- `Export/equipment/equipment.json`\n",
+      "summary": "修正版GS-30を基準に、TASK-NIP-D12でCurrent Save Version 4と実在Migration v2/v3を正式境界として確定。",
+      "body": "# セーブとニューゲーム\n\n仕様ID：GS-30　版：1.1　作成日：2026-09-11\n\n## セーブ方式\n\nプレイヤーSaveは1SlotのAuto Saveとする。永続状態を変更する操作が正常確定した直後に保存する。同時保存を直列化し、関連する変更は一体で成功または失敗させる。\n\n保存対象はギルド、冒険者、Level・能力値・経験値・履歴、所持品・倉庫・装備、習得ID・実消費SP記録・Active選択枠・Passive、有効AI設定、QuestRun、進行・フラグ、設定、チュートリアル状態。\n\n## 保存処理\n\n1. 変更後状態を一時領域で構築する。\n2. Schema・ID参照・所有状態・数量・編成・各機能の整合性を検証する。\n3. 検証した全状態をシリアライズする。\n4. 直前の正常SaveをBackupとして保持し、本Saveを切り替える。\n5. 全工程が成功した場合だけ保存成功を表示する。\n\n一時領域は中間状態であり、正常Saveとして読ませない。容量不足や書き込み失敗では、前の正常Saveを壊した状態で進行しない。再試行可能なら保存再試行を提供する。\n\n## 読み込みと版\n\n| 状態 | 動作 |\n|---|---|\n| 対応版・整合性正常 | 読み込みを確定 |\n| 版違い・正式Migrationあり | 変換前Backup→変換→整合性検証→成功時のみ確定 |\n| Migrationなし | 読み込み拒否 |\n| 欠損・破損・変換失敗 | 読み込み拒否し、理由と復旧導線を表示 |\n\n未知IDや欠損値を初期値に置き換えて成功扱いしない。Backup復旧でも検証を行う。単に古い形式であることを理由に、未定義の互換変換を作らない。\n\n### D12確定境界：Save VersionとMigration\n\nCurrentの正式Save Versionは`4`とする。Migrationの判定は`saveVersion`を正本とし、`schemaRevision`はMigration経路の選択に使用しない。\n\n| 入力Save Version | 正式経路 | 変換内容 | 最終条件 |\n|---:|---|---|---|\n| 4 | 変換なし | Current payloadをそのまま検証 | Current厳格Schema・Integrity検証に合格 |\n| 3 | `v3→v4` | `saveVersion`を4へ更新 | 変換後payloadがCurrent厳格Schema・Integrity検証に合格 |\n| 2 | `v2→v3→v4` | 各段階で`saveVersion`だけを次版へ更新 | 変換後payloadがCurrent厳格Schema・Integrity検証に合格 |\n| 1以下・5以上・その他未登録版 | Migrationなし | 変換しない | Load拒否 |\n\n`v2→v3`と`v3→v4`は、欠損Fieldの生成、未知Fieldの削除、IDの置換、既定値補完を行わない狭いMigrationとする。したがって旧Version番号であっても、Version更新後にCurrentの厳格Schemaを満たせないSaveはMigration失敗としてLoadを拒否する。\n\nMigrationを実行する場合は変換前payloadをMigration Backupへ保存し、変換後payloadを一時検証してからCurrent Slotへ切り替える。Current Slotへの書き込みまたは検証に失敗した場合は、Current SlotとMigration Backupを処理開始前の状態へ戻す。\n\nLegacy Slotとして`guildAdventureV10.save.v2`と`guildAdventureV10.save.v3`を探索対象にする。Current Slotは`guildAdventureV10.save.v4`。未登録のLegacy Slot名を推測して探索しない。\n\n## ニューゲーム初期値\n\n| 設定 | 現在値 |\n|---|---|\n| 所持Gold | 500 |\n| 初期冒険者 | 下表の6人、ギルド所属済み |\n| パーティ | 初期6人全員 |\n| Level | 全員1 |\n| STR/VIT/AGI/DEX/INT/MND/LUK | 全員各10 |\n| 個体基礎HP/MP | 100 / 30 |\n| SP | 0 |\n| 初期Active・Passive | 指定なし |\n| 初期隊列 | 全員FRONTLINE |\n| 装備外の初期Inventory ID一覧 | 空 |\n\n| 名前 | ジョブ | 初期主武器 | 初期副装備 | 防具4部位 |\n|---|---|---|---|---|\n| アルト | 剣士 | 木の大剣 EQP-0012 | なし | iLv1重装 |\n| セリア | 騎士 | 木の片手剣 EQP-0001 | 木の盾 EQP-0122 | iLv1重装 |\n| ロウ | 盗賊 | 木の短剣 EQP-0023 | なし | iLv1軽装 |\n| フィン | 狩人 | 木の弓 EQP-0067 | 木の矢筒 EQP-0133 | iLv1軽装 |\n| ミナ | 魔術師 | 木の杖 EQP-0089 | なし | iLv1ローブ |\n| エル | 神官 | 木のワンド EQP-0100 | なし | iLv1ローブ |\n\n| 防具種 | 頭 | 鎧 | 手 | 足 |\n|---|---|---|---|---|\n| 重装 | EQP-0155 | EQP-0144 | EQP-0166 | EQP-0177 |\n| 軽装 | EQP-0199 | EQP-0188 | EQP-0210 | EQP-0221 |\n| ローブ | EQP-0243 | EQP-0232 | EQP-0254 | EQP-0265 |\n\n表のIDは装備マスター参照。初期装備として付与するときは各個体の所有を成立させ、同じ装備個体を複数人で共有しない。アルトの大剣はSTR条件により両手持ちになる。初期HP・MPの最大値は、この基礎値に各人の装備補正を加えて求める。\n\nこれらは現在の初期データ値として設定から読み、初期RosterやGoldを画面コードへ固定しない。\n\n## 初期化順序\n\nギルド作成→進行・フラグ初期化→冒険者生成→パーティ編成→所持品・倉庫初期化→スキル・Passive・AI初期状態→整合性検証→初回Save。\n\n既存Saveがある場合は上書き確認を必須とする。初期化途中で失敗しても、未完成の初期状態を正式Saveにしない。\n\n## 冒険復帰\n\nQuestRunを読み込んだら、その開始時刻・Timeline・Snapshotから表示を再開する。Loadを理由にストーン再消費、Battle再計算、報酬再抽選、受取済み報酬の再付与を行わない。\n\n## 参照元\n\n- `development-project-data/DEV-V9-REORG-019.json / SAVE・NEWGAME・SKILL-ACQ`\n- `Export/system/adventure_settings.json / game_runtime`\n- `Export/equipment/equipment.json`\n- `game/assets/js/app-runtime.js / SAVE_VERSION・SAVE_LEGACY_KEYS・SAVE_MIGRATIONS`\n",
       "depends_on": [],
-      "decision_refs": [],
+      "decision_refs": [
+        "DEC-NIP-D12-SAVE-MIGRATION-1.0"
+      ],
       "contract_ids": [],
-      "revision": 1,
+      "revision": 2,
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-09-11T00:00:00Z",
-      "updated_at": "2026-09-11T00:00:00Z",
+      "updated_at": "2026-09-12T12:15:00Z",
       "source_path": "基準仕様/30_セーブとニューゲーム.md",
-      "source_sha256": "25bfad7b0c2f7d876cd94b6a39eb405289654cf153d36e8177b8e799d1966cb1",
+      "source_sha256": "dff3af50b8eea2da2b57434992a3c16d5d4a8fc9e63d4faa8655138c511ebbee",
       "input_authority": "user_provided_current_specification",
-      "spec_version": "1.0",
+      "spec_version": "1.1",
       "acceptance_criteria": "",
       "system_node_id": "",
       "source_candidate_id": "",
@@ -919,20 +945,22 @@
       "id": "GS-32",
       "title": "サウンドとプレイヤー設定",
       "status": "Review",
-      "summary": "ユーザー提供の修正版仕様を基準入力として保存。承認履歴を捏造しない。",
-      "body": "# サウンドとプレイヤー設定\n\n仕様ID：GS-32　版：1.0　作成日：2026-09-11\n\n## BGM\n\nギルド、戦闘、Story、主要画面でBGMを切り替えられる。各画面・SceneはAudioへの再生要求と音源参照を持ち、音源データそのものを複製して所有しない。\n\n## SE\n\n通常攻撃、スキル、魔法、回復、クリティカル、状態付与、主要UI操作へSEを指定できる。音源はAsset参照とし、同じゲーム効果の定義を変えずに音源を差し替えられる。\n\n音源ID、初期音量、Fade時間、効果音の演出タイミングはContent/Configから取得する。未指定の音源を特定の楽曲名へ推測で埋めない。\n\n## 公開する設定\n\n| 設定 | 反映先 |\n|---|---|\n| BGM音量 | BGM再生 |\n| SE音量 | SE再生 |\n| BGM/SE Mute | 対応音声の出力 |\n| 戦闘速度 | 戦闘再生 |\n| 戦闘演出軽減 | Shake・Flash等 |\n| 画面振動OFF | Camera演出 |\n\n具体的な初期音量、速度倍率の選択肢、軽減段階は設定データとし、資料にない値を固定しない。\n\n## 保存と適用\n\nプレイヤーが確定した設定値はSave対象にする。画面遷移・Load後も保持する。BGM・SEの音量はそれぞれの出力へ適用し、Mute解除時に別の未指定音量へ変更しない。\n\n設定変更は表示・音声・再生方法に反映する。Battle・Questの確定結果、Seed、抽選、報酬、進行フラグを変更しない。\n\n## 演出軽減\n\n画面振動の停止とFlash軽減を提供する。軽減しても行動者、対象、行動種別、Damage/Heal、状態変化が確認できる。演出を減らすために戦闘イベント自体を省略しない。\n\n## 参照元\n\n- `development-project-data/DEV-V9-REORG-019.json / AUDIO・SETTINGS・ACCESSIBILITY`\n",
+      "summary": "GS-32を基準にTASK-NIP-D13でAUDIO-PRESENTATION-1.0を確定。Suno制作前提のBGM Asset、SE ID、音量・速度・演出軽減Current値をConfig可変で定義。",
+      "body": "# サウンドとプレイヤー設定\n\n仕様ID：GS-32　版：1.1　作成日：2026-09-11\n\n## BGM\n\nギルド、戦闘、Story、主要画面でBGMを切り替えられる。各画面・SceneはAudioへの再生要求と音源参照を持ち、音源データそのものを複製して所有しない。\n\n## SE\n\n通常攻撃、スキル、魔法、回復、クリティカル、状態付与、主要UI操作へSEを指定できる。音源はAsset参照とし、同じゲーム効果の定義を変えずに音源を差し替えられる。\n\n音源ID、初期音量、Fade時間、効果音の演出タイミングはContent/Configから取得する。未指定の音源を特定の楽曲名へ推測で埋めない。\n\n## 公開する設定\n\n| 設定 | 反映先 |\n|---|---|\n| BGM音量 | BGM再生 |\n| SE音量 | SE再生 |\n| BGM/SE Mute | 対応音声の出力 |\n| 戦闘速度 | 戦闘再生 |\n| 戦闘演出軽減 | Shake・Flash等 |\n| 画面振動OFF | Camera演出 |\n\n具体的な初期音量、速度倍率の選択肢、軽減段階は設定データとし、資料にない値を固定しない。\n\n## 保存と適用\n\nプレイヤーが確定した設定値はSave対象にする。画面遷移・Load後も保持する。BGM・SEの音量はそれぞれの出力へ適用し、Mute解除時に別の未指定音量へ変更しない。\n\n設定変更は表示・音声・再生方法に反映する。Battle・Questの確定結果、Seed、抽選、報酬、進行フラグを変更しない。\n\n## 演出軽減\n\n画面振動の停止とFlash軽減を提供する。軽減しても行動者、対象、行動種別、Damage/Heal、状態変化が確認できる。演出を減らすために戦闘イベント自体を省略しない。\n\n## D13確定設定（AUDIO-PRESENTATION-1.0）\n\nCurrentの表示・音響設定は次を初期値とする。数値はすべてContent/Configから取得し、Runtimeへ直書きしない。\n\n| 設定 | Current初期値 | 選択肢 |\n|---|---:|---|\n| BGM音量 | 0.60 | 0.00〜1.00 |\n| SE音量 | 0.80 | 0.00〜1.00 |\n| BGM Mute / SE Mute | OFF / OFF | ON / OFF |\n| BGM Crossfade | 800ms | Config値 |\n| 戦闘速度 | 1x | 1x / 2x / 4x |\n| 戦闘演出 | NORMAL | NORMAL / REDUCED |\n| 画面振動 | ON | ON / OFF |\n\n`REDUCED`ではFlash強度とShake強度をCurrent初期値0.35倍とする。`NORMAL`は1.0倍。画面振動OFFでは演出段階に関係なくShake出力を0にする。これらの倍率もConfig値とする。\n\n戦闘速度は保存済み再生の表示速度だけへ反映し、Tick、Seed、対象、Hit数、Damage、Quest Timeline、報酬を変更しない。BGMの再生Rateは戦闘速度に連動させず1.0を維持し、速度変更で音程を変えない。Muteは保存済み音量値を書き換えない。\n\n### BGM Asset割当\n\n| Asset ID | 用途 | 本番Path |\n|---|---|---|\n| BGM_TITLE | Title・主要上位画面 | `assets/audio/bgm/bgm_title.mp3` |\n| BGM_GUILD | ギルド・施設 | `assets/audio/bgm/bgm_guild.mp3` |\n| BGM_ADVENTURE | Quest準備・冒険進行 | `assets/audio/bgm/bgm_adventure.mp3` |\n| BGM_BATTLE | 通常戦闘 | `assets/audio/bgm/bgm_battle.mp3` |\n| BGM_STORY | Story・会話 | `assets/audio/bgm/bgm_story.mp3` |\n\nBGMはSunoで制作する方針とし、全曲インストゥルメンタル、歌詞・歌唱なし、ループ編集を前提とする。曲調・テンポ等の制作ブリーフは`AUDIO-PRESENTATION-1.0`へ保持する。Suno出力を未編集のまま本番Asset確定とせず、頭尾・無音・ループ境界を確認する。\n\n### SE Asset割当\n\n主要SEはUI決定・戻る・エラー、通常Hit・Miss、物理Skill、魔法Cast・Hit、Heal、Critical、状態異常、Buff、Debuff、BARRIER、Revive、戦闘不能の正式Asset IDを`AUDIO-PRESENTATION-1.0`で定義する。同一ゲーム効果からAsset IDを参照し、効果ロジックへ音源名を埋め込まない。\n\n現時点ではBGM/SEの実音源ファイルは未納品である。D13はID・用途・制作条件・表示設定値を確定するTaskとし、実ファイルの存在・Decode・Hash・BGMループ境界の確認はTASK-NIP-32-02の本番素材受入で必須とする。音源欠落時に別音源やPlaceholderへ暗黙Fallbackして本番完了扱いにしない。\n\n## 参照元\n\n- `development-project-data/DEV-V9-REORG-019.json / AUDIO・SETTINGS・ACCESSIBILITY`\n",
       "depends_on": [],
-      "decision_refs": [],
+      "decision_refs": [
+        "DEC-NIP-D13-AUDIO-PRESENTATION-1.0"
+      ],
       "contract_ids": [],
-      "revision": 1,
+      "revision": 2,
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-09-11T00:00:00Z",
-      "updated_at": "2026-09-11T00:00:00Z",
+      "updated_at": "2026-09-12T12:25:00Z",
       "source_path": "基準仕様/32_サウンドとプレイヤー設定.md",
-      "source_sha256": "669eed8c5bf8c0566f5709ebac34f2a088a98d2456ed7d385b6c8427629192c5",
+      "source_sha256": "86cbd7e686d887a84ac11a5a677893fbecccc535d78ddf1711d792b42c6cac1c",
       "input_authority": "user_provided_current_specification",
-      "spec_version": "1.0",
+      "spec_version": "1.1",
       "acceptance_criteria": "",
       "system_node_id": "",
       "source_candidate_id": "",
@@ -1761,7 +1789,7 @@
       "id": "TASK-NIP-D12",
       "title": "Save対応版とMigration対象",
       "box_id": "BOX-NIP-DECISIONS",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 14,
       "depends_on": [
         "TASK-NIP-F01"
@@ -1779,24 +1807,25 @@
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": false,
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "AI-from-current-authority",
+        "at": "2026-09-12T12:15:00Z"
       },
       "created_at": "2026-09-11T00:00:00Z",
-      "updated_at": "2026-09-11T00:00:00Z",
+      "updated_at": "2026-09-12T12:15:00Z",
       "decision_type": "実装基準確定",
       "affected_tasks": [
         "TASK-NIP-30-02"
       ],
       "implementation_note": "ルールの新規決定はユーザー判断、明示仕様から決められる型・検証実装は実装担当が進める。未決のまま確定済みと記録しない。",
-      "body": "実装手順\n1. 着手ソースで読めるSchema版と、正式Migrationの存在する入力版を確定する。\n2. 実在する正式変換だけを列挙してfixture化する。旧計画の移行完了状態は引き継がない。\n3. 採用内容・設定版・根拠を記録し、影響する仕様の該当境界だけを明示更新してから依存タスクへ渡す。\n\n完了条件\n1. 曖昧な選択肢が残らず、数値表または具体的な入力/期待出力がある。\n2. 影響先に渡す値と版が固定され、未採用案が本番設定へ混在していない。"
+      "body": "実装手順\n1. 着手ソースで読めるSchema版と、正式Migrationの存在する入力版を確定する。\n2. 実在する正式変換だけを列挙してfixture化する。旧計画の移行完了状態は引き継がない。\n3. 採用内容・設定版・根拠を記録し、影響する仕様の該当境界だけを明示更新してから依存タスクへ渡す。\n\n完了条件\n1. 曖昧な選択肢が残らず、数値表または具体的な入力/期待出力がある。\n2. 影響先に渡す値と版が固定され、未採用案が本番設定へ混在していない。",
+      "result_summary": "SAVE-MIGRATION-1.0確定。Current Save Version 4、正式入力v2/v3/v4、Migration v2→v3→v4 / v3→v4のみ。未登録版は拒否し、変換後Current厳格検証を必須とする。"
     },
     {
       "id": "TASK-NIP-D13",
       "title": "音響素材と表示設定値",
       "box_id": "BOX-NIP-DECISIONS",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 15,
       "depends_on": [
         "TASK-NIP-F01"
@@ -1814,18 +1843,19 @@
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": false,
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "AI-by-human-delegation",
+        "at": "2026-09-12T12:25:00Z"
       },
       "created_at": "2026-09-11T00:00:00Z",
-      "updated_at": "2026-09-11T00:00:00Z",
+      "updated_at": "2026-09-12T12:25:00Z",
       "decision_type": "データ作成",
       "affected_tasks": [
         "TASK-NIP-32-02"
       ],
       "implementation_note": "ルールの新規決定はユーザー判断、明示仕様から決められる型・検証実装は実装担当が進める。未決のまま確定済みと記録しない。",
-      "body": "実装手順\n1. BGM/SE割当、既定音量、速度候補、演出軽減段階を決める。\n2. 素材と設定の対応表を作り、戦闘計算への影響を持たせない。\n3. 採用内容・設定版・根拠を記録し、影響する仕様の該当境界だけを明示更新してから依存タスクへ渡す。\n\n完了条件\n1. 曖昧な選択肢が残らず、数値表または具体的な入力/期待出力がある。\n2. 影響先に渡す値と版が固定され、未採用案が本番設定へ混在していない。"
+      "body": "実装手順\n1. BGM/SE割当、既定音量、速度候補、演出軽減段階を決める。\n2. 素材と設定の対応表を作り、戦闘計算への影響を持たせない。\n3. 採用内容・設定版・根拠を記録し、影響する仕様の該当境界だけを明示更新してから依存タスクへ渡す。\n\n完了条件\n1. 曖昧な選択肢が残らず、数値表または具体的な入力/期待出力がある。\n2. 影響先に渡す値と版が固定され、未採用案が本番設定へ混在していない。",
+      "result_summary": "AUDIO-PRESENTATION-1.0確定。Suno制作前提BGM 5系統、SE正式Asset ID、BGM0.60/SE0.80、速度1/2/4x、演出NORMAL/REDUCED、Shake ON/OFFをConfig可変で固定。実音源納品は32-02受入Gateへ残す。"
     },
     {
       "id": "TASK-NIP-D14",
@@ -6446,6 +6476,20 @@
       "id": "HISTORY-NIP-D11-20260912",
       "at": "2026-09-12T09:30:00Z",
       "message": "TASK-NIP-D11完了。Human指示により所持品Stack20・容量20・売却可能品の単価1 GoldをINVENTORY-ECONOMY-1.0の外部Config可変Current暫定値として確定。Development Data SHA256=eaf378aa59034a6e026fe5e22924b1513c8b988917092be16677771ce1550138。GS-29 v1.1へ該当境界だけ反映。"
+    },
+    {
+      "id": "HISTORY-NIP-D12-20260912",
+      "at": "2026-09-12T12:15:00Z",
+      "message": "TASK-NIP-D12完了。Fresh Currentの実在Save契約からSAVE-MIGRATION-1.0を確定。Save Version 4、Migration v2→v3→v4 / v3→v4のみ。Development Data SHA256=92b2de812973b4816b2c32b27cb0a1845939189c515f963b011eba6d9f24f438。GS-30 v1.1へ該当境界だけ反映。"
+    },
+    {
+      "id": "HISTORY-NIP-D13-20260912-122500",
+      "entity_type": "Task",
+      "entity_id": "TASK-NIP-D13",
+      "action": "Completed",
+      "summary": "AUDIO-PRESENTATION-1.0を確定。実音源は後段32-02で受入。",
+      "actor": "AI-by-human-delegation",
+      "at": "2026-09-12T12:25:00Z"
     }
   ],
   "authority": {
