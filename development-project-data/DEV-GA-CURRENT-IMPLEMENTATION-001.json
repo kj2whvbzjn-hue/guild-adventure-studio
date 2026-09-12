@@ -5,17 +5,17 @@
     "name": "修正版34仕様に基づく新規実装計画",
     "status": "Implementing",
     "ai_attention": "Include",
-    "updated_at": "2026-09-12T05:40:37.123Z"
+    "updated_at": "2026-09-12T06:14:32.731Z"
   },
   "project_context": {
     "purpose": "修正版34仕様の全項目を実装し、Studio/Game/Export/Saveで一貫させる。",
-    "summary": "TASK-NIP-F01/F02/D01/D02/D03/D05完了。MagicDefense誤混入を修正版仕様・計画から除去しD04を削除済み。D05で競合かばうはpriority降順、同priorityは戦闘開始時に1回だけ決定して戦闘中固定する処理順で解決すると確定。次はTASK-NIP-D06へ進む。"
+    "summary": "TASK-NIP-F01/F02/D01/D02/D03/D05/D06完了。MagicDefense誤混入を修正版仕様・計画から除去しD04を削除済み。D05は競合かばう、D06は同Tickの状態満了・Cast完了・前衛全滅境界を確定。次はTASK-NIP-D07へ進む。"
   },
   "current_focus": {
     "architecture_id": "ARC-NIP",
     "work_box_id": "BOX-NIP-DECISIONS",
     "theme": "未確定事項具体化",
-    "goal": "TASK-NIP-D06「同Tick境界の優先」をDEVELOPMENT_ONLYで確定する"
+    "goal": "TASK-NIP-D07「強制前進時のCast」をDEVELOPMENT_ONLYで確定する"
   },
   "source_baseline": {
     "studio_build": "GKS-B910",
@@ -105,6 +105,18 @@
       "approved_at": "2026-09-12T05:16:15Z",
       "created_at": "2026-09-12T05:16:15Z",
       "updated_at": "2026-09-12T05:16:15Z"
+    },
+    {
+      "id": "DEC-NIP-D06-SAME-TICK-BOUNDARY-1.0",
+      "title": "同Tickの状態満了・Cast完了・前衛全滅の優先規則",
+      "status": "Approved",
+      "text": "同一Tickで状態満了とCast完了が競合する場合はGS-14のTick共通順序に従い状態満了を先に解決し、その後にCast完了を処理する。複数のCast完了が同時成立した場合は、戦闘開始時に1回だけ確定し戦闘中固定する処理順の早い側から解決する。処理途中で前衛生存者が0人になった場合は、次の対象解決より前に生存後衛全員を強制前進させて更新済み隊列を使用する。Tick、Cast完了、前衛全滅を契機に処理順を再抽選しない。",
+      "rationale": "HumanがTASK-NIP-D06の提示案Aを選択。既存GS-14の状態満了順を保持し、未定義だったCast完了と前衛全滅の境界のみ具体化する。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-09-12T05:52:08Z",
+      "created_at": "2026-09-12T05:52:08Z",
+      "updated_at": "2026-09-12T05:52:08Z"
     }
   ],
   "specifications": [
@@ -420,19 +432,21 @@
       "title": "Tickと行動ゲージ",
       "status": "Review",
       "summary": "ユーザー提供の修正版仕様を基準入力として保存。承認履歴を捏造しない。",
-      "body": "# Tickと行動ゲージ\n\n仕様ID：GS-14　版：1.1　作成日：2026-09-11\n\n## 時間単位\n\n戦闘処理は整数Tickで進行する。描画フレーム、実時間、再生速度から独立させる。同じ初期状態・同じデータ・同じSeedなら同じ戦闘結果を再現する。\n\n## 行動ゲージ\n\n```text\n基礎増加量 / Tick = (100 + AGI) / 10\n```\n\n例：AGI10なら11、AGI50なら15、AGI100なら20。ゲージ増加補正は`ACTION_GAUGE_GAIN`のContributionとして加える。速度Buffで基礎AGIそのものを変更しない。\n\nStudio戦闘の後段倍率`agiGaugeCoefficient`と`actionSpeedMultiplier`は各1.0を初期値とする。存在する設定を使い、UI側で別式を作らない。\n\n| ゲージ設定 | 現在値 |\n|---|---:|\n| 最大値 | 100 |\n| AI再評価間隔 | 最大値の10%（現在10） |\n| 成立行動の消費量 | 最大値の100%（現在100） |\n| 実行失敗時の消費量 | 最大値の50%（現在50） |\n\n失敗消費は、開始・実行を試みて成立しなかった行動に適用する。ゲージ10ごとのAI評価そのものを失敗行動として毎回50消費しない。\n\n## AI評価\n\n再評価間隔を通過するたび、現在状態でプログラムを新規評価する。前回の対象・行動予約を記憶として優先しない。行動開始直前に使用可能性を検証し、実行不能なら次の再評価を待つ。\n\nAIが参照できるものは現在のHP・MP・生死・効果・隊列・詠唱など。将来の抽選値、これから起こる結果、敵の次行動予定は参照できない。ヘイト値は設けない。\n\n## 戦闘中の処理順の固定\n\n処理順の抽選は戦闘開始時に1回だけ行う。抽選で決めた順序はその戦闘の終了まで保持する。Tick更新・行動実行・各Hitを契機に再抽選しない。新しい戦闘を開始したときに、その戦闘用の順序を新たに抽選する。\n\n## Tickの共通順序\n\n1. 戦闘開始時に確定した処理順を使用する。ここでは抽選しない。\n2. 持続時間を更新する。\n3. 到達したDOT・HOT・周期効果を処理する。\n4. Cooldownを更新する。\n5. 満了した効果を終了する。\n6. 行動ゲージとAI再評価を処理し、行動予約を更新する。\n7. Tickを終了する。\n\n次Tickでも、戦闘開始時に決めた同じ順序を使用する。周期PassiveはこのTick処理へ参加し、別の実時間Timerを持たない。\n\n行動・Cast完了時の処理はGS-15、Hit後の誘発はGS-20に従う。同一Tickの「状態満了・Cast完了・前衛全滅」が競合する場合の全体順序は資料に統一定義がないため、上表だけから追加の優先を推測しない。\n\n## 戦闘開始・終了\n\n開始時に初期状態、装備基礎値、各補正源、選択スキル・Passive、AI、Seed、抽選による処理順を確定し、開始時Triggerを解決してから通常AIを進める。補正源の読み込み順で数値結果が変わらないようにする。\n\n終了判定後は終了時Triggerを解決し、戦闘専用Buff・Debuff・状態異常・BARRIER・Cooldown・周期状態を破棄する。AIを停止し、終了結果を保存する。\n\n## 参照元\n\n- `development-project-data/DEV-V9-REORG-019.json / AG式決定`\n- `development-project-data/SKL-0001.json / 周期Passive決定`\n- `Export/system/adventure_settings.json`\n- 本会話のユーザー指定：順序抽選は戦闘開始時に1回のみ。同一戦闘中は固定。\n",
+      "body": "# Tickと行動ゲージ\n\n仕様ID：GS-14　版：1.2　作成日：2026-09-11\n\n## 時間単位\n\n戦闘処理は整数Tickで進行する。描画フレーム、実時間、再生速度から独立させる。同じ初期状態・同じデータ・同じSeedなら同じ戦闘結果を再現する。\n\n## 行動ゲージ\n\n```text\n基礎増加量 / Tick = (100 + AGI) / 10\n```\n\n例：AGI10なら11、AGI50なら15、AGI100なら20。ゲージ増加補正は`ACTION_GAUGE_GAIN`のContributionとして加える。速度Buffで基礎AGIそのものを変更しない。\n\nStudio戦闘の後段倍率`agiGaugeCoefficient`と`actionSpeedMultiplier`は各1.0を初期値とする。存在する設定を使い、UI側で別式を作らない。\n\n| ゲージ設定 | 現在値 |\n|---|---:|\n| 最大値 | 100 |\n| AI再評価間隔 | 最大値の10%（現在10） |\n| 成立行動の消費量 | 最大値の100%（現在100） |\n| 実行失敗時の消費量 | 最大値の50%（現在50） |\n\n失敗消費は、開始・実行を試みて成立しなかった行動に適用する。ゲージ10ごとのAI評価そのものを失敗行動として毎回50消費しない。\n\n## AI評価\n\n再評価間隔を通過するたび、現在状態でプログラムを新規評価する。前回の対象・行動予約を記憶として優先しない。行動開始直前に使用可能性を検証し、実行不能なら次の再評価を待つ。\n\nAIが参照できるものは現在のHP・MP・生死・効果・隊列・詠唱など。将来の抽選値、これから起こる結果、敵の次行動予定は参照できない。ヘイト値は設けない。\n\n## 戦闘中の処理順の固定\n\n処理順の抽選は戦闘開始時に1回だけ行う。抽選で決めた順序はその戦闘の終了まで保持する。Tick更新・行動実行・各Hitを契機に再抽選しない。新しい戦闘を開始したときに、その戦闘用の順序を新たに抽選する。\n\n## Tickの共通順序\n\n1. 戦闘開始時に確定した処理順を使用する。ここでは抽選しない。\n2. 持続時間を更新する。\n3. 到達したDOT・HOT・周期効果を処理する。\n4. Cooldownを更新する。\n5. 満了した効果を終了する。\n6. そのTickで完了条件に到達したCastを処理する。複数ある場合は戦闘開始時に確定した処理順の早い側から解決し、ここでは抽選しない。\n7. 行動ゲージとAI再評価を処理し、行動予約を更新する。\n8. Tickを終了する。\n\n次Tickでも、戦闘開始時に決めた同じ順序を使用する。周期PassiveはこのTick処理へ参加し、別の実時間Timerを持たない。\n\n行動・Cast完了時の処理はGS-15、Hit後の誘発はGS-20に従う。同一Tickで「状態満了・Cast完了・前衛全滅」が競合する場合は、状態満了を先に完了し、その後にCast完了を処理する。複数のCast完了が同時に成立した場合は、戦闘開始時に1回だけ確定した処理順の早い側から解決し、Tick・Cast完了ごとに再抽選しない。処理途中で前衛の生存者が0人になった場合はGS-13の強制前進を適用し、次の対象解決より前に生存後衛を前衛へ移した更新済み隊列を使う。\n\n## 戦闘開始・終了\n\n開始時に初期状態、装備基礎値、各補正源、選択スキル・Passive、AI、Seed、抽選による処理順を確定し、開始時Triggerを解決してから通常AIを進める。補正源の読み込み順で数値結果が変わらないようにする。\n\n終了判定後は終了時Triggerを解決し、戦闘専用Buff・Debuff・状態異常・BARRIER・Cooldown・周期状態を破棄する。AIを停止し、終了結果を保存する。\n\n## 参照元\n\n- `development-project-data/DEV-V9-REORG-019.json / AG式決定`\n- `development-project-data/SKL-0001.json / 周期Passive決定`\n- `Export/system/adventure_settings.json`\n- 本会話のユーザー指定：順序抽選は戦闘開始時に1回のみ。同一戦闘中は固定。\n",
       "depends_on": [],
-      "decision_refs": [],
+      "decision_refs": [
+        "DEC-NIP-D06-SAME-TICK-BOUNDARY-1.0"
+      ],
       "contract_ids": [],
-      "revision": 1,
+      "revision": 2,
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-09-11T00:00:00Z",
-      "updated_at": "2026-09-11T00:00:00Z",
+      "updated_at": "2026-09-12T05:52:08Z",
       "source_path": "基準仕様/14_Tickと行動ゲージ.md",
-      "source_sha256": "e19bf9ef80a60d8adbedd75945072ca0e2c9e28627cf0423790554f319138cc3",
+      "source_sha256": "e963b25e57e866638a548634003d8c9b557928683e2a113b59f3c03b339df1aa",
       "input_authority": "user_provided_current_specification",
-      "spec_version": "1.1",
+      "spec_version": "1.2",
       "acceptance_criteria": "",
       "system_node_id": "",
       "source_candidate_id": "",
@@ -1458,7 +1472,7 @@
       "id": "TASK-NIP-D06",
       "title": "同Tick境界の優先",
       "box_id": "BOX-NIP-DECISIONS",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 8,
       "depends_on": [
         "TASK-NIP-F01"
@@ -1481,7 +1495,7 @@
         "at": ""
       },
       "created_at": "2026-09-11T00:00:00Z",
-      "updated_at": "2026-09-11T00:00:00Z",
+      "updated_at": "2026-09-12T05:52:08Z",
       "decision_type": "ルール決定",
       "affected_tasks": [
         "TASK-NIP-14-02",
@@ -1489,7 +1503,7 @@
         "TASK-NIP-13-02"
       ],
       "implementation_note": "ルールの新規決定はユーザー判断、明示仕様から決められる型・検証実装は実装担当が進める。未決のまま確定済みと記録しない。",
-      "body": "実装手順\n1. Cast完了・状態満了・前衛全滅が重なる場合の全体順序を決める。\n2. GS-14既定Tick順と戦闘開始時固定順を保持し、未定義のCast/前進境界だけを具体例で決める。Tickごとの順序再抽選案は採用しない。\n3. 採用内容・設定版・根拠を記録し、影響する仕様の該当境界だけを明示更新してから依存タスクへ渡す。\n\n完了条件\n1. 曖昧な選択肢が残らず、数値表または具体的な入力/期待出力がある。\n2. 影響先に渡す値と版が固定され、未採用案が本番設定へ混在していない。"
+      "body": "実装手順\n1. Cast完了・状態満了・前衛全滅が重なる場合の全体順序を決める。\n2. GS-14既定Tick順と戦闘開始時固定順を保持し、未定義のCast/前進境界だけを具体例で決める。Tickごとの順序再抽選案は採用しない。\n3. 採用内容・設定版・根拠を記録し、影響する仕様の該当境界だけを明示更新してから依存タスクへ渡す。\n\n完了条件\n1. 曖昧な選択肢が残らず、数値表または具体的な入力/期待出力がある。\n2. 影響先に渡す値と版が固定され、未採用案が本番設定へ混在していない。\n\nD06確定結果\n- 設定版: SAME-TICK-BOUNDARY-1.0\n- 採用案: A\n- 状態満了とCast完了が同一Tickで競合する場合、状態満了を先に解決する。\n- その後、そのTickで完了条件に到達したCastを処理する。\n- 同時Cast完了は戦闘開始時に1回だけ確定し戦闘中固定する処理順の早い側から解決する。\n- 処理途中で前衛生存者が0人になった場合、次の対象解決より前に生存後衛全員を強制前進させ、更新済み隊列を使用する。死亡後衛は対象外。\n- Tick/Cast完了/前衛全滅を契機に処理順を再抽選しない。\n- Development Data artifact SHA-256: 3feb50933c5c4e67e22ecd1fdf1372b3f0f0c5b9c563c9738bb3d5df894673a3\n- 本TaskはDEVELOPMENT_ONLY。Game/Studio/Export/Save/Buildは変更しない。\n"
     },
     {
       "id": "TASK-NIP-D07",
@@ -6326,6 +6340,12 @@
       "at": "2026-09-12T05:16:15Z",
       "action": "complete_task",
       "summary": "TASK-NIP-D05 Done。MagicDefense除去済み89タスク体系へ同期。COVER-PRIORITY-1.0としてpriority降順、同priorityはGS-14の戦闘開始時固定処理順を使用し、再抽選/登録sequence優先を禁止。無効候補は次候補へ進み、実際に置換した1件だけUSES消費。Development Data artifact SHA256=f0b92b1447f7fcd3cccd2f58a227584eb01afb2077daa4cf6135808609681632。DEVELOPMENT_ONLYのためSource/Export/Build変更なし。"
+    },
+    {
+      "id": "HISTORY-NIP-D06-20260912-055208",
+      "at": "2026-09-12T05:52:08Z",
+      "action": "complete_task",
+      "summary": "TASK-NIP-D06 Done。Human選択AをSAME-TICK-BOUNDARY-1.0として確定。状態満了をCast完了より先に処理し、同時Cast完了は戦闘開始時固定処理順で解決。前衛0は次の対象解決より前に生存後衛を強制前進。再抽選なし。Development Data artifact SHA256=3feb50933c5c4e67e22ecd1fdf1372b3f0f0c5b9c563c9738bb3d5df894673a3。DEVELOPMENT_ONLYのためSource/Export/Build変更なし。"
     }
   ],
   "authority": {
