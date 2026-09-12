@@ -5,17 +5,17 @@
     "name": "修正版34仕様に基づく新規実装計画",
     "status": "Implementing",
     "ai_attention": "Include",
-    "updated_at": "2026-09-12T07:38:27.524Z"
+    "updated_at": "2026-09-12T08:06:18.755Z"
   },
   "project_context": {
     "purpose": "修正版34仕様の全項目を実装し、Studio/Game/Export/Saveで一貫させる。",
-    "summary": "TASK-NIP-F01/F02/D01/D02/D03/D05/D06/D07完了。MagicDefense誤混入は修正版仕様・計画から除去済み。D05は競合かばう、D06は同Tick境界、D07は前衛0による自動強制前進時のCast継続を確定。次はTASK-NIP-D08へ進む。"
+    "summary": "TASK-NIP-F01/F02/D01/D02/D03/D05/D06/D07/D08/D09完了。MagicDefense誤混入は修正版仕様・計画から除去済み。D09はMonster魔法命中をINT+DEX比、魔法抵抗をMND+AGI比で仮想装備性能へ接続し、既存GS-22丸め規則まで確定。次はTASK-NIP-D10へ進む。"
   },
   "current_focus": {
     "architecture_id": "ARC-NIP",
     "work_box_id": "BOX-NIP-DECISIONS",
     "theme": "未確定事項具体化",
-    "goal": "TASK-NIP-D08「Active参照Passiveの具体マスター」をDEVELOPMENT_ONLYで確定する"
+    "goal": "TASK-NIP-D10「Guild進行と解放・容量」をDEVELOPMENT_ONLYで確定する"
   },
   "source_baseline": {
     "studio_build": "GKS-B910",
@@ -129,6 +129,30 @@
       "approved_at": "2026-09-12T06:20:47Z",
       "created_at": "2026-09-12T06:20:47Z",
       "updated_at": "2026-09-12T06:20:47Z"
+    },
+    {
+      "id": "DEC-NIP-D08-PASSIVE-ACTIVE-REF-1.0",
+      "title": "Active参照Passiveの具体Masterと本番登録範囲",
+      "status": "Approved",
+      "text": "PASSIVE-ACTIVE-REF-1.0をD08の正式Development Dataとする。Currentで完成Masterとして本番登録対象にするActive参照PassiveはCounter系列PASS-SER-16の3段階のみ。EVD-0012の未解決参照NORMAL_ATTACK_100_PERCENTをFormal参照ID SKL-0011へ具体化し、3段階すべて同じPHYSICAL DAMAGE power100を参照する。TriggerはON_HIT_RECEIVED/COUNTER、対象はEVENT_CONTEXT/ATTACKER、要求STR20/40/60、発動率25/50/75%、総Threshold20/40/60。SKL-0011はPassive Compiler参照専用でPlayer習得・Active選択・Player AI候補へ公開しない。HEAL/BARRIER参照は禁止。具体参照Active等が未指定のCritical/回避/Block/被Hit/攻撃Hit/Battle Start/LUK確率Trigger Frameworkは完成Masterとして本番登録しない。",
+      "rationale": "GS-19、SKL-0001のApproved Decision、EVD-0012のCounter 3段階はCounterの要求値・発動率・通常攻撃100%参照まで明示している一方、他Trigger Templateは具体参照Active等が未指定。新しいEffect性能を推測せず、完成定義だけを本番候補へ渡すD08受入条件に従う。",
+      "source_discussion_ids": [],
+      "approved_by": "AI-from-current-authority",
+      "approved_at": "2026-09-12T07:38:28.524Z",
+      "created_at": "2026-09-12T07:38:28.524Z",
+      "updated_at": "2026-09-12T07:38:28.524Z"
+    },
+    {
+      "id": "DEC-NIP-D09-MONSTER-MAGIC-HIT-RESIST-1.0",
+      "title": "Monster魔法命中・魔法抵抗の生成契約",
+      "status": "Approved",
+      "text": "Human選択Aを採用する。Monsterのmagic_accuracyは仮想主武器のmagic_accuracy元性能[I_w×(武器INT係数+武器DEX係数)×2]へ(M_INT+M_DEX)/(P_INT+P_DEX)を掛ける。magic_resistanceは仮想防具4部位一式のmagic_resistance元性能[I_a×(防具MND係数+防具AGI係数)×4]へ(M_MND+M_AGI)/(P_MND+P_AGI)を掛ける。I_w/I_aはGS-22既存の仮想iLvを用い、中間値は小数保持、最終値は既存GS-22のROUND_HALF_UPと非0→最低1規則で整数化する。副装備の盾・矢筒をmagic_accuracyへ加算せず、プレイヤー用装備生成式へMonster能力値を直接代入しない。設定版はMONSTER-MAGIC-HIT-RESIST-1.0。",
+      "rationale": "TASK-NIP-D09のHuman判断で案Aを選択。GS-07のmagic_accuracyがINT+DEX、GS-08のmagic_resistanceがMND+AGIを元性能に使うため、その能力値組を保持した比率をGS-22の既存「仮想装備性能×Monster/比較用冒険者能力値比」方式へ接続する。物理単一Stat式の根拠なき流用は行わない。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-09-12T07:58:35Z",
+      "created_at": "2026-09-12T07:58:35Z",
+      "updated_at": "2026-09-12T07:58:35Z"
     }
   ],
   "specifications": [
@@ -562,20 +586,22 @@
       "id": "GS-19",
       "title": "パッシブスキル",
       "status": "Review",
-      "summary": "ユーザー提供の修正版仕様を基準入力として保存。承認履歴を捏造しない。",
-      "body": "# パッシブスキル\n\n仕様ID：GS-19　版：1.0　作成日：2026-09-11\n\n## 基本構造\n\nPassiveは手動発動しない。基本は1件1効果とし、Activeとは別のマスターで作成する。Compilerが`runtimeContracts`へ変換し、効果実行は共通の正式Runtimeを使う。\n\nルートに`passiveSeriesId`を必須で持つ。同じ冒険者に同じ系列を複数有効化できない。低段階・高段階の重複も拒否する。編集確定時と戦闘開始時に検証し、自動で高い段階だけを残さない。\n\n有効Passiveの参照は`character.passiveIds`を使用し、系列はマスターから解決する。別のPassive専用Loadoutフィールドへ正本を複製しない。現在のPassive枠設定は5。\n\n## 標準効果と要求値\n\nスラッシュ区切りは同じ順序で対応する段階を示す。数値は現在の可変設定として扱う。\n\n| 効果 | 要求値 | 効果量 |\n|---|---|---|\n| 最大HP | VIT20/40/60 | 基礎最大HPへ相対+5/10/15% |\n| 最大MP | MND20/40/60 | 基礎最大MPへ相対+5/10/15% |\n| 指定元素耐性 | MND20/30/40/50/60 | 指定耐性+5/10/15/20/25pp |\n| 指定Damage系状態耐性 | VIT20/30/40/50/60 | 指定耐性+5/10/15/20/25pp |\n| 指定行動阻害系状態耐性 | MND20/30/40/50/60 | 指定耐性+5/10/15/20/25pp |\n| Block率 | VIT20/30/40/50/60 | 基礎Block率へ相対+5/10/15/20/25% |\n| Block性能 | VIT20/30/40/50/60 | 基礎軽減率へ相対+5/10/15/20/25% |\n| クリティカル率 | LUK20/30/40/50/60 | 基礎率へ相対+5/10/15/20/25% |\n| クリティカル追加Damage | LUK20/30/40/50/60 | 基礎追加量へ相対+5/10/15/20/25% |\n| 被クリティカル増加分軽減 | LUK20/30/40/50/60 | 追加Damage部分を5/10/15/20/25%軽減 |\n| 反撃 | STR20/40/60 | 被Hit時25/50/75%でpower100の通常攻撃Activeを参照 |\n| HP自動回復 | VIT20/40/60 | 20Tickごとに現在最大HPの1/2/3% |\n| MP自動回復 | MND20/40/60 | 20Tickごとに現在最大MPの0.5/1/1.5% |\n| MP消費軽減 | MND20/40/60 | Range適用済みMPを5/10/15%軽減、切り上げ |\n| CD短縮 | AGI20/40/60 | 基礎CDを5/10/15%短縮、切り上げ |\n| Cast短縮 | INT20/40/60 | 基礎Castを5/10/15%短縮、切り上げ |\n| 致死耐え | VIT40 | 致死Damage時にHP1、CD999999Tick |\n| 瀕死強化 | VIT20/40/60 | HP5/10/15%以下で指定10項目へ相対+100%、20Tick、CD999999Tick |\n\n耐性は対象元素・対象状態を個別に指定する。表の「指定耐性」を全耐性一括上昇へ置き換えない。能力値7種の直接上昇Passiveは作成しない。\n\nBlock率20%に相対+25%を適用した結果は25%。Block軽減率30%に相対+25%を適用した結果は37.5%。25ppを直接足さない。\n\n## Active参照型\n\nBattle開始、攻撃Hit、被Hit、クリティカル、回避、Blockなどの正式Triggerから、登録済みActiveの効果を参照する。Triggerを通常攻撃だけに限定しない。\n\n参照Activeのpower・期間等をPassive側へ複製しない。参照ActiveのMP・CD・Cast・Range CostをPassiveの発動費用として再度課さない。Passive自身が持つ確率・CD・条件は適用する。対象はPassive側のEVENT_CONTEXTまたはFORMAL_TARGETで決める。\n\n```text\nPassive総要求量 = Trigger条件に使う要求量 + 参照Activeの全能力値要求量\n```\n\n総量10〜110。同じ能力値でも加算する。例：Trigger VIT60＋参照Active VIT60は120なので無効。要求値を実際のキャラクター能力値から消費するという意味ではない。\n\n段階型の効果参照は要求20/40/60・参照Active段階1/2/3を基本とするが、具体Trigger能力値と参照Activeが未指定のテンプレートは完成スキルとして登録しない。\n\n## 周期回復\n\n初回は戦闘開始直後ではなく、intervalTicks経過後。現在interval20。以後同じ周期で判定する。\n\n```text\n回復要求量 = max(1, floor(発動時の現在最大HPまたはMP × 回復率))\n```\n\n最大値を超えた分は回復しない。死亡中に来た周期は不発、後からまとめて回復しない。蘇生しても周期をリセットしない。戦闘終了時に周期状態を破棄する。\n\nPassiveの回復はこの周期HP・MP回復のみ。Hit時・被Hit時・撃破時などの回復、PassiveによるBARRIERは使用しない。参照Active経由でもこの制限を迂回しない。\n\n## 致死耐え\n\nBlock・BARRIER後のHPダメージ候補によりHP0以下になる場合、HP確定前に割り込む。成功時はHP1で確定し、Passive CDを開始する。HP支払い・イベントによる直接死亡をDamageと読み替えて発動しない。\n\n多段攻撃の最初の致死Hitを耐えても残りHitは続く。CD中の次の致死Hitには発動しない。死亡・蘇生でCDを初期化せず、戦闘終了時に破棄する。\n\n## 瀕死強化\n\n対象はPHYSICAL_DAMAGE、MAGIC_DAMAGE、ACCURACY、MAGIC_ACCURACY、EVASION、BLOCK_RATE、BLOCK_PERFORMANCE、CRITICAL_RATE、CRITICAL_DAMAGE、ACTION_GAUGE_GAIN。\n\n各基礎値へ相対+100%のContributionを加える。基礎10に既存相対+10%がある場合は、10+1+10=21。既存補正込み最終値11を2倍して22にしない。\n\n最大HP・MP、魔法抵抗、元素・状態耐性、被クリティカル増加分軽減、MP・CD・Cast短縮、7基礎能力値は対象外。\n\n## 参照元\n\n- `development-project-data/SKL-0001.json / Passiveの各Approved Decision`\n- `development-project-data/DEV-V9-BALANCE-EVIDENCE-EVD-0008.json`\n- `development-project-data/DEV-V9-BALANCE-EVIDENCE-EVD-0012.json`\n- `Export/system/adventure_settings.json`\n",
+      "summary": "修正版GS-19を基準に、D08でActive参照Passiveの完成MasterをCounter系列だけへ具体化し、未完成Trigger Templateを本番候補から除外。",
+      "body": "# パッシブスキル\n\n仕様ID：GS-19　版：1.1　作成日：2026-09-11\n\n## 基本構造\n\nPassiveは手動発動しない。基本は1件1効果とし、Activeとは別のマスターで作成する。Compilerが`runtimeContracts`へ変換し、効果実行は共通の正式Runtimeを使う。\n\nルートに`passiveSeriesId`を必須で持つ。同じ冒険者に同じ系列を複数有効化できない。低段階・高段階の重複も拒否する。編集確定時と戦闘開始時に検証し、自動で高い段階だけを残さない。\n\n有効Passiveの参照は`character.passiveIds`を使用し、系列はマスターから解決する。別のPassive専用Loadoutフィールドへ正本を複製しない。現在のPassive枠設定は5。\n\n## 標準効果と要求値\n\nスラッシュ区切りは同じ順序で対応する段階を示す。数値は現在の可変設定として扱う。\n\n| 効果 | 要求値 | 効果量 |\n|---|---|---|\n| 最大HP | VIT20/40/60 | 基礎最大HPへ相対+5/10/15% |\n| 最大MP | MND20/40/60 | 基礎最大MPへ相対+5/10/15% |\n| 指定元素耐性 | MND20/30/40/50/60 | 指定耐性+5/10/15/20/25pp |\n| 指定Damage系状態耐性 | VIT20/30/40/50/60 | 指定耐性+5/10/15/20/25pp |\n| 指定行動阻害系状態耐性 | MND20/30/40/50/60 | 指定耐性+5/10/15/20/25pp |\n| Block率 | VIT20/30/40/50/60 | 基礎Block率へ相対+5/10/15/20/25% |\n| Block性能 | VIT20/30/40/50/60 | 基礎軽減率へ相対+5/10/15/20/25% |\n| クリティカル率 | LUK20/30/40/50/60 | 基礎率へ相対+5/10/15/20/25% |\n| クリティカル追加Damage | LUK20/30/40/50/60 | 基礎追加量へ相対+5/10/15/20/25% |\n| 被クリティカル増加分軽減 | LUK20/30/40/50/60 | 追加Damage部分を5/10/15/20/25%軽減 |\n| 反撃 | STR20/40/60 | 被Hit時25/50/75%でpower100の通常攻撃Activeを参照 |\n| HP自動回復 | VIT20/40/60 | 20Tickごとに現在最大HPの1/2/3% |\n| MP自動回復 | MND20/40/60 | 20Tickごとに現在最大MPの0.5/1/1.5% |\n| MP消費軽減 | MND20/40/60 | Range適用済みMPを5/10/15%軽減、切り上げ |\n| CD短縮 | AGI20/40/60 | 基礎CDを5/10/15%短縮、切り上げ |\n| Cast短縮 | INT20/40/60 | 基礎Castを5/10/15%短縮、切り上げ |\n| 致死耐え | VIT40 | 致死Damage時にHP1、CD999999Tick |\n| 瀕死強化 | VIT20/40/60 | HP5/10/15%以下で指定10項目へ相対+100%、20Tick、CD999999Tick |\n\n耐性は対象元素・対象状態を個別に指定する。表の「指定耐性」を全耐性一括上昇へ置き換えない。能力値7種の直接上昇Passiveは作成しない。\n\nBlock率20%に相対+25%を適用した結果は25%。Block軽減率30%に相対+25%を適用した結果は37.5%。25ppを直接足さない。\n\n## Active参照型\n\nBattle開始、攻撃Hit、被Hit、クリティカル、回避、Blockなどの正式Triggerから、登録済みActiveの効果を参照する。Triggerを通常攻撃だけに限定しない。\n\n参照Activeのpower・期間等をPassive側へ複製しない。参照ActiveのMP・CD・Cast・Range CostをPassiveの発動費用として再度課さない。Passive自身が持つ確率・CD・条件は適用する。対象はPassive側のEVENT_CONTEXTまたはFORMAL_TARGETで決める。\n\n```text\nPassive総要求量 = Trigger条件に使う要求量 + 参照Activeの全能力値要求量\n```\n\n総量10〜110。同じ能力値でも加算する。例：Trigger VIT60＋参照Active VIT60は120なので無効。要求値を実際のキャラクター能力値から消費するという意味ではない。\n\n段階型の効果参照は要求20/40/60・参照Active段階1/2/3を基本とするが、具体Trigger能力値と参照Activeが未指定のテンプレートは完成スキルとして登録しない。\n\n### D08確定マスター（PASSIVE-ACTIVE-REF-1.0）\n\nCurrentで完成定義として本番登録対象にできるActive参照PassiveはCounter系列`PASS-SER-16`の3段階だけとする。EVD-0012で3段階すべてが参照していた未解決記号`NORMAL_ATTACK_100_PERCENT`は、D08でFormal参照ID`SKL-0011`へ具体化する。`SKL-0011`はPassive Compiler参照専用の通常攻撃100%定義で、Playerの習得候補・Active選択枠・Player AI行動候補へ公開しない。\n\n`SKL-0011`の実行効果は`DAMAGE / PHYSICAL / power=100`、対象は敵単体。Passive発動では参照ActiveのMP・Cooldown・Cast・Range Costを再課金しない。Counterの対象は`EVENT_CONTEXT / ATTACKER`で解決する。\n\n| 段階 | 論理ID | Trigger要求 | 発動率 | 参照Active | 総Threshold |\n|---:|---|---|---:|---|---:|\n| 1 | PASS-SER-16-L1 | STR20 | 25% | SKL-0011 | 20 |\n| 2 | PASS-SER-16-L2 | STR40 | 50% | SKL-0011 | 40 |\n| 3 | PASS-SER-16-L3 | STR60 | 75% | SKL-0011 | 60 |\n\nCounterは既存Authorityどおり3段階ともDamage倍率100%の同一参照Activeを使用し、段階差はTrigger要求STRと発動率だけとする。参照Active側の能力要求は0なので、Passive総Thresholdは20/40/60で110以下となる。\n\nCritical時Effect、回避時Effect、Block時Effect、被Hit時Effect、攻撃Hit時Effect、Battle Start Effect、LUK確率TriggerはFrameworkのみ確定しており、具体Trigger能力値・参照Active ID・Effect内容のいずれかが未指定であるため、D08では完成Masterとして本番登録しない。HEALとBARRIERを参照Active経由で追加することも禁止する。\n\n\n## 周期回復\n\n初回は戦闘開始直後ではなく、intervalTicks経過後。現在interval20。以後同じ周期で判定する。\n\n```text\n回復要求量 = max(1, floor(発動時の現在最大HPまたはMP × 回復率))\n```\n\n最大値を超えた分は回復しない。死亡中に来た周期は不発、後からまとめて回復しない。蘇生しても周期をリセットしない。戦闘終了時に周期状態を破棄する。\n\nPassiveの回復はこの周期HP・MP回復のみ。Hit時・被Hit時・撃破時などの回復、PassiveによるBARRIERは使用しない。参照Active経由でもこの制限を迂回しない。\n\n## 致死耐え\n\nBlock・BARRIER後のHPダメージ候補によりHP0以下になる場合、HP確定前に割り込む。成功時はHP1で確定し、Passive CDを開始する。HP支払い・イベントによる直接死亡をDamageと読み替えて発動しない。\n\n多段攻撃の最初の致死Hitを耐えても残りHitは続く。CD中の次の致死Hitには発動しない。死亡・蘇生でCDを初期化せず、戦闘終了時に破棄する。\n\n## 瀕死強化\n\n対象はPHYSICAL_DAMAGE、MAGIC_DAMAGE、ACCURACY、MAGIC_ACCURACY、EVASION、BLOCK_RATE、BLOCK_PERFORMANCE、CRITICAL_RATE、CRITICAL_DAMAGE、ACTION_GAUGE_GAIN。\n\n各基礎値へ相対+100%のContributionを加える。基礎10に既存相対+10%がある場合は、10+1+10=21。既存補正込み最終値11を2倍して22にしない。\n\n最大HP・MP、魔法抵抗、元素・状態耐性、被クリティカル増加分軽減、MP・CD・Cast短縮、7基礎能力値は対象外。\n\n## 参照元\n\n- `development-project-data/SKL-0001.json / Passiveの各Approved Decision`\n- `development-project-data/DEV-V9-BALANCE-EVIDENCE-EVD-0008.json`\n- `development-project-data/DEV-V9-BALANCE-EVIDENCE-EVD-0012.json`\n- `Export/system/adventure_settings.json`\n",
       "depends_on": [],
-      "decision_refs": [],
+      "decision_refs": [
+        "DEC-NIP-D08-PASSIVE-ACTIVE-REF-1.0"
+      ],
       "contract_ids": [],
-      "revision": 1,
+      "revision": 2,
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-09-11T00:00:00Z",
-      "updated_at": "2026-09-11T00:00:00Z",
+      "updated_at": "2026-09-12T07:38:28.524Z",
       "source_path": "基準仕様/19_パッシブスキル.md",
-      "source_sha256": "eb9a373aef8edb2c22314857b5098e84ab93048450125b542441a8718ee53a3c",
+      "source_sha256": "b2da506af7af5c24c42880e8c8e03ff11985e45513672fba1b44f0490aa1b939",
       "input_authority": "user_provided_current_specification",
-      "spec_version": "1.0",
+      "spec_version": "1.1",
       "acceptance_criteria": "",
       "system_node_id": "",
       "source_candidate_id": "",
@@ -631,20 +657,22 @@
       "id": "GS-22",
       "title": "モンスター生成",
       "status": "Review",
-      "summary": "ユーザー提供の修正版仕様を基準入力として保存。承認履歴を捏造しない。",
-      "body": "# モンスター生成\n\n仕様ID：GS-22　版：1.0　作成日：2026-09-11\n\n## 生成モデル\n\n通常モンスターは基礎種の骨格に7ジョブの成長特性を組み合わせる。内部ジョブは数値生成と能力傾向に使い、表示名とは分離する。ストーリー固有モンスターは通常の7ジョブ派生と別に個別マスターで定義する。\n\nAIによる名前・見た目・能力構成の提案から、戦闘数値を直接確定しない。生成式と設定値で数値を算出する。\n\n## 基礎能力値\n\n`L`をLevel、`G_s`をジョブの能力値別成長値とする。\n\n```text\nモンスター基礎能力値 M_s = L × G_s / 10\n比較用冒険者期待値 P_s = 10 + (L - 1) × G_s / 10\n```\n\n途中計算では小数を保持する。モンスターに初期能力値10を加算しない。基本計算範囲はLevel1〜50。\n\n## 仮想装備構成\n\n| ジョブ | 主武器 | 副装備 | 持ち方 | 防具種 |\n|---|---|---|---|---|\n| 剣士 | 大剣 | なし | 両手 | 重装 |\n| 騎士 | 片手剣 | 盾 | 武器＋盾 | 重装 |\n| 盗賊 | 短剣 | 盾 | 武器＋盾 | 軽装 |\n| 狩人 | 弓 | 矢筒 | 弓＋矢筒 | 軽装 |\n| 魔術師 | 杖 | なし | 両手 | ローブ |\n| 神官 | 魔導書 | 盾 | 武器＋盾 | ローブ |\n| 冒険家 | 片手剣 | 盾 | 武器＋盾 | 重装 |\n\nこれはモンスター数値生成の比較構成。プレイヤーへの初期装備付与表とは別とする。\n\n## 仮想iLv\n\n装備`e`の要求能力値係数を`C_eff(e,s)`とする。両手持ちの場合だけSTR要求係数を1/2にする。\n\n```text\nI_e = clamp(min_s(P_s / C_eff(e,s)), 1, 11)\n```\n\n最小値はその装備が要求する能力値だけで求める。主武器・副装備・防具でそれぞれ計算し、小数iLvを保持する。装備可能な整数iLvへ切り捨ててから戦闘性能を作らない。\n\n## 連続装備性能と能力値比\n\n武器・防具の生成式を小数iLvへ適用した値を`F_X(e,I_e)`とする。\n\n```text\nモンスター戦闘値 X = F_X(e,I_e) × M_s / P_s\n```\n\n| 戦闘値X | 比率に使う能力値s | 仮想iLvあたり性能 |\n|---|---|---|\n| attack | STR | 武器STR係数×2 |\n| accuracy | DEX | 武器DEX係数×2 |\n| magic_weapon_bonus | INT | 武器INT係数×武器STR係数 |\n| HP | VIT | 防具VIT係数×50 |\n| MP | MND | 防具MND係数×50 |\n| evasion | AGI | 防具AGI係数×4 |\n\n防具の50は4部位のHP・MP係数20+10+10+10、回避の4は4部位数。これはモンスターの仮想一式生成にだけ用い、プレイヤー防具1個の魔法抵抗へ流用しない。モンスターHP・MPにプレイヤー初期値100・30を加算しない。\n\n## クリティカルとBlock\n\n```text\nクリティカル率[%] = 主武器率[%] × (1 + モンスターLUK/100)\n盾Block率[%] = 20 + 2 × (盾の小数仮想iLv - 1)\n盾軽減率[%] = 30\n```\n\nこの3項目に`M_s/P_s`を掛けない。盾なしのBlock率・軽減率は0。盾・矢筒の攻撃寄与は0とし、主武器へ合算しない。\n\n## 最終丸め\n\n最終戦闘数値は四捨五入（ROUND_HALF_UP）で整数化する。元値0は0を保持し、元値が非0なのに丸めて0になる場合は1とする。割合は百分率の単位へ変換して丸める。例えば21.333%は21%であり、割合0.21333を直接整数化しない。\n\n例：Level1剣士は仮想大剣iLv1.666…、STR比1.5/10からattack6。回避0.2666…は最終1。HP65、MP20、魔法武器補正1、クリティカル率5%となる。\n\n## マスター出力\n\nID、名称、内部ジョブ、Level、生成入力・式・未丸め値・最終値、スキル、MOD、標準配置、Formal AI参照を保持する。Encounter側の個体数・配置・難易度予算はこの生成計算と別に扱う。\n\n**未定義の境界：** このモンスター生成式群には`magic_accuracy / magic_resistance`の最終生成・丸め契約が含まれていない。プレイヤー用の魔法命中修正式をそのままモンスターへ拡張しない。\n\n## 参照元\n\n- `development-project-data/DEV-V9-BALANCE-EVIDENCE-EVD-0004.json / authority_basis`\n- `development-project-data/DEV-V9-BALANCE-EVIDENCE-EVD-0005.json / authority_basis`\n- `development-project-data/DEV-V9-BALANCE-EVIDENCE-EVD-0006.json / authority_basis`\n- `development-project-data/DEV-V9-REORG-019.json / MONSTER`\n",
+      "summary": "修正版GS-22を基準に、D09でMonsterのmagic_accuracy / magic_resistance生成・比率・丸め契約を具体化。",
+      "body": "# モンスター生成\n\n仕様ID：GS-22　版：1.1　作成日：2026-09-11\n\n## 生成モデル\n\n通常モンスターは基礎種の骨格に7ジョブの成長特性を組み合わせる。内部ジョブは数値生成と能力傾向に使い、表示名とは分離する。ストーリー固有モンスターは通常の7ジョブ派生と別に個別マスターで定義する。\n\nAIによる名前・見た目・能力構成の提案から、戦闘数値を直接確定しない。生成式と設定値で数値を算出する。\n\n## 基礎能力値\n\n`L`をLevel、`G_s`をジョブの能力値別成長値とする。\n\n```text\nモンスター基礎能力値 M_s = L × G_s / 10\n比較用冒険者期待値 P_s = 10 + (L - 1) × G_s / 10\n```\n\n途中計算では小数を保持する。モンスターに初期能力値10を加算しない。基本計算範囲はLevel1〜50。\n\n## 仮想装備構成\n\n| ジョブ | 主武器 | 副装備 | 持ち方 | 防具種 |\n|---|---|---|---|---|\n| 剣士 | 大剣 | なし | 両手 | 重装 |\n| 騎士 | 片手剣 | 盾 | 武器＋盾 | 重装 |\n| 盗賊 | 短剣 | 盾 | 武器＋盾 | 軽装 |\n| 狩人 | 弓 | 矢筒 | 弓＋矢筒 | 軽装 |\n| 魔術師 | 杖 | なし | 両手 | ローブ |\n| 神官 | 魔導書 | 盾 | 武器＋盾 | ローブ |\n| 冒険家 | 片手剣 | 盾 | 武器＋盾 | 重装 |\n\nこれはモンスター数値生成の比較構成。プレイヤーへの初期装備付与表とは別とする。\n\n## 仮想iLv\n\n装備`e`の要求能力値係数を`C_eff(e,s)`とする。両手持ちの場合だけSTR要求係数を1/2にする。\n\n```text\nI_e = clamp(min_s(P_s / C_eff(e,s)), 1, 11)\n```\n\n最小値はその装備が要求する能力値だけで求める。主武器・副装備・防具でそれぞれ計算し、小数iLvを保持する。装備可能な整数iLvへ切り捨ててから戦闘性能を作らない。\n\n## 連続装備性能と能力値比\n\n武器・防具の生成式を小数iLvへ適用した値を`F_X(e,I_e)`とする。\n\n```text\nモンスター戦闘値 X = F_X(e,I_e) × M_s / P_s\n```\n\n| 戦闘値X | 比率に使う能力値s | 仮想iLvあたり性能 |\n|---|---|---|\n| attack | STR | 武器STR係数×2 |\n| accuracy | DEX | 武器DEX係数×2 |\n| magic_weapon_bonus | INT | 武器INT係数×武器STR係数 |\n| HP | VIT | 防具VIT係数×50 |\n| MP | MND | 防具MND係数×50 |\n| evasion | AGI | 防具AGI係数×4 |\n\n防具の50は4部位のHP・MP係数20+10+10+10、回避の4は4部位数。これはモンスターの仮想一式生成にだけ用い、プレイヤー防具1個の魔法抵抗へ流用しない。モンスターHP・MPにプレイヤー初期値100・30を加算しない。\n\n## クリティカルとBlock\n\n```text\nクリティカル率[%] = 主武器率[%] × (1 + モンスターLUK/100)\n盾Block率[%] = 20 + 2 × (盾の小数仮想iLv - 1)\n盾軽減率[%] = 30\n```\n\nこの3項目に`M_s/P_s`を掛けない。盾なしのBlock率・軽減率は0。盾・矢筒の攻撃寄与は0とし、主武器へ合算しない。\n\n## 最終丸め\n\n最終戦闘数値は四捨五入（ROUND_HALF_UP）で整数化する。元値0は0を保持し、元値が非0なのに丸めて0になる場合は1とする。割合は百分率の単位へ変換して丸める。例えば21.333%は21%であり、割合0.21333を直接整数化しない。\n\n例：Level1剣士は仮想大剣iLv1.666…、STR比1.5/10からattack6。回避0.2666…は最終1。HP65、MP20、魔法武器補正1、クリティカル率5%となる。\n\n## マスター出力\n\nID、名称、内部ジョブ、Level、生成入力・式・未丸め値・最終値、スキル、MOD、標準配置、Formal AI参照を保持する。Encounter側の個体数・配置・難易度予算はこの生成計算と別に扱う。\n\n## 魔法命中・魔法抵抗\n\nTASK-NIP-D09で設定版`MONSTER-MAGIC-HIT-RESIST-1.0`を確定する。主武器の仮想iLvを`I_w`、仮想防具一式のiLvを`I_a`とし、どちらも上記「仮想iLv」の計算結果を使う。\n\n```text\nF_magic_accuracy(w, I_w) = I_w × (武器INT係数 + 武器DEX係数) × 2\nmagic_accuracy_raw = F_magic_accuracy(w, I_w) × (M_INT + M_DEX) / (P_INT + P_DEX)\n\nF_magic_resistance(a, I_a) = I_a × (防具MND係数 + 防具AGI係数) × 4\nmagic_resistance_raw = F_magic_resistance(a, I_a) × (M_MND + M_AGI) / (P_MND + P_AGI)\n```\n\n`magic_accuracy`は仮想主武器1件だけを元性能とし、副装備の盾・矢筒を加算しない。`magic_resistance`は同じ仮想防具種・同じ`I_a`の4部位分を元性能とする。能力値比は、元の装備性能式で使う能力値の組を維持し、魔法命中ではINT+DEX、魔法抵抗ではMND+AGIをそれぞれ合算して比較する。プレイヤー用の装備生成式へモンスター能力値を直接代入して性能を作り直さない。\n\n`magic_accuracy_raw / magic_resistance_raw`は小数を保持し、最終値だけを本書「最終丸め」のROUND_HALF_UP規則で整数化する。元値が非0なのに丸め結果0となる場合は1とする。\n\n具体例：\n\n- Level1魔術師：仮想杖`I_w=1.666...`、仮想ローブ`I_a=1.666...`。魔法命中raw=`2.9166...`→`3`、魔法抵抗raw=`6.3`→`6`。\n- Level50魔術師：`I_w=11`、`I_a=11`。魔法命中raw=`135.0877...`→`135`、魔法抵抗raw=`338.3238...`→`338`。\n- Level1冒険家：魔法命中raw=`0.4666...`は非0なので最終`1`、魔法抵抗raw=`2.0`→`2`。\n\n## 参照元\n\n- `development-project-data/DEV-V9-BALANCE-EVIDENCE-EVD-0004.json / authority_basis`\n- `development-project-data/DEV-V9-BALANCE-EVIDENCE-EVD-0005.json / authority_basis`\n- `development-project-data/DEV-V9-BALANCE-EVIDENCE-EVD-0006.json / authority_basis`\n- `development-project-data/DEV-V9-REORG-019.json / MONSTER`\n",
       "depends_on": [],
-      "decision_refs": [],
+      "decision_refs": [
+        "DEC-NIP-D09-MONSTER-MAGIC-HIT-RESIST-1.0"
+      ],
       "contract_ids": [],
-      "revision": 1,
+      "revision": 2,
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-09-11T00:00:00Z",
-      "updated_at": "2026-09-11T00:00:00Z",
+      "updated_at": "2026-09-12T07:58:35Z",
       "source_path": "基準仕様/22_モンスター生成.md",
-      "source_sha256": "1231931e010f15bd82181f6daede57c470c604d782082ac5ba2606e2f73ead8e",
+      "source_sha256": "f36819ea79bea61738b15ebbe5776dc45e4d90311f798fa64e131bc23c2fe064",
       "input_authority": "user_provided_current_specification",
-      "spec_version": "1.0",
+      "spec_version": "1.1",
       "acceptance_criteria": "",
       "system_node_id": "",
       "source_candidate_id": "",
@@ -1558,7 +1586,7 @@
       "id": "TASK-NIP-D08",
       "title": "Active参照Passiveの具体マスター",
       "box_id": "BOX-NIP-DECISIONS",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 10,
       "depends_on": [
         "TASK-NIP-F01"
@@ -1576,24 +1604,25 @@
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": false,
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "AI-from-current-authority",
+        "at": "2026-09-12T07:38:28.524Z"
       },
       "created_at": "2026-09-11T00:00:00Z",
-      "updated_at": "2026-09-11T00:00:00Z",
+      "updated_at": "2026-09-12T07:38:28.524Z",
       "decision_type": "データ作成",
       "affected_tasks": [
         "TASK-NIP-19-02"
       ],
       "implementation_note": "ルールの新規決定はユーザー判断、明示仕様から決められる型・検証実装は実装担当が進める。未決のまま確定済みと記録しない。",
-      "body": "実装手順\n1. 参照Active ID、Trigger能力要求、段階対応を決める。\n2. 総要求110以下と回復/Barrier禁止を満たす完成定義だけを登録する。未完成テンプレートは本番候補に入れない。\n3. 採用内容・設定版・根拠を記録し、影響する仕様の該当境界だけを明示更新してから依存タスクへ渡す。\n\n完了条件\n1. 曖昧な選択肢が残らず、数値表または具体的な入力/期待出力がある。\n2. 影響先に渡す値と版が固定され、未採用案が本番設定へ混在していない。"
+      "body": "実装手順\n1. 参照Active ID、Trigger能力要求、段階対応を決める。\n2. 総要求110以下と回復/Barrier禁止を満たす完成定義だけを登録する。未完成テンプレートは本番候補に入れない。\n3. 採用内容・設定版・根拠を記録し、影響する仕様の該当境界だけを明示更新してから依存タスクへ渡す。\n\n完了条件\n1. 曖昧な選択肢が残らず、数値表または具体的な入力/期待出力がある。\n2. 影響先に渡す値と版が固定され、未採用案が本番設定へ混在していない。",
+      "result_summary": "PASSIVE-ACTIVE-REF-1.0確定。Counter PASS-SER-16-L1/L2/L3をSKL-0011参照へ具体化し、総Threshold20/40/60を検証。未完成Trigger Templateは本番登録対象外。"
     },
     {
       "id": "TASK-NIP-D09",
       "title": "Monster魔法命中・抵抗生成",
       "box_id": "BOX-NIP-DECISIONS",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 11,
       "depends_on": [
         "TASK-NIP-F01"
@@ -1611,18 +1640,19 @@
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": false,
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-09-12T07:58:35Z"
       },
       "created_at": "2026-09-11T00:00:00Z",
-      "updated_at": "2026-09-11T00:00:00Z",
+      "updated_at": "2026-09-12T07:58:35Z",
       "decision_type": "ルール決定",
       "affected_tasks": [
         "TASK-NIP-22-02"
       ],
       "implementation_note": "ルールの新規決定はユーザー判断、明示仕様から決められる型・検証実装は実装担当が進める。未決のまま確定済みと記録しない。",
-      "body": "実装手順\n1. Monsterの魔法命中/魔法命中抵抗の元性能、比率、丸めを決める。\n2. 既知の物理性能生成式を根拠なく流用せず、Level/ジョブ/装備の具体例で出力を確定する。\n3. 採用内容・設定版・根拠を記録し、影響する仕様の該当境界だけを明示更新してから依存タスクへ渡す。\n\n完了条件\n1. 曖昧な選択肢が残らず、数値表または具体的な入力/期待出力がある。\n2. 影響先に渡す値と版が固定され、未採用案が本番設定へ混在していない。"
+      "body": "実装手順\n1. Monsterの魔法命中/魔法命中抵抗の元性能、比率、丸めを決める。\n2. 既知の物理性能生成式を根拠なく流用せず、Level/ジョブ/装備の具体例で出力を確定する。\n3. 採用内容・設定版・根拠を記録し、影響する仕様の該当境界だけを明示更新してから依存タスクへ渡す。\n\n完了条件\n1. 曖昧な選択肢が残らず、数値表または具体的な入力/期待出力がある。\n2. 影響先に渡す値と版が固定され、未採用案が本番設定へ混在していない。",
+      "result_summary": "MONSTER-MAGIC-HIT-RESIST-1.0確定。magic_accuracyは仮想主武器×INT+DEX比、magic_resistanceは仮想防具4部位×MND+AGI比。最終丸めはGS-22既存規則を使用。"
     },
     {
       "id": "TASK-NIP-D10",
@@ -6366,6 +6396,16 @@
       "at": "2026-09-12T06:20:47Z",
       "action": "complete_task",
       "summary": "TASK-NIP-D07 Done。Human選択AをAUTO-FRONT-ADVANCE-CAST-1.0として確定。GS-13の前衛0による自動強制前進ではCast継続、固定対象集合/Cast完了Tick維持、前進時MP/CD変化なし。完了時に通常再検証し、成立時だけMP消費→CD開始。不成立なら補充なし・MP/CD/効果なし。Development Data artifact SHA256=3020131a830ce04aab8a25f154364e6d4ac0ffb651f070ac16f7a3042b67f7bf。DEVELOPMENT_ONLYのためSource/Export/Build変更なし。"
+    },
+    {
+      "id": "HISTORY-NIP-D08-20260912",
+      "at": "2026-09-12T07:38:28.524Z",
+      "message": "TASK-NIP-D08完了。Counter系列PASS-SER-16の3段階を参照Active SKL-0011へ具体化。未完成Active参照Trigger Templateは本番候補から除外。GS-19 v1.1へ該当境界だけ反映。"
+    },
+    {
+      "id": "HISTORY-NIP-D09-20260912",
+      "at": "2026-09-12T07:58:35Z",
+      "message": "TASK-NIP-D09完了。Human選択Aを採用し、Monster魔法命中=仮想主武器×INT+DEX比、魔法抵抗=仮想防具4部位×MND+AGI比としてGS-22 v1.1へ該当境界だけ反映。"
     }
   ],
   "authority": {
