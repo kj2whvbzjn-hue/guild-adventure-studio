@@ -5,17 +5,17 @@
     "name": "修正版34仕様に基づく新規実装計画",
     "status": "Implementing",
     "ai_attention": "Include",
-    "updated_at": "2026-09-12T06:14:32.731Z"
+    "updated_at": "2026-09-12T07:38:27.524Z"
   },
   "project_context": {
     "purpose": "修正版34仕様の全項目を実装し、Studio/Game/Export/Saveで一貫させる。",
-    "summary": "TASK-NIP-F01/F02/D01/D02/D03/D05/D06完了。MagicDefense誤混入を修正版仕様・計画から除去しD04を削除済み。D05は競合かばう、D06は同Tickの状態満了・Cast完了・前衛全滅境界を確定。次はTASK-NIP-D07へ進む。"
+    "summary": "TASK-NIP-F01/F02/D01/D02/D03/D05/D06/D07完了。MagicDefense誤混入は修正版仕様・計画から除去済み。D05は競合かばう、D06は同Tick境界、D07は前衛0による自動強制前進時のCast継続を確定。次はTASK-NIP-D08へ進む。"
   },
   "current_focus": {
     "architecture_id": "ARC-NIP",
     "work_box_id": "BOX-NIP-DECISIONS",
     "theme": "未確定事項具体化",
-    "goal": "TASK-NIP-D07「強制前進時のCast」をDEVELOPMENT_ONLYで確定する"
+    "goal": "TASK-NIP-D08「Active参照Passiveの具体マスター」をDEVELOPMENT_ONLYで確定する"
   },
   "source_baseline": {
     "studio_build": "GKS-B910",
@@ -117,6 +117,18 @@
       "approved_at": "2026-09-12T05:52:08Z",
       "created_at": "2026-09-12T05:52:08Z",
       "updated_at": "2026-09-12T05:52:08Z"
+    },
+    {
+      "id": "DEC-NIP-D07-AUTO-FRONT-ADVANCE-CAST-1.0",
+      "title": "前衛0による自動強制前進時のCast継続規則",
+      "status": "Approved",
+      "text": "GS-13の前衛生存者0による隊列の自動強制前進はGS-15のCast中断条件に含めず、詠唱を継続する。自動強制前進では固定済み対象集合とCast完了Tickを作り直さず、MP消費・Cooldown開始もしない。Cast完了時に固定済み対象と使用条件を通常どおり再検証し、有効対象が残って発動成立した時点でのみMP消費→Cooldown開始→効果実行する。全予約対象が無効なら補充せず不発とし、MP/CD/効果は発生しない。その他の正式な強制移動によるCast中断規則は変更しない。",
+      "rationale": "HumanがTASK-NIP-D07の提示案Aを選択。前衛0の自動前進と、GS-15で既定の正式な強制移動を区別し、自動前進だけはCast継続とする。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-09-12T06:20:47Z",
+      "created_at": "2026-09-12T06:20:47Z",
+      "updated_at": "2026-09-12T06:20:47Z"
     }
   ],
   "specifications": [
@@ -457,19 +469,21 @@
       "title": "スキル発動と詠唱",
       "status": "Review",
       "summary": "ユーザー提供の修正版仕様を基準入力として保存。承認履歴を捏造しない。",
-      "body": "# スキル発動と詠唱\n\n仕様ID：GS-15　版：1.0　作成日：2026-09-11\n\n## 発動の状態遷移\n\n| 段階 | 処理 | MP・Cooldown |\n|---|---|---|\n| AI判断・予約 | 行動候補を選ぶ | 消費・開始なし |\n| 実行開始検証 | 使用者、スキル、MP、CD、使用条件、対象、Rangeを検証 | 消費・開始なし |\n| 詠唱開始 | 基準対象と展開済み対象集合を固定 | 消費・開始なし |\n| 詠唱中 | 中断条件を監視 | 消費・開始なし |\n| 詠唱完了検証 | 固定対象と使用条件を再検証 | 失敗なら消費・開始なし |\n| 発動成立 | MP消費→CD開始→効果実行 | この時点で確定 |\n\n`resource.castTime`は0以上の整数Tick。0でも開始検証・対象固定・完了検証を通り、同じ実行内で発動する。\n\n## 検証\n\n使用者が生存し、行動可能で、スキルが登録・選択され、使用を阻害されておらず、MPを支払え、CDが満了し、装備等の使用条件を満たす必要がある。\n\n完了時は固定済み対象だけを検証する。死亡・無効・Range外の対象は除外する。別対象の再取得・補充・追加はしない。有効対象0なら不発としてMP・CD・効果を発生させない。\n\n成立後に攻撃がMissした場合は、成立したスキルのMP・CDを取り消さない。\n\n## 中断\n\n行動不能、使用スキルを阻害する効果、使用者死亡、正式な強制移動で中断する。通常Damage・DOT・反射Damageを受けただけでは中断しない。\n\n強制移動の処理契約は、成立判定→Cast中断→位置変更→Range・対象状態更新→次回AI再評価。この規則によって任意移動・ノックバック・引き寄せの新しい機能を追加しない。隊列の自動前進をCast中断へ結び付けるかは未定義とする。\n\n## MP・時間短縮\n\nRangeを反映した基本値に、正式な消費・時間補正を適用する。相対補正は同じ基礎値から独立計算する。\n\n```text\n最終MP = max(0, ceil(Range適用済みMP + 有効MP補正合計))\n最終CD = max(0, ceil(基礎CD + 有効CD補正合計))\n最終Cast = max(0, ceil(基礎Cast + 有効Cast補正合計))\n```\n\n短縮Contributionは負の寄与量として扱う。現在の標準Passive短縮率は5/10/15%。例：CD7に15%短縮なら`ceil(7×0.85)=6 Tick`、基礎CD0は0のまま。\n\n## 複数Hit・複合効果\n\n各Hitを、判定→Damage→防御・HP→ダメージ参照効果→命中付随効果→Hit後誘発の順に完結させる。単体対象が戦闘不能なら残りHitを終了する。複数対象では、他の有効対象への処理を続ける。\n\n複合効果は、Damage、ダメージ参照、状態異常・Buff・Debuff、HP・MP回復、BARRIER、正式な対象・行動制御、誘発の順。同段階の複数効果はデータ記載順とする。対象が無効になった効果だけを適用せず、他の有効対象・独立効果まで全体取消しにしない。\n\n## 戦闘不能と蘇生\n\nHP0以下で戦闘不能を確定し、撃破・戦闘不能効果、仮報酬・進行記録、対象リスト除外を処理する。ここでの経験値・報酬記録は帰還前の仮集計とする。\n\n蘇生は、条件成立→戦闘不能解除→指定HP・MP回復→状態異常・Buff・Debuff解除→対象へ復帰→蘇生時効果。自動蘇生を通常蘇生より先に処理し、同種は付与順。蘇生成功後の他蘇生は不発。共通無敵時間は設けない。\n\n## 参照元\n\n- `development-project-data/DEV-V9-REORG-019.json / DEC-R42-CAST-001・BATTLE-002〜003`\n- `development-project-data/SKL-0001.json`\n",
+      "body": "# スキル発動と詠唱\n\n仕様ID：GS-15　版：1.1　作成日：2026-09-11\n\n## 発動の状態遷移\n\n| 段階 | 処理 | MP・Cooldown |\n|---|---|---|\n| AI判断・予約 | 行動候補を選ぶ | 消費・開始なし |\n| 実行開始検証 | 使用者、スキル、MP、CD、使用条件、対象、Rangeを検証 | 消費・開始なし |\n| 詠唱開始 | 基準対象と展開済み対象集合を固定 | 消費・開始なし |\n| 詠唱中 | 中断条件を監視 | 消費・開始なし |\n| 詠唱完了検証 | 固定対象と使用条件を再検証 | 失敗なら消費・開始なし |\n| 発動成立 | MP消費→CD開始→効果実行 | この時点で確定 |\n\n`resource.castTime`は0以上の整数Tick。0でも開始検証・対象固定・完了検証を通り、同じ実行内で発動する。\n\n## 検証\n\n使用者が生存し、行動可能で、スキルが登録・選択され、使用を阻害されておらず、MPを支払え、CDが満了し、装備等の使用条件を満たす必要がある。\n\n完了時は固定済み対象だけを検証する。死亡・無効・Range外の対象は除外する。別対象の再取得・補充・追加はしない。有効対象0なら不発としてMP・CD・効果を発生させない。\n\n成立後に攻撃がMissした場合は、成立したスキルのMP・CDを取り消さない。\n\n## 中断\n\n行動不能、使用スキルを阻害する効果、使用者死亡、正式な強制移動で中断する。通常Damage・DOT・反射Damageを受けただけでは中断しない。\n\n強制移動の処理契約は、成立判定→Cast中断→位置変更→Range・対象状態更新→次回AI再評価。この規則によって任意移動・ノックバック・引き寄せの新しい機能を追加しない。GS-13の前衛生存者0による隊列の自動強制前進はCast中断条件に含めず、詠唱を継続する。自動強制前進では固定済み対象集合・Cast完了Tickを作り直さず、MP消費・Cooldown開始も行わない。詠唱完了時に通常どおり固定済み対象と使用条件を再検証し、発動成立時にだけMP消費→Cooldown開始→効果実行を行う。全予約対象が無効なら不発としてMP・Cooldown・効果を発生させない。\n\n## MP・時間短縮\n\nRangeを反映した基本値に、正式な消費・時間補正を適用する。相対補正は同じ基礎値から独立計算する。\n\n```text\n最終MP = max(0, ceil(Range適用済みMP + 有効MP補正合計))\n最終CD = max(0, ceil(基礎CD + 有効CD補正合計))\n最終Cast = max(0, ceil(基礎Cast + 有効Cast補正合計))\n```\n\n短縮Contributionは負の寄与量として扱う。現在の標準Passive短縮率は5/10/15%。例：CD7に15%短縮なら`ceil(7×0.85)=6 Tick`、基礎CD0は0のまま。\n\n## 複数Hit・複合効果\n\n各Hitを、判定→Damage→防御・HP→ダメージ参照効果→命中付随効果→Hit後誘発の順に完結させる。単体対象が戦闘不能なら残りHitを終了する。複数対象では、他の有効対象への処理を続ける。\n\n複合効果は、Damage、ダメージ参照、状態異常・Buff・Debuff、HP・MP回復、BARRIER、正式な対象・行動制御、誘発の順。同段階の複数効果はデータ記載順とする。対象が無効になった効果だけを適用せず、他の有効対象・独立効果まで全体取消しにしない。\n\n## 戦闘不能と蘇生\n\nHP0以下で戦闘不能を確定し、撃破・戦闘不能効果、仮報酬・進行記録、対象リスト除外を処理する。ここでの経験値・報酬記録は帰還前の仮集計とする。\n\n蘇生は、条件成立→戦闘不能解除→指定HP・MP回復→状態異常・Buff・Debuff解除→対象へ復帰→蘇生時効果。自動蘇生を通常蘇生より先に処理し、同種は付与順。蘇生成功後の他蘇生は不発。共通無敵時間は設けない。\n\n## 参照元\n\n- `development-project-data/DEV-V9-REORG-019.json / DEC-R42-CAST-001・BATTLE-002〜003`\n- `development-project-data/SKL-0001.json`\n",
       "depends_on": [],
-      "decision_refs": [],
+      "decision_refs": [
+        "DEC-NIP-D07-AUTO-FRONT-ADVANCE-CAST-1.0"
+      ],
       "contract_ids": [],
-      "revision": 1,
+      "revision": 2,
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-09-11T00:00:00Z",
-      "updated_at": "2026-09-11T00:00:00Z",
+      "updated_at": "2026-09-12T06:20:47Z",
       "source_path": "基準仕様/15_スキル発動と詠唱.md",
-      "source_sha256": "e51453748a07455df5394c93294310e93f199edccf0b6d70d38ff5341cb978c4",
+      "source_sha256": "7ce27bbcd1827b2c7a17204520d3060b443c3ef6d1cc4de294208867080440db",
       "input_authority": "user_provided_current_specification",
-      "spec_version": "1.0",
+      "spec_version": "1.1",
       "acceptance_criteria": "",
       "system_node_id": "",
       "source_candidate_id": "",
@@ -1509,7 +1523,7 @@
       "id": "TASK-NIP-D07",
       "title": "強制前進時のCast",
       "box_id": "BOX-NIP-DECISIONS",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 9,
       "depends_on": [
         "TASK-NIP-F01"
@@ -1532,13 +1546,13 @@
         "at": ""
       },
       "created_at": "2026-09-11T00:00:00Z",
-      "updated_at": "2026-09-11T00:00:00Z",
+      "updated_at": "2026-09-12T06:20:47Z",
       "decision_type": "ルール決定",
       "affected_tasks": [
         "TASK-NIP-15-02"
       ],
       "implementation_note": "ルールの新規決定はユーザー判断、明示仕様から決められる型・検証実装は実装担当が進める。未決のまま確定済みと記録しない。",
-      "body": "実装手順\n1. 詠唱中の後衛が強制前進した場合に中断するか継続するか決める。\n2. 同一予約対象集合に対する中断/継続の2例を提示し、MP/CDが発生する境界と併せて選ぶ。\n3. 採用内容・設定版・根拠を記録し、影響する仕様の該当境界だけを明示更新してから依存タスクへ渡す。\n\n完了条件\n1. 曖昧な選択肢が残らず、数値表または具体的な入力/期待出力がある。\n2. 影響先に渡す値と版が固定され、未採用案が本番設定へ混在していない。"
+      "body": "実装手順\n1. 詠唱中の後衛が強制前進した場合に中断するか継続するか決める。\n2. 同一予約対象集合に対する中断/継続の2例を提示し、MP/CDが発生する境界と併せて選ぶ。\n3. 採用内容・設定版・根拠を記録し、影響する仕様の該当境界だけを明示更新してから依存タスクへ渡す。\n\n完了条件\n1. 曖昧な選択肢が残らず、数値表または具体的な入力/期待出力がある。\n2. 影響先に渡す値と版が固定され、未採用案が本番設定へ混在していない。\n\nD07確定結果\n- 設定版: AUTO-FRONT-ADVANCE-CAST-1.0\n- 採用案: A\n- GS-13の前衛0による自動強制前進ではCastを中断せず継続する。\n- 固定済み対象集合とCast完了Tickを作り直さない。\n- 自動強制前進時点ではMPを消費せず、Cooldownも開始しない。\n- Cast完了時に通常の完了検証を行い、発動成立時だけMP消費→Cooldown開始→効果実行。\n- 全予約対象が無効なら補充せず不発。MP/CD/効果なし。\n- その他の正式な強制移動によるCast中断規則は変更しない。\n- Development Data artifact SHA-256: 3020131a830ce04aab8a25f154364e6d4ac0ffb651f070ac16f7a3042b67f7bf\n- 本TaskはDEVELOPMENT_ONLY。Game/Studio/Export/Save/Buildは変更しない。\n"
     },
     {
       "id": "TASK-NIP-D08",
@@ -6346,6 +6360,12 @@
       "at": "2026-09-12T05:52:08Z",
       "action": "complete_task",
       "summary": "TASK-NIP-D06 Done。Human選択AをSAME-TICK-BOUNDARY-1.0として確定。状態満了をCast完了より先に処理し、同時Cast完了は戦闘開始時固定処理順で解決。前衛0は次の対象解決より前に生存後衛を強制前進。再抽選なし。Development Data artifact SHA256=3feb50933c5c4e67e22ecd1fdf1372b3f0f0c5b9c563c9738bb3d5df894673a3。DEVELOPMENT_ONLYのためSource/Export/Build変更なし。"
+    },
+    {
+      "id": "HISTORY-NIP-D07-20260912-062047",
+      "at": "2026-09-12T06:20:47Z",
+      "action": "complete_task",
+      "summary": "TASK-NIP-D07 Done。Human選択AをAUTO-FRONT-ADVANCE-CAST-1.0として確定。GS-13の前衛0による自動強制前進ではCast継続、固定対象集合/Cast完了Tick維持、前進時MP/CD変化なし。完了時に通常再検証し、成立時だけMP消費→CD開始。不成立なら補充なし・MP/CD/効果なし。Development Data artifact SHA256=3020131a830ce04aab8a25f154364e6d4ac0ffb651f070ac16f7a3042b67f7bf。DEVELOPMENT_ONLYのためSource/Export/Build変更なし。"
     }
   ],
   "authority": {
