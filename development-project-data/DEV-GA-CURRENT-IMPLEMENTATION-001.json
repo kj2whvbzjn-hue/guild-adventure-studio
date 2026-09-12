@@ -5,17 +5,17 @@
     "name": "修正版34仕様に基づく新規実装計画",
     "status": "Implementing",
     "ai_attention": "Include",
-    "updated_at": "2026-09-11T23:32:32.955Z"
+    "updated_at": "2026-09-12T01:06:32.117Z"
   },
   "project_context": {
     "purpose": "修正版34仕様の全項目を実装し、Studio/Game/Export/Saveで一貫させる。",
-    "summary": "TASK-NIP-F01/F02完了。Fresh CurrentはGKS-B911 / GA-B486.242。TASK-NIP-D01はユーザー明示条件「基礎値10・毎回30%増加」でEXP-LV-50-1.1へ改定済み。次はTASK-NIP-D02へ進む。"
+    "summary": "TASK-NIP-F01/F02/D01/D02/D03完了。Fresh CurrentはGKS-B911 / GA-B486.242。D03でCritical Rate上限100%・Critical追加Damage上限700%をCurrent Balanceとして外部Config所有へ固定。次はTASK-NIP-D04へ進む。"
   },
   "current_focus": {
     "architecture_id": "ARC-NIP",
     "work_box_id": "BOX-NIP-DECISIONS",
     "theme": "未確定事項具体化",
-    "goal": "TASK-NIP-D03「クリティカルのBalance上限」をDEVELOPMENT_ONLYで確定する"
+    "goal": "TASK-NIP-D04「混在防具のMagicDefense集約」をDEVELOPMENT_ONLYで確定する"
   },
   "source_baseline": {
     "studio_build": "GKS-B910",
@@ -81,6 +81,18 @@
       "approved_at": "2026-09-11T23:28:38Z",
       "created_at": "2026-09-11T23:28:38Z",
       "updated_at": "2026-09-11T23:28:38Z"
+    },
+    {
+      "id": "DEC-NIP-D03-CRITICAL-BALANCE-LIMITS-1.0",
+      "title": "Critical Rate / Critical Bonus DamageのBalance上限",
+      "status": "Approved",
+      "text": "Current Runtimeに存在する上限をD03初期Balanceとして維持する。final Critical Rate上限は1.0 ratio（表示100%）、Critical追加Damage上限は700%。基礎Critical追加DamageはGS-11確定値50%のまま変更しない。100/700はRuntimeへ直書きせず、Export/system/adventure_settings.json の game_runtime.critical 配下の外部Balance Configから取得する。率はratio、追加Damageはpercentを正式単位とする。Config欠落/不正時に100/700へ暗黙Fallbackしない。物理命中下限5%は追加しない。",
+      "rationale": "Fresh Current GKS-B911 / GA-B486.242のGame/Studio双方が既にCritical Rate=100%、Critical bonus damage=700%でClampしている。新しいBalance数値を推測せずCurrent挙動をBaseline化し、Human指示「可変にしてハードコードしない。システム的に固有を求められるものは固定でよい」に従い、数値は外部Config可変、単位/計算順/識別構造だけを固定する。",
+      "source_discussion_ids": [],
+      "approved_by": "AI-from-current-authority",
+      "approved_at": "2026-09-11T23:35:35Z",
+      "created_at": "2026-09-11T23:35:35Z",
+      "updated_at": "2026-09-11T23:35:35Z"
     }
   ],
   "specifications": [
@@ -325,13 +337,15 @@
       "summary": "ユーザー提供の修正版仕様を基準入力として保存。承認履歴を捏造しない。",
       "body": "# 命中とクリティカル\n\n仕様ID：GS-11　版：1.0　作成日：2026-09-11\n\n## 1 Hitの判定順\n\n1. 使用する武器と攻撃種別を確定する。\n2. クリティカル率を計算してクリティカル判定を行う。\n3. クリティカル成功なら必中として命中判定を省略する。命中乱数も消費しない。\n4. クリティカル不成立時だけ、物理または魔法の命中判定を行う。\n5. 命中ならダメージ処理へ進む。Missなら、そのHitのダメージ・命中付随状態異常・Blockを発生させない。\n\n多段スキルと二刀流は、Hit・Strikeごとにこの判定を繰り返す。最初の結果を後続Hitへコピーしない。\n\n## クリティカル率\n\n```text\nbaseCriticalRate = weapon_critical_rate × (1 + LUK / 100)\nfinalCriticalRate = baseCriticalRate + 有効なクリティカル率Contribution合計\n```\n\n`weapon_critical_rate`と計算結果の単位は割合値。例：武器5%、LUK20なら基礎率は`0.05 × 1.20 = 0.06`、すなわち6%。ここに相対+20%なら7.2%、固定+2ppなら8%となる。\n\n武器率0では、LUKだけから基礎クリティカル率を作らない。各補正はこの共通基礎率から独立計算する。下限・上限はBalance設定の責務とし、資料にない独自のクリティカル上限を追加しない。\n\n## 物理命中\n\n```text\nEvasion > 0：命中率[%] = Accuracy / Evasion × 100\nEvasion <= 0：命中率[%] = 100\n```\n\n最低命中率は設けない。式へ明示的な100%クランプを追加しない。命中抽選は0以上100未満の値と比較するため、計算率が100%以上なら命中する。\n\n例：命中30・回避60なら50%、命中0・回避60なら0%、命中120・回避60なら計算率200%。\n\n## 魔法命中\n\n```text\nMagicResistance > 0：命中率[%] = min(100, MagicAccuracy / MagicResistance × 100)\nMagicResistance <= 0：命中率[%] = 100\n```\n\n魔法命中は武器の保存値、魔法抵抗は実装備防具の保存値合計を基礎に補正する。キャラクターINT・DEX・AGI・MNDを要求値式へ直接代入して、装備性能を作り直さない。\n\n## クリティカルダメージ\n\n基礎の追加ダメージは50%。通常時倍率1、クリティカル時の初期倍率1.5。\n\n```text\ncriticalMultiplier = 1 + finalCriticalDamagePercent / 100\n```\n\n被クリティカル増加分軽減率を`r`とすると、倍率は`1 + (finalCriticalDamagePercent / 100) × (1-r)`。通常ダメージ部分の1を軽減しない。\n\n例：追加ダメージ50%、増加分軽減20%なら倍率1.4。上限値はBalance設定として扱う。クリティカル成立の判定は命中より前、クリティカルのダメージ倍率適用は抵抗軽減より後に行う。\n\n## 参照元\n\n- `development-project-data/DEV-V9-BALANCE-001.json / クリティカル先行・基礎追加50%決定`\n- `development-project-data/DEV-V9-CRITICAL-MODIFIER-POLICY-001.json`\n- `development-project-data/SKL-0001.json`\n- `game/assets/js/tag-skill-runtime.js / currentBattleMagicHitRatePercent`\n",
       "depends_on": [],
-      "decision_refs": [],
+      "decision_refs": [
+        "DEC-NIP-D03-CRITICAL-BALANCE-LIMITS-1.0"
+      ],
       "contract_ids": [],
       "revision": 1,
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-09-11T00:00:00Z",
-      "updated_at": "2026-09-11T00:00:00Z",
+      "updated_at": "2026-09-11T23:35:35Z",
       "source_path": "基準仕様/11_命中とクリティカル.md",
       "source_sha256": "ef1b7fb49f6934211feb24d6ba8da7c82ff808827796c36dfb5cb7c8c36c69d4",
       "input_authority": "user_provided_current_specification",
@@ -1324,7 +1338,7 @@
       "id": "TASK-NIP-D03",
       "title": "クリティカルのBalance上限",
       "box_id": "BOX-NIP-DECISIONS",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 5,
       "depends_on": [
         "TASK-NIP-F01"
@@ -1347,7 +1361,7 @@
         "at": ""
       },
       "created_at": "2026-09-11T00:00:00Z",
-      "updated_at": "2026-09-11T00:00:00Z",
+      "updated_at": "2026-09-11T23:35:35Z",
       "decision_type": "設定確定",
       "affected_tasks": [
         "TASK-NIP-11-02"
@@ -6235,6 +6249,29 @@
         "mode": ""
       },
       "blocking": false
+    },
+    {
+      "id": "CHECK-NIP-D03-CRITICAL-BALANCE-LIMITS",
+      "title": "D03 クリティカルBalance上限受入",
+      "target_type": "Task",
+      "target_id": "TASK-NIP-D03",
+      "status": "Passed",
+      "result": "Current Game/StudioのCritical Rate 100% / Critical bonus damage 700%を外部Balance初期値として明示。率=ratio、追加Damage=percentの単位を固定し、Runtime literal/Fallback禁止を契約化。GS-11基礎式・基礎追加Damage50%・物理命中下限なしを維持。",
+      "evidence": "TASK-NIP-D03_CRITICAL-BALANCE-LIMITS-1.0.json SHA256=de5afaa336c3d16cbf3d7916470f09349819d77080b2387f21926a32df805c97; Fresh Current GKS-B911/GA-B486.242 Quick 13/13 PASS evidence sha256=676b5bfa232d2e441acbecff228222f818faa28cef022f5f28d95f4164e344ea; Game tag-skill-runtime.js current clamps 100/700; Studio Formal Battle mirrors 100/700; DEVELOPMENT_ONLY so Source/Export/Build unchanged.",
+      "created_at": "2026-09-11T23:35:35Z",
+      "updated_at": "2026-09-11T23:35:35Z",
+      "gate": "General",
+      "checked_by": "AI",
+      "checked_at": "2026-09-11T23:35:35Z",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "CHECK-NIP-D03-CRITICAL-BALANCE-LIMITS",
+        "resolved_at": "2026-09-11T23:35:35Z",
+        "reason": "D03 acceptance criteria satisfied from Current authority without inventing new Balance values",
+        "mode": ""
+      },
+      "blocking": false
     }
   ],
   "history": [
@@ -6267,6 +6304,12 @@
       "at": "2026-09-11T23:28:38Z",
       "action": "complete_task",
       "summary": "TASK-NIP-D02 Done。Human決定A/AをMOD-RARITY-QUALITY-1.0へ固定。Balance数値はConfig可変・Runtime hard-code禁止、構造上の一意ID/Schema/enum/抽選順等のみ固定可。Development Data artifact SHA256=63f8186bac0a16e10dff1517c261d97d11a29b2044a037e32a0a553c893b5e0e。DEVELOPMENT_ONLYのためSource/Export/Build変更なし。"
+    },
+    {
+      "id": "HISTORY-NIP-D03-20260912-083535",
+      "at": "2026-09-11T23:35:35Z",
+      "action": "complete_task",
+      "summary": "TASK-NIP-D03 Done。Fresh Currentの既存上限Critical Rate=100%、Critical追加Damage=700%をCRITICAL-BALANCE-LIMITS-1.0としてBaseline化。数値はgame_runtime.critical外部Config可変、Runtime hard-code/暗黙Fallback禁止。基礎追加Damage50%とGS-11式は変更なし。Development Data artifact SHA256=de5afaa336c3d16cbf3d7916470f09349819d77080b2387f21926a32df805c97。DEVELOPMENT_ONLYのためSource/Export/Build変更なし。"
     }
   ],
   "authority": {
