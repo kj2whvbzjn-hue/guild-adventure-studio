@@ -93,6 +93,29 @@
   function commitActivation(context,key,meta={}){const pre=canActivate(context,key);if(!pre.ok)return pre;context.activationCount=Math.max(0,Number(context.activationCount)||0)+1;context.activeKeys.add(pre.key);const entry=Object.freeze({key:pre.key,index:context.activationCount,meta:meta&&typeof meta==='object'?{...meta}:{}});context.history.push(entry);let released=false;return{ok:true,key:pre.key,index:context.activationCount,max_activations:pre.max_activations,release(){if(released)return false;released=true;context.activeKeys.delete(pre.key);return true}}}
   function tryActivate(context,key,meta={}){return commitActivation(context,key,meta)}
 
+  function evaluateActivationChance(chanceValue,randomFn){
+    const chance=chanceValue==null?1:Number(chanceValue);
+    if(!Number.isFinite(chance)||chance<0||chance>1)return failure('TRIGGER_ACTIVATION_CHANCE_INVALID','',{activation_chance:chanceValue});
+    if(chance===0)return{ok:true,passed:false,reason:'ACTIVATION_CHANCE_ZERO',activation_chance:chance,activation_roll:null,rng_consumed:false};
+    if(chance===1)return{ok:true,passed:true,activation_chance:chance,activation_roll:null,rng_consumed:false};
+    if(typeof randomFn!=='function')return failure('TRIGGER_ACTIVATION_RNG_REQUIRED','',{activation_chance:chance});
+    const roll=Number(randomFn());
+    if(!Number.isFinite(roll)||roll<0||roll>=1)return failure('TRIGGER_ACTIVATION_RNG_INVALID','',{activation_chance:chance,activation_roll:roll});
+    return{ok:true,passed:roll<chance,reason:roll<chance?null:'ACTIVATION_CHANCE_FAILED',activation_chance:chance,activation_roll:roll,rng_consumed:true};
+  }
+  function prepareActivation(context,key,{eligible=true,chance=1,random=null}={}){
+    if(!eligible)return{ok:true,passed:false,phase:'CONDITION',reason:'TRIGGER_CONDITION_NOT_MET',committed:false,rng_consumed:false};
+    const guard=canActivate(context,key);if(!guard.ok)return{...guard,passed:false,phase:'CAN',committed:false,rng_consumed:false};
+    const chanceResult=evaluateActivationChance(chance,random);if(!chanceResult.ok)return{...chanceResult,passed:false,phase:'CHANCE',committed:false};
+    if(!chanceResult.passed)return{...chanceResult,phase:'CHANCE',committed:false,key:guard.key};
+    return{...chanceResult,ok:true,passed:true,phase:'READY',committed:false,key:guard.key,activation_index:guard.index,max_activations:guard.max_activations};
+  }
+  function activatePrepared(context,prepared,meta={}){
+    if(!prepared||prepared.ok!==true||prepared.passed!==true||prepared.phase!=='READY')return failure('TRIGGER_ACTIVATION_NOT_READY','',{prepared_phase:prepared?.phase||null});
+    const committed=commitActivation(context,prepared.key,meta);if(!committed.ok)return{...committed,passed:false,phase:'COMMIT',committed:false};
+    return{...committed,passed:true,phase:'COMMITTED',committed:true,activation_chance:prepared.activation_chance,activation_roll:prepared.activation_roll,rng_consumed:prepared.rng_consumed};
+  }
+
   const REACTIVE_FAMILY_ORDER=Object.freeze({COUNTER:0,FOLLOW_UP:1});
   function normalizeReactiveCandidate(candidate,index){
     const c=candidate&&typeof candidate==='object'?candidate:{};
@@ -106,6 +129,10 @@
     if(!Array.isArray(candidates))return[];
     return candidates.map((candidate,index)=>normalizeReactiveCandidate(candidate,index)).sort((a,b)=>a.familyRank-b.familyRank||b.priority-a.priority||a.sequence-b.sequence);
   }
+  function orderReactiveEventCandidates(candidates){
+    if(!Array.isArray(candidates))return[];
+    return candidates.map((candidate,index)=>{const c=candidate&&typeof candidate==='object'?candidate:{};return{...c,eventSequence:Number.isInteger(Number(c.eventSequence))?Number(c.eventSequence):0,priority:Number.isInteger(Number(c.priority))?Number(c.priority):0,sequence:Number.isInteger(Number(c.sequence))?Number(c.sequence):index};}).sort((a,b)=>a.eventSequence-b.eventSequence||b.priority-a.priority||a.sequence-b.sequence);
+  }
   function dispatchCompiled(contract,eventType,payload={},handler){
     const checked=validateCompiledContract(contract,eventType);
     if(!checked.ok)return checked;
@@ -117,5 +144,5 @@
       return failure('TRIGGER_DISPATCH_HANDLER_ERROR',checked.type,{message:String(error&&error.message||error)});
     }
   }
-  return Object.freeze({VERSION,SUPPORTED,BOUNDARY,DEFAULT_ACTION_TRIGGER_LIMIT,REACTIVE_FAMILY_ORDER,create,createActionContext,canActivate,commitActivation,tryActivate,orderSimultaneousCandidates,validateCompiledContract,dispatchCompiled});
+  return Object.freeze({VERSION,SUPPORTED,BOUNDARY,DEFAULT_ACTION_TRIGGER_LIMIT,REACTIVE_FAMILY_ORDER,create,createActionContext,canActivate,commitActivation,tryActivate,evaluateActivationChance,prepareActivation,activatePrepared,orderSimultaneousCandidates,orderReactiveEventCandidates,validateCompiledContract,dispatchCompiled});
 });
