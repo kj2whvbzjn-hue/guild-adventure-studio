@@ -103,15 +103,11 @@ function growthMultiplier(kind,metric,itemLevel){
 function generateWeapon(input){
   const i=Number(input.item_level),type=String(input.base_item_type||''),c=config.weapon.requirement_coefficients[type];
   if(!c)throw new Error('未定義の武器種です: '+type);
-  const required_str=i*Number(c.str),required_dex=i*Number(c.dex),required_int=i*Number(c.int),perf=config.weapon.performance||{};
-  const gmAttack=growthMultiplier('weapon','attack',i),gmAccuracy=growthMultiplier('weapon','accuracy',i),gmMagic=growthMultiplier('weapon','magic_weapon_bonus',i);
-  const attack=required_str*Number(perf.attack_multiplier)*gmAttack;
-  const accuracy=required_dex*Number(perf.accuracy_multiplier)*gmAccuracy;
-  const magic_accuracy=(required_int+required_dex)*2;
-  const magicMultiplier=perf.magic_int_multiplier_source==='weapon_str_requirement_coefficient'?Number(c.str):NaN;
-  const magic_weapon_bonus=required_int*magicMultiplier*gmMagic;
-  const weapon_critical_rate=Number(perf.weapon_critical_rate),isShield=type==='盾';
-  const block_rate=isShield?Number(perf.block_rate_base)+Number(perf.block_rate_per_item_level)*(i-1):null,block_damage_cut_rate=isShield?Number(perf.block_damage_cut_rate):null;
+  const perf=config.weapon.performance||{},gmAttack=growthMultiplier('weapon','attack',i),gmAccuracy=growthMultiplier('weapon','accuracy',i),gmMagic=growthMultiplier('weapon','magic_weapon_bonus',i);
+  const formal=global.GKWeaponGenerationDomain?.generate?.({base_item_type:type,item_level:i,config});
+  const required_str=formal?.ok?formal.required_str:i*Number(c.str),required_dex=formal?.ok?formal.required_dex:i*Number(c.dex),required_int=formal?.ok?formal.required_int:i*Number(c.int);
+  const attack=formal?.ok?formal.attack:required_str*Number(perf.attack_multiplier)*gmAttack,accuracy=formal?.ok?formal.accuracy:required_dex*Number(perf.accuracy_multiplier)*gmAccuracy,magic_accuracy=formal?.ok?formal.magic_accuracy:(required_int+required_dex)*2,magic_weapon_bonus=formal?.ok?formal.magic_weapon_bonus:required_int*Number(c.str)*gmMagic,weapon_critical_rate=formal?.ok?formal.weapon_critical_rate:Number(perf.weapon_critical_rate),isShield=type==='盾';
+  const block_rate=isShield?(formal?.ok?formal.block_rate:Number(perf.block_rate_base)+Number(perf.block_rate_per_item_level)*(i-1)):null,block_damage_cut_rate=isShield?(formal?.ok?formal.block_damage_cut_rate:Number(perf.block_damage_cut_rate)):null;
   const trace=[`required_str=${i}*${c.str}=${required_str}`,`required_dex=${i}*${c.dex}=${required_dex}`,`required_int=${i}*${c.int}=${required_int}`,`attack=${required_str}*${perf.attack_multiplier}*growth(${gmAttack})=${attack}`,`accuracy=${required_dex}*${perf.accuracy_multiplier}*growth(${gmAccuracy})=${accuracy}`,`magic_accuracy=(${required_int}+${required_dex})*2=${magic_accuracy}`,`magic_weapon_bonus=${required_int}*weapon_str_coefficient(${c.str})*growth(${gmMagic})=${magic_weapon_bonus}`,`weapon_critical_rate=${weapon_critical_rate}`,...(isShield?[`block_rate=${perf.block_rate_base}+${perf.block_rate_per_item_level}*(${i}-1)=${block_rate}`,`block_damage_cut_rate=${block_damage_cut_rate}`]:[])];
   const baseName=formalBaseName('weapon',type,i),defaultName=type==='魔導書'?baseName:`${baseName}${type}`;
   const out={id:String(input.id||''),name:String(input.name||defaultName),status:'draft',tags:Array.isArray(input.tags)?clone(input.tags):[],params:{},description:String(input.description||''),mod_ids:[],item_level:i,required_str,required_dex,required_int,attack,accuracy,magic_accuracy,magic_weapon_bonus,weapon_critical_rate,...(isShield?{block_rate,block_damage_cut_rate}:{})};
