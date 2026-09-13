@@ -33,7 +33,7 @@
   }
   function previewIndividual(save,character,kind,id,balanceValue,{validateAfterRemoval}={}){
     normalizeSave(save);normalizeCharacter(character);const target=String(id||'').trim();if(!target)return{ok:false,reason:'ID_REQUIRED'};
-    const owned=kind==='skill'?character.skills:kind==='passive'?character.passiveIds:null;if(!owned)return{ok:false,reason:'RESPEC_KIND_INVALID'};if(!owned.includes(target))return{ok:false,reason:kind==='skill'?'SKILL_NOT_OWNED':'PASSIVE_NOT_OWNED',id:target};
+    const owned=kind==='skill'?character.skills:kind==='passive'?character.passives:null;if(!owned)return{ok:false,reason:'RESPEC_KIND_INVALID'};if(!owned.includes(target))return{ok:false,reason:kind==='skill'?'SKILL_NOT_OWNED':'PASSIVE_NOT_OWNED',id:target};
     if(kind==='passive'){const checked=validatePassiveRemoval(character,character.passiveIds.filter(x=>x!==target),validateAfterRemoval);if(!checked.ok)return{...checked,id:target};}
     const cost=costFor(kind,balanceValue),funds=affordability(save,cost);if(!funds.ok)return{ok:false,reason:'GOLD_SHORTAGE',id:target,kind,...funds};
     const skillPointsRefund=refundFor(character,kind,target),skillPointsBefore=character.skillPoints;
@@ -41,12 +41,12 @@
   }
   function respecIndividual(save,character,kind,id,balanceValue,options={}){
     const preview=previewIndividual(save,character,kind,id,balanceValue,options);if(!preview.ok)return{...preview,changed:false};
-    if(kind==='skill')removeSkillReferences(character,preview.id);else character.passiveIds=character.passiveIds.filter(x=>x!==preview.id);
+    if(kind==='skill')removeSkillReferences(character,preview.id);else{character.passives=character.passives.filter(x=>x!==preview.id);character.passiveIds=character.passiveIds.filter(x=>x!==preview.id);}
     if(character.skillPointSpend?.[kind])delete character.skillPointSpend[kind][preview.id];
     character.skillPoints=preview.skillPointsAfter;save.guild.gold=preview.goldAfter;return{...preview,changed:true};
   }
   function previewAll(save,character,balanceValue,{validateAfterRemoval}={}){
-    normalizeSave(save);normalizeCharacter(character);const skillIds=[...character.skills],passiveIds=[...character.passiveIds];if(!skillIds.length&&!passiveIds.length)return{ok:false,reason:'NOTHING_TO_RESPEC'};
+    normalizeSave(save);normalizeCharacter(character);const skillIds=[...character.skills],passiveIds=[...character.passives];if(!skillIds.length&&!passiveIds.length)return{ok:false,reason:'NOTHING_TO_RESPEC'};
     const checked=validatePassiveRemoval(character,[],validateAfterRemoval);if(!checked.ok)return{...checked,skillIds,passiveIds};
     const cost=costFor('all',balanceValue),funds=affordability(save,cost);if(!funds.ok)return{ok:false,reason:'GOLD_SHORTAGE',kind:'all',skillIds,passiveIds,...funds};
     const refundById={skill:Object.fromEntries(skillIds.map(id=>[id,refundFor(character,'skill',id)])),passive:Object.fromEntries(passiveIds.map(id=>[id,refundFor(character,'passive',id)]))};
@@ -55,7 +55,7 @@
   }
   function respecAll(save,character,balanceValue,options={}){
     const preview=previewAll(save,character,balanceValue,options);if(!preview.ok)return{...preview,changed:false};
-    character.skills=[];character.equippedSkillId='';if(Array.isArray(character.skillLoadoutIds))character.skillLoadoutIds=[];character.passiveIds=[];character.skillPointSpend={skill:{},passive:{}};character.skillPoints=preview.skillPointsAfter;save.guild.gold=preview.goldAfter;
+    character.skills=[];character.equippedSkillId='';if(Array.isArray(character.skillLoadoutIds))character.skillLoadoutIds=[];character.passives=[];character.passiveIds=[];character.skillPointSpend={skill:{},passive:{}};character.skillPoints=preview.skillPointsAfter;save.guild.gold=preview.goldAfter;
     return{...preview,changed:true};
   }
   return Object.freeze({normalizeBalance,costFor,refundFor,previewIndividual,respecIndividual,previewAll,respecAll});

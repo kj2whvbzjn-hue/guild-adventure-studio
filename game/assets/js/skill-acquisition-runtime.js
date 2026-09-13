@@ -44,7 +44,10 @@
     character.skillPoints=own(character,'skillPoints')?integer(character.skillPoints,'character.skillPoints',{min:0}):0;
     character.skills=Array.isArray(character.skills)?[...new Set(character.skills.map(id=>String(id||'').trim()).filter(Boolean))]:[];
     character.passiveIds=Array.isArray(character.passiveIds)?[...new Set(character.passiveIds.map(id=>String(id||'').trim()).filter(Boolean))]:[];
-    const spend=normalizeSkillPointSpend(character.skillPointSpend),skillIds=new Set(character.skills),passiveIds=new Set(character.passiveIds);
+    const legacyPassiveOwnership=!own(character,'passives');
+    character.passives=Array.isArray(character.passives)?[...new Set(character.passives.map(id=>String(id||'').trim()).filter(Boolean))]:legacyPassiveOwnership?[...character.passiveIds]:[];
+    const learnedPassiveIds=new Set(character.passives);character.passiveIds=character.passiveIds.filter(id=>learnedPassiveIds.has(id));
+    const spend=normalizeSkillPointSpend(character.skillPointSpend),skillIds=new Set(character.skills),passiveIds=learnedPassiveIds;
     character.skillPointSpend={
       skill:Object.fromEntries(Object.entries(spend.skill).filter(([id])=>skillIds.has(id))),
       passive:Object.fromEntries(Object.entries(spend.passive).filter(([id])=>passiveIds.has(id)))
@@ -82,24 +85,17 @@
     const branch=kind==='skill'?'skill':kind==='passive'?'passive':null;if(!branch)throw new Error(`unsupported skill-point spend kind: ${kind}`);
     return Number(character.skillPointSpend?.[branch]?.[target])||0;
   }
-  function passiveSelectionCheck(character,record,options){
-    const policy=options&&typeof options==='object'?options:{};if(!policy)return{ok:true};
-    const maxOwned=policy.maxOwned==null?null:integer(policy.maxOwned,'passive.maxOwned',{min:1});if(maxOwned!=null&&character.passiveIds.length>=maxOwned)return{ok:false,reason:'PASSIVE_SLOT_CAPACITY_REACHED',capacity:maxOwned,count:character.passiveIds.length};
-    if(typeof policy.validateAfterAdd==='function'){try{const result=policy.validateAfterAdd([...character.passiveIds,idOf(record)]);if(result===false||result?.ok===false)return{ok:false,reason:result?.reason||'PASSIVE_SELECTION_INVALID',detail:result?.detail||''};}catch(error){return{ok:false,reason:'PASSIVE_SELECTION_INVALID',detail:String(error?.message||error)};}}
-    return{ok:true};
-  }
   function preview(character,record,kind,balanceValue,options){
     normalizeCharacterState(character);const id=idOf(record);if(!id)return{ok:false,reason:'ID_REQUIRED'};
-    const owned=kind==='skill'?character.skills:character.passiveIds;if(owned.includes(id))return{ok:false,reason:kind==='skill'?'SKILL_ALREADY_OWNED':'PASSIVE_ALREADY_OWNED',id};
+    const owned=kind==='skill'?character.skills:character.passives;if(owned.includes(id))return{ok:false,reason:kind==='skill'?'SKILL_ALREADY_OWNED':'PASSIVE_ALREADY_OWNED',id};
     const requirements=requirementCheck(character,record,kind);if(!requirements.ok)return{ok:false,reason:'ABILITY_REQUIREMENT_NOT_MET',id,...requirements};
-    if(kind==='passive'){const selection=passiveSelectionCheck(character,record,options);if(!selection.ok)return{...selection,id};}
     const cost=acquisitionCost(record,kind,balanceValue),before=character.skillPoints;if(before<cost)return{ok:false,reason:'SKILL_POINTS_SHORTAGE',id,cost,skillPointsBefore:before,skillPointsAfter:before,...requirements};
     return{ok:true,id,kind,cost,skillPointsBefore:before,skillPointsAfter:before-cost,...requirements};
   }
   function acquire(character,record,kind,balanceValue,options){
     const result=preview(character,record,kind,balanceValue,options);if(!result.ok)return{...result,changed:false};
     character.skillPoints=result.skillPointsAfter;
-    if(kind==='skill')character.skills.push(result.id);else character.passiveIds.push(result.id);
+    if(kind==='skill')character.skills.push(result.id);else character.passives.push(result.id);
     character.skillPointSpend[kind][result.id]=result.cost;
     return{...result,changed:true,skillPointsSpent:result.cost};
   }

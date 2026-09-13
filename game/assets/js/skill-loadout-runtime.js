@@ -36,6 +36,30 @@
     return character;
   }
   function selectedSkillIds(character,{capacity=null}={}){const result=validateActiveSkillLoadout(character,{capacity});if(!result.ok)throw Object.assign(new Error(result.reason),{code:result.reason,details:result});return result.ids;}
+
+  function passiveSeriesId(record){return asId(record?.passiveSeriesId||record?.passive_series_id||record?.runtimeContracts?.passiveSeriesId||record?.runtimeContracts?.passive_series_id);}
+  function validatePassiveLoadout(character,{capacity=null,resolvePassive=null,validateSelection=null}={}){
+    if(!character||typeof character!=='object')return{ok:false,reason:'CHARACTER_REQUIRED',ids:[]};
+    const owned=normalizeSkillIds(character.passives,{fallback:Array.isArray(character.passives)?[]:normalizeSkillIds(character.passiveIds,{fallback:[]})}),raw=character.passiveIds;
+    if(raw==null)return{ok:true,ids:[],ownedPassiveIds:owned,capacity:capacity==null?null:Number(capacity),passiveSeriesIds:[]};
+    if(!Array.isArray(raw))return{ok:false,reason:'PASSIVE_LOADOUT_ARRAY_REQUIRED',ids:[],ownedPassiveIds:owned};
+    const ids=[],seen=new Set();for(const row of raw){const id=asId(row);if(!id)return{ok:false,reason:'PASSIVE_LOADOUT_ID_REQUIRED',ids:[...ids],ownedPassiveIds:owned};if(seen.has(id))return{ok:false,reason:'PASSIVE_LOADOUT_DUPLICATE',id,ids:[...ids],ownedPassiveIds:owned};seen.add(id);ids.push(id);}
+    const limit=capacity==null?null:Number(capacity);if(limit!=null&&(!Number.isInteger(limit)||limit<1))return{ok:false,reason:'PASSIVE_LOADOUT_CAPACITY_INVALID',capacity};
+    if(limit!=null&&ids.length>limit)return{ok:false,reason:'PASSIVE_LOADOUT_CAPACITY_EXCEEDED',capacity:limit,count:ids.length,ids,ownedPassiveIds:owned};
+    const missing=ids.filter(id=>!owned.includes(id));if(missing.length)return{ok:false,reason:'PASSIVE_LOADOUT_NOT_OWNED',missing,ids,ownedPassiveIds:owned,capacity:limit};
+    const seriesIds=[],seriesSeen=new Set();if(typeof resolvePassive==='function'){for(const id of ids){const passive=resolvePassive(id);if(!passive)return{ok:false,reason:'PASSIVE_NOT_AVAILABLE',id,ids,ownedPassiveIds:owned,capacity:limit};const series=passiveSeriesId(passive);if(series&&seriesSeen.has(series))return{ok:false,reason:'PASSIVE_SERIES_DUPLICATE',id,passiveSeriesId:series,ids,ownedPassiveIds:owned,capacity:limit};if(series){seriesSeen.add(series);seriesIds.push(series);}}}
+    if(typeof validateSelection==='function'){try{const result=validateSelection([...ids]);if(result===false||result?.ok===false)return{ok:false,reason:result?.reason||'PASSIVE_SELECTION_INVALID',detail:result?.detail||result,ids,ownedPassiveIds:owned,capacity:limit};}catch(error){return{ok:false,reason:error?.code||'PASSIVE_SELECTION_INVALID',detail:String(error?.message||error),ids,ownedPassiveIds:owned,capacity:limit};}}
+    return{ok:true,ids,ownedPassiveIds:owned,capacity:limit,passiveSeriesIds:seriesIds};
+  }
+  function selectedPassiveIds(character,options={}){const result=validatePassiveLoadout(character,options);if(!result.ok)throw Object.assign(new Error(result.reason),{code:result.reason,details:result});return result.ids;}
+  function setPassiveSelected(character,passiveId,selected,{capacity,resolvePassive,validateSelection}={}){
+    if(!character||typeof character!=='object')return{ok:false,reason:'CHARACTER_REQUIRED',changed:false};const id=asId(passiveId);if(!id)return{ok:false,reason:'PASSIVE_ID_REQUIRED',changed:false};
+    if(!Array.isArray(character.passives))character.passives=normalizeSkillIds(character.passiveIds,{fallback:[]});
+    const before=validatePassiveLoadout(character,{capacity,resolvePassive,validateSelection});if(!before.ok)return{...before,changed:false};if(!before.ownedPassiveIds.includes(id))return{ok:false,reason:'PASSIVE_NOT_OWNED',id,changed:false};
+    const next=selected?(before.ids.includes(id)?before.ids:[...before.ids,id]):before.ids.filter(x=>x!==id);if(selected&&before.ids.includes(id))return{ok:true,changed:false,id,selected:true,ids:before.ids,capacity:before.capacity};if(!selected&&!before.ids.includes(id))return{ok:true,changed:false,id,selected:false,ids:before.ids,capacity:before.capacity};
+    const candidate={...character,passiveIds:next};const checked=validatePassiveLoadout(candidate,{capacity,resolvePassive,validateSelection});if(!checked.ok)return{...checked,id,changed:false};character.passiveIds=next;return{ok:true,changed:true,id,selected:!!selected,ids:[...next],capacity:checked.capacity,passiveSeriesIds:checked.passiveSeriesIds};
+  }
+  function validateBattleSkillSelection(character,{activeCapacity=null,passiveCapacity=null,resolvePassive=null,validatePassiveSelection=null}={}){const active=validateActiveSkillLoadout(character,{capacity:activeCapacity});if(!active.ok)return{ok:false,domain:'active',...active};const passive=validatePassiveLoadout(character,{capacity:passiveCapacity,resolvePassive,validateSelection:validatePassiveSelection});if(!passive.ok)return{ok:false,domain:'passive',...passive};return{ok:true,activeSkillIds:active.ids,passiveIds:passive.ids};}
   function formalProductionSkillCheck(skill,compileSkill){
     if(!skill||typeof skill!=='object')return{ok:false,reason:'SKILL_NOT_FOUND'};
     const id=asId(skill.id);if(!FORMAL_SKILL_ID.test(id))return{ok:false,reason:'FORMAL_SKILL_ID_REQUIRED'};
@@ -70,5 +94,5 @@
     const changed=character.equippedSkillId!==id;character.equippedSkillId=id;return{ok:true,changed,id,skill};
   }
   function unavailableOwnedSkillIds(character,resolveSkill,compileSkill){normalizeCharacterSkillState(character);return character.skills.filter(id=>{const skill=typeof resolveSkill==='function'?resolveSkill(id):null;if(!skill)return true;if(typeof compileSkill!=='function')return false;return !compileSkill(skill)?.ok;});}
-  return Object.freeze({DEFAULT_SKILL_IDS,FORMAL_SKILL_ID,normalizeSkillIds,validateActiveSkillLoadout,selectedSkillIds,normalizeCharacterSkillState,formalProductionSkillCheck,assignFormalProductionSkill,setSkillSelected,skillUseCheck,equipOwnedSkill,unavailableOwnedSkillIds});
+  return Object.freeze({DEFAULT_SKILL_IDS,FORMAL_SKILL_ID,normalizeSkillIds,validateActiveSkillLoadout,selectedSkillIds,validatePassiveLoadout,selectedPassiveIds,setPassiveSelected,validateBattleSkillSelection,normalizeCharacterSkillState,formalProductionSkillCheck,assignFormalProductionSkill,setSkillSelected,skillUseCheck,equipOwnedSkill,unavailableOwnedSkillIds});
 });
