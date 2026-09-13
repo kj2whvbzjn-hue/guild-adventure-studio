@@ -1142,7 +1142,7 @@ if($('baseToTitle'))$('baseToTitle').onclick=()=>setPhase('title');
 $('baseDepart').onclick=$('baseDepartSide').onclick=beginSelectedAdventure;
 $('eventBackBase').onclick=$('eventRetreat').onclick=()=>{setPhase('base');setBaseView('home',{instant:true})};if($('adventureReturn'))$('adventureReturn').onclick=returnFromAdventurePlayback;
 $('battleAbort').onclick=()=>{setPhase('base');setBaseView('home',{instant:true})};
-$('resultToEvent').onclick=launchStandaloneBattle;
+if($('resultToEvent'))$('resultToEvent').onclick=launchStandaloneBattle;
 $('resultToBase').onclick=()=>{setPhase('base',{keepBattle:true});setBaseView('home',{instant:true})};
 document.querySelectorAll('#phaseDevNav [data-phase]').forEach(btn=>btn.onclick=()=>{if(btn.dataset.phase==='battle'){launchStandaloneBattle();return}setPhase(btn.dataset.phase,{keepBattle:true})});
 document.querySelectorAll('#baseMobileNav [data-base-tab]').forEach(btn=>btn.onclick=()=>setBaseView(btn.dataset.baseTab));

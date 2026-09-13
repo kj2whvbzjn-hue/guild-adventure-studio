@@ -34,7 +34,7 @@ if($('baseToTitle'))$('baseToTitle').onclick=()=>setPhase('title');
 $('baseDepart').onclick=$('baseDepartSide').onclick=async()=>{if(!data.partyIds.length){notify('遠征パーティを1人以上選んでください。','bad');return}await beginSelectedAdventure()};
 $('eventBackBase').onclick=$('eventRetreat').onclick=()=>{setPhase('base');setBaseView('home',{instant:true})};
 $('battleAbort').onclick=()=>{setPhase('base');setBaseView('home',{instant:true})};
-$('resultToEvent').onclick=launchStandaloneBattle;
+if($('resultToEvent'))$('resultToEvent').onclick=launchStandaloneBattle;
 $('resultToBase').onclick=()=>{setPhase('base',{keepBattle:true});setBaseView('home',{instant:true})};
 document.querySelectorAll('#phaseDevNav [data-phase]').forEach(btn=>btn.onclick=()=>{if(btn.dataset.phase==='battle'){launchStandaloneBattle();return}setPhase(btn.dataset.phase,{keepBattle:true})});
 
