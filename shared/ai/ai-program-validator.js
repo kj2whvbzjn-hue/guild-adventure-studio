@@ -138,6 +138,9 @@
     if (!tag) return {ok: false, reason: 'condition_tag_not_found', tag: null, category: null, kind: '', semantic: ''};
     const categoryId = String(tag?.category_id || '').trim(), category = categories.find((row) => String(row?.id || '') === categoryId) || null;
     if (!categoryId || !category) return {ok: false, reason: 'condition_tag_category_invalid', tag, category: null, kind: '', semantic: ''};
+    const targetAuthority = targetTagAuthority(data);
+    if (!targetAuthority.ok) return {ok: false, reason: targetAuthority.reason, tag, category, kind: '', semantic: String(tag?.runtime_semantic || '').trim().toUpperCase()};
+    if (String(targetAuthority.category?.id || '') === categoryId) return {ok: false, reason: 'condition_tag_is_target_category', tag, category, kind: '', semantic: String(tag?.runtime_semantic || '').trim().toUpperCase()};
     const semantic = String(tag?.runtime_semantic || '').trim().toUpperCase();
     if (AUTHORABLE_SEARCH_TARGET_SEMANTICS.has(semantic)) return {ok: false, reason: 'condition_tag_is_target', tag, category, kind: '', semantic};
     if (ACTION_CONDITION_EXTREME_SEMANTICS.has(semantic)) return {ok: true, reason: '', tag, category, kind: 'STATE_NUMERIC', semantic};
