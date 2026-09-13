@@ -5,7 +5,7 @@
     "name": "修正版34仕様に基づく新規実装計画",
     "status": "Implementing",
     "ai_attention": "Include",
-    "updated_at": "2026-09-13T02:59:54.497Z"
+    "updated_at": "2026-09-13T03:33:31.505Z"
   },
   "project_context": {
     "purpose": "修正版34仕様の全項目を実装し、Studio/Game/Export/Saveで一貫させる。",
@@ -19,9 +19,9 @@
   },
   "current_focus": {
     "architecture_id": "ARC-NIP",
-    "work_box_id": "BOX-NIP-34",
-    "theme": "スキル習得・選択・リスペック",
-    "goal": "TASK-NIP-34-01「スキル習得・選択・リスペック：ドメイン処理を実装する」をSOURCE_UPDATEで実装する"
+    "work_box_id": "BOX-NIP-04",
+    "theme": "経験値とSP",
+    "goal": "TASK-NIP-04-01「経験値とSP：ドメイン処理を実装する」をSOURCE_UPDATEで実装する"
   },
   "source_baseline": {
     "studio_build": "GKS-B927",
@@ -173,6 +173,20 @@
       "result": "Applied",
       "evidence": "GS-31に対し、QuestRun保存済みBattle Result / playback_eventsの表示専用Playbackへ再生・速度変更・戦闘Skipを実装。速度/Skipは保存イベント列とBattle結果を変更しない。Battle playback eventへshield_absorbedを保持し、Barrier吸収のみでHP damage=0のHitをBARRIER吸収付きで表示。通常プレイヤー導線からDeveloper UI、Pause/1行動送り/再戦を除外し、Standalone結果画面は正式SaveへGold/Item/戦績/Quest進行をCommitしない既存境界を維持。専用fixture PASS、Adventure Playback/Battle/QuestReturn回帰PASS、Source Quick 12/12 PASS、適用後Full 27/27 PASS。artifact_id=GKS-B928-d9ac383174b6。削除なし・Game Data変更なし。",
       "recorded_at": "2026-09-13T02:52:00Z"
+    },
+    {
+      "id": "IMPL-NIP-34-01-GKS-B929-001",
+      "studio_build": "GKS-B929",
+      "game_build": "GA-B486.260",
+      "work_box_ids": [
+        "BOX-NIP-34"
+      ],
+      "task_ids": [
+        "TASK-NIP-34-01"
+      ],
+      "result": "Applied",
+      "evidence": "GS-34の習得・選択・Respec Domainを更新。Activeはskills/skillLoadoutIds、Passiveは習得passives/有効選択passiveIdsへ分離し、旧Saveではpassives欠落時にpassiveIdsを習得済みとして互換移行。Active/Passive各5枠、未習得選択拒否、同passiveSeriesId重複拒否を編集時と出撃Snapshot生成時に検証。実消費SPをskillPointSpendへ保持し、現在価格変更後も実消費量を返還、無記録/無料取得は0返還。Active50G/Passive50G/全200G Respecは習得・選択・実消費記録を整合削除し、Level/能力/Job/装備/AI Bindingを変更しない。Skill/Passive操作を既存C05 Save Transactionへ接続し、保存失敗時にGold/SP/習得/選択を公開状態へ部分反映しない。外部専用fixture PASS、Source Quick 12/12、Source Full 27/27、正確なGKS-B928 / GA-B486.259 baselineへの適用後Full 27/27 PASS。artifact_id=GKS-B929-786167941520。削除なし・Game Data変更なし。",
+      "recorded_at": "2026-09-13T03:08:49Z"
     }
   ],
   "discussions": [],
@@ -3035,7 +3049,7 @@
       "id": "TASK-NIP-34-01",
       "title": "スキル習得・選択・リスペック：ドメイン処理を実装する",
       "box_id": "BOX-NIP-34",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 39,
       "depends_on": [
         "TASK-NIP-F03",
@@ -3061,7 +3075,7 @@
         "at": ""
       },
       "created_at": "2026-09-11T00:00:00Z",
-      "updated_at": "2026-09-11T00:00:00Z",
+      "updated_at": "2026-09-13T03:08:49Z",
       "decision_policy": "未決値は検証済みの明示入力・試験fixtureで分離し、欠落する本番設定は拒否する。未決境界を除く確定処理を実装できる。",
       "spec_refs": [
         "GS-34"
@@ -7063,6 +7077,15 @@
       "summary": "GA-B486.258 / GKS-B927でGS-24のScene Snapshot、既読/表示分離、会話送り/Auto/既読Skip/履歴、壁時計Playback継続、一度だけCommitを実装。適用後Full 27/27 PASS。次の実装フォーカスはTASK-NIP-31-01。",
       "actor": "AI-from-current-authority",
       "at": "2026-09-13T02:36:00Z"
+    },
+    {
+      "id": "HISTORY-NIP-34-01-20260913",
+      "entity_type": "Task",
+      "entity_id": "TASK-NIP-34-01",
+      "action": "Completed",
+      "summary": "GA-B486.260 / GKS-B929でGS-34のSkill/Passive習得・選択分離、実消費SP返還、5枠/系列検証、Respec、C05保存原子性を実装。適用後Full 27/27 PASS。次はTASK-NIP-04-01。",
+      "actor": "AI-from-current-authority",
+      "at": "2026-09-13T03:08:49Z"
     }
   ],
   "authority": {
