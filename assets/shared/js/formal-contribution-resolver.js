@@ -125,6 +125,26 @@
     const rows=Array.isArray(masterRows)?masterRows:[],ids=Array.isArray(passiveIds)?passiveIds:[];if(new Set(ids.map(String)).size!==ids.length)throw Object.assign(new Error('character.passiveIdsに重複があります。'),{code:'FORMAL_PASSIVE_ID_DUPLICATE'});
     const map=new Map(rows.map(row=>[String(row?.id||''),row])),selected=[],series=new Set();for(const rawId of ids){const id=String(rawId||'').trim(),raw=map.get(id);if(!raw)throw Object.assign(new Error(`未解決Passive IDです: ${id}`),{code:'FORMAL_PASSIVE_ID_UNRESOLVED',passive_id:id});const checked=validateFormalPassive(raw,{...options,requireRuntimeContracts:options.requireRuntimeContracts===true});if(series.has(checked.passiveSeriesId))throw Object.assign(new Error(`同一passiveSeriesIdを複数装備できません: ${checked.passiveSeriesId}`),{code:'FORMAL_PASSIVE_SERIES_DUPLICATE',passive_series_id:checked.passiveSeriesId});series.add(checked.passiveSeriesId);selected.push(checked)}const active=abilityStats==null?selected:selected.filter(row=>passiveRequirementsMet(row,abilityStats));return{ok:true,passives:selected,activePassives:active,passiveSeriesIds:[...series]};
   }
+  function resolveCombatStatContributions(base,target,rows,{allowedTargets=null,allowDynamicTarget=null,errorPrefix='Formal Combat'}={}){
+    const baseValue=Number.isFinite(Number(base))?Number(base):0,targetStat=String(target||'').trim().toUpperCase();
+    if(!targetStat)throw Object.assign(new Error(`${errorPrefix} modifier targetが必要です。`),{code:'FORMAL_COMBAT_MODIFIER_TARGET_REQUIRED'});
+    const allowed=Array.isArray(allowedTargets)?new Set(allowedTargets.map(x=>String(x||'').toUpperCase())):null;
+    if(allowed&&!allowed.has(targetStat)&&!(typeof allowDynamicTarget==='function'&&allowDynamicTarget(targetStat)))throw Object.assign(new Error(`${errorPrefix} modifier target ${targetStat}は未接続です。`),{code:'FORMAL_COMBAT_MODIFIER_TARGET_UNCONNECTED',target_stat:targetStat});
+    const contributions=[];
+    for(const row of Array.isArray(rows)?rows:[]){
+      if(String(row?.target_stat||'').toUpperCase()!==targetStat)continue;
+      const sourceType=String(row?.source_type||'').trim().toUpperCase(),sourceId=String(row?.source_id||'').trim(),modifierId=String(row?.modifier_id||'').trim(),mode=String(row?.mode||'').trim().toUpperCase(),raw=Number(row?.raw_modifier_value);
+      if(!sourceType||!sourceId||!Number.isFinite(raw))throw Object.assign(new Error(`${errorPrefix} ${targetStat} Contribution provenanceが不正です。`),{code:'FORMAL_COMBAT_MODIFIER_PROVENANCE_INVALID',target_stat:targetStat});
+      let resolved=0;
+      if(mode==='RELATIVE_PERCENT')resolved=baseValue*raw;
+      else if(mode==='FLAT_ADD'||mode==='ADDITIVE_POINT')resolved=raw;
+      else if(mode==='SUBTRACTIVE_POINT')resolved=-raw;
+      else throw Object.assign(new Error(`${errorPrefix} modifier operation ${mode||'(empty)'}は未対応です。`),{code:'FORMAL_COMBAT_MODIFIER_OPERATION_UNSUPPORTED',target_stat:targetStat,operation:mode});
+      contributions.push({source_type:sourceType,source_id:sourceId,modifier_id:modifierId,target_stat:targetStat,mode,raw_modifier_value:raw,base_value_used:baseValue,resolved_contribution:resolved});
+    }
+    const totals=contributions.reduce((acc,row)=>{if(row.mode==='RELATIVE_PERCENT')acc.relative_percent+=row.raw_modifier_value;else if(row.mode==='ADDITIVE_POINT')acc.additive_point+=row.raw_modifier_value;else if(row.mode==='SUBTRACTIVE_POINT')acc.subtractive_point+=row.raw_modifier_value;else acc.flat_add+=row.raw_modifier_value;return acc;},{relative_percent:0,additive_point:0,subtractive_point:0,flat_add:0});
+    return{base_value:baseValue,final_value:baseValue+baseValue*totals.relative_percent+totals.flat_add+totals.additive_point-totals.subtractive_point,totals,contributions};
+  }
   function sumEquipmentContributions(rows){const total=Object.fromEntries(EQUIPMENT_FIELDS.map(k=>[k,0])),blockOwners=[];for(const row of rows||[]){for(const k of ADDITIVE_EQUIPMENT_FIELDS)total[k]+=Number(row?.modified?.[k])||0;if(BLOCK_FIELDS.some(k=>(Number(row?.modified?.[k])||0)>0))blockOwners.push(row);}if(blockOwners.length>1)throw Object.assign(new Error('Block性能を持つEquipmentを複数合算できません。'),{code:'FORMAL_EQUIPMENT_MULTI_BLOCK_SOURCE_FORBIDDEN',count:blockOwners.length});if(blockOwners.length===1)for(const k of BLOCK_FIELDS)total[k]=Number(blockOwners[0]?.modified?.[k])||0;return total}
-  return Object.freeze({EQUIPMENT_FIELDS,BLOCK_FIELDS,ADDITIVE_EQUIPMENT_FIELDS,REQUIREMENT_FIELDS,MOD_FIELDS,PASSIVE_STATS,PASSIVE_COMBAT_CAPABILITIES,NUMERIC_OPERATIONS,TARGET_TO_FIELD,validateFormalEquipment,baseEquipmentContribution,validateModDefinition,validateModCandidate,applyEquipmentMods,resolveEquipmentContribution,validateFormalPassive,resolvePassiveContribution,passiveRequirementsMet,validatePassiveSelection,sumEquipmentContributions});
+  return Object.freeze({EQUIPMENT_FIELDS,BLOCK_FIELDS,ADDITIVE_EQUIPMENT_FIELDS,REQUIREMENT_FIELDS,MOD_FIELDS,PASSIVE_STATS,PASSIVE_COMBAT_CAPABILITIES,NUMERIC_OPERATIONS,TARGET_TO_FIELD,validateFormalEquipment,baseEquipmentContribution,validateModDefinition,validateModCandidate,applyEquipmentMods,resolveEquipmentContribution,validateFormalPassive,resolvePassiveContribution,passiveRequirementsMet,validatePassiveSelection,resolveCombatStatContributions,sumEquipmentContributions});
 });
