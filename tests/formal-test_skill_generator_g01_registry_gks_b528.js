@@ -1,8 +1,8 @@
 const fs=require('fs'),vm=require('vm'),assert=require('assert');
 const build=require('../package-build.json');
 const registry=require('../assets/shared/config/skill-registry.json');
-assert.strictEqual(build.game_build,'GA-B486.264');
-assert.strictEqual(build.studio_build,'GKS-B933');
+assert.strictEqual(build.game_build,'GA-B486.265');
+assert.strictEqual(build.studio_build,'GKS-B934');
 const ctx={console,module:{exports:{}},globalThis:null};ctx.globalThis=ctx;vm.createContext(ctx);
 vm.runInContext(fs.readFileSync('assets/shared/js/skill-authoring-registry.js','utf8'),ctx);
 const author=ctx.GKSSkillAuthoringRegistry;assert.ok(author,'authoring registry API missing');assert.ok(['G01','G02','G03','G04','G05'].includes(author.VERSION),'authoring registry API regressed');
