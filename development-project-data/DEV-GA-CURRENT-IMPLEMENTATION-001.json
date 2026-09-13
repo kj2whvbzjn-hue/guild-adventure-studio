@@ -5,30 +5,30 @@
     "name": "修正版34仕様に基づく新規実装計画",
     "status": "Implementing",
     "ai_attention": "Include",
-    "updated_at": "2026-09-13T02:09:56.639Z"
+    "updated_at": "2026-09-13T02:22:27.709Z"
   },
   "project_context": {
     "purpose": "修正版34仕様の全項目を実装し、Studio/Game/Export/Saveで一貫させる。",
-    "summary": "TASK-NIP-F01〜F04、D01/D02/D03/D05〜D14、TASK-NIP-01-01、02-01、03-01/03-02、05-01、06-01、07-01、08-01、09-01、13-01、16-01、17-01、20-01、23-01、28-01、29-01、30-01完了。GS-20でcan→chance→commit境界、0/1無RNG、共有16回上限、Reactive順序、致死割込み位置を共通Trigger Domainへ接続。次はTASK-NIP-21-01へ進む。",
+    "summary": "TASK-NIP-F01〜F04、D01/D02/D03/D05〜D14、TASK-NIP-01-01、02-01、03-01/03-02、05-01、06-01、07-01、08-01、09-01、13-01、16-01、17-01、20-01、21-01、23-01、28-01、29-01、30-01完了。GS-21でPlayer/Monster共通AI実行、Formal Tag条件、MIN/MAX同率AI_DECISION、対象カテゴリ除外を確認・補正。次はTASK-NIP-24-01へ進む。",
     "current_focus": {
       "architecture_id": "ARC-NIP",
-      "work_box_id": "BOX-NIP-21",
-      "theme": "AI編集と行動選択",
-      "goal": "TASK-NIP-21-01「AI編集と行動選択：ドメイン処理を実装する」をSOURCE_UPDATEで実装する"
+      "work_box_id": "BOX-NIP-24",
+      "theme": "ストーリーと会話",
+      "goal": "TASK-NIP-24-01「ストーリーと会話：ドメイン処理を実装する」をSOURCE_UPDATEで実装する"
     }
   },
   "current_focus": {
     "architecture_id": "ARC-NIP",
-    "work_box_id": "BOX-NIP-20",
-    "theme": "トリガーと連鎖処理",
-    "goal": "TASK-NIP-20-01「トリガーと連鎖処理：ドメイン処理を実装する」をSOURCE_UPDATEで実装する"
+    "work_box_id": "BOX-NIP-24",
+    "theme": "ストーリーと会話",
+    "goal": "TASK-NIP-24-01「ストーリーと会話：ドメイン処理を実装する」をSOURCE_UPDATEで実装する"
   },
   "source_baseline": {
-    "studio_build": "GKS-B924",
-    "game_build": "GA-B486.255",
-    "source_label": "GKS-B924-5f2b9a538699 / target source tree SHA256 5f2b9a538699714920fd43b533a815e38d03f3e6d7f1a1b25f2357d4f2e15417",
+    "studio_build": "GKS-B926",
+    "game_build": "GA-B486.257",
+    "source_label": "GKS-B926-f4bfacb27ba0 / target source tree SHA256 f4bfacb27ba0b1160434c8a2362135f4dc33fb77463ac55225ad8e981d5f58d8",
     "source_role": "current_baseline",
-    "recorded_at": "2026-09-13T01:41:20Z"
+    "recorded_at": "2026-09-13T02:16:00Z"
   },
   "lifecycle": {
     "status": "Active",
@@ -117,6 +117,34 @@
       "result": "Applied",
       "evidence": "assets/shared/js/skill-ai-batch-engine.jsのPHYSICAL_DAMAGEをGS-16式へ修正。activeBinding.hitCountを正式入力として、多段負債=100×(H-1)、AGI返済、STR加算前最低60判定を実装。STR20/AGI20・2Hit=各70、AGI19・2Hit拒否、AGI100・4Hit拒否、Barrier/Critical/Level4 ALL資源式を受入fixtureで確認。Source Quick 12/12、適用後Full 27/27 PASS。artifact_id=GKS-B924-5f2b9a538699。削除なし・Game Data変更なし。",
       "recorded_at": "2026-09-13T01:41:20Z"
+    },
+    {
+      "id": "IMPL-NIP-20-01-GKS-B925-001",
+      "studio_build": "GKS-B925",
+      "game_build": "GA-B486.256",
+      "work_box_ids": [
+        "BOX-NIP-20"
+      ],
+      "task_ids": [
+        "TASK-NIP-20-01"
+      ],
+      "result": "Applied",
+      "evidence": "shared/trigger/trigger-engine.js系のGS-20共通Trigger Domainへcan→chance→commit境界、0/1無RNG、同Passive再入拒否、共有16回上限、Reactive順序、致死割込み位置を接続。適用後Full 27/27 PASS。artifact_id=GKS-B925-58eafbd19c3f。削除なし・Game Data変更なし。",
+      "recorded_at": "2026-09-13T02:20:00Z"
+    },
+    {
+      "id": "IMPL-NIP-21-01-GKS-B926-001",
+      "studio_build": "GKS-B926",
+      "game_build": "GA-B486.257",
+      "work_box_ids": [
+        "BOX-NIP-21"
+      ],
+      "task_ids": [
+        "TASK-NIP-21-01"
+      ],
+      "result": "Applied",
+      "evidence": "shared/ai/ai-program-validator.jsでPlayer条件候補からFormal対象カテゴリ自体を除外。対象カテゴリ内の空runtime_semantic Tagを効果Tagへ誤分類しないようFail Closed化。既存のPlayer/Monster共通Runtime、Search/StateCheck、HP/MP CURRENT/RATIO、Action MIN/MAX同率AI_DECISION、候補1件無RNGを専用fixtureと既存6回帰で確認。Source Quick 12/12、適用後Full 27/27 PASS。artifact_id=GKS-B926-f4bfacb27ba0。削除なし・Game Data変更なし。",
+      "recorded_at": "2026-09-13T02:16:00Z"
     }
   ],
   "discussions": [],
@@ -2833,7 +2861,7 @@
       "id": "TASK-NIP-21-01",
       "title": "AI編集と行動選択：ドメイン処理を実装する",
       "box_id": "BOX-NIP-21",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 36,
       "depends_on": [
         "TASK-NIP-F03",
@@ -2860,7 +2888,7 @@
         "at": ""
       },
       "created_at": "2026-09-11T00:00:00Z",
-      "updated_at": "2026-09-11T00:00:00Z",
+      "updated_at": "2026-09-13T02:16:00Z",
       "decision_policy": "未決値は検証済みの明示入力・試験fixtureで分離し、欠落する本番設定は拒否する。未決境界を除く確定処理を実装できる。",
       "spec_refs": [
         "GS-21"
@@ -6688,6 +6716,98 @@
         "reason": "",
         "mode": ""
       }
+    },
+    {
+      "id": "CHECK-NIP-20-01-GS20-ACCEPTANCE",
+      "title": "GS-20 トリガーと連鎖処理Domain受入",
+      "target_type": "Task",
+      "target_id": "TASK-NIP-20-01",
+      "status": "Passed",
+      "result": "条件/確率不成立でcommit 0、0/1無RNG、同Passive再入拒否、共有16回上限、priority/sequence順、致死割込み位置を確認。",
+      "evidence": "TASK-NIP-20-01_ACCEPTANCE_RESULT.txt",
+      "created_at": "2026-09-13T02:20:00Z",
+      "updated_at": "2026-09-13T02:20:00Z",
+      "gate": "General",
+      "checked_by": "AI",
+      "checked_at": "2026-09-13T02:20:00Z",
+      "resolves_check_ids": [],
+      "blocking": false,
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      }
+    },
+    {
+      "id": "CHECK-NIP-20-01-SOURCE-GATE",
+      "title": "TASK-NIP-20-01 SOURCE_UPDATE適用後Gate",
+      "target_type": "Task",
+      "target_id": "TASK-NIP-20-01",
+      "status": "Passed",
+      "result": "正確なGA-B486.255 / GKS-B924 baselineへ差分SOURCE_UPDATEをoverlayし、Full 27/27 PASS。",
+      "evidence": "artifact_id=GKS-B925-58eafbd19c3f; applied Full 27/27 PASS; deleted=0.",
+      "created_at": "2026-09-13T02:20:00Z",
+      "updated_at": "2026-09-13T02:20:00Z",
+      "gate": "General",
+      "checked_by": "AI",
+      "checked_at": "2026-09-13T02:20:00Z",
+      "resolves_check_ids": [],
+      "blocking": false,
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      }
+    },
+    {
+      "id": "CHECK-NIP-21-01-GS21-ACCEPTANCE",
+      "title": "GS-21 AI編集と行動選択Domain受入",
+      "target_type": "Task",
+      "target_id": "TASK-NIP-21-01",
+      "status": "Passed",
+      "result": "同一Program相当Runtime/SeedでPlayer/Monster判断一致、候補1件RNG 0、MIN同率複数候補はAI_DECISIONのみ、未知非空semantic拒否、同名TagをID/カテゴリで区別、対象カテゴリ内空semanticを条件候補から除外。",
+      "evidence": "TASK-NIP-21-01_ACCEPTANCE_RESULT.txt",
+      "created_at": "2026-09-13T02:16:00Z",
+      "updated_at": "2026-09-13T02:16:00Z",
+      "gate": "General",
+      "checked_by": "AI",
+      "checked_at": "2026-09-13T02:16:00Z",
+      "resolves_check_ids": [],
+      "blocking": false,
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      }
+    },
+    {
+      "id": "CHECK-NIP-21-01-SOURCE-GATE",
+      "title": "TASK-NIP-21-01 SOURCE_UPDATE適用後Gate",
+      "target_type": "Task",
+      "target_id": "TASK-NIP-21-01",
+      "status": "Passed",
+      "result": "正確なGA-B486.256 / GKS-B925 baselineへ差分SOURCE_UPDATEをoverlayし、Source Quick 12/12・適用後Full 27/27 PASS。",
+      "evidence": "artifact_id=GKS-B926-f4bfacb27ba0; target_source_tree_sha256=f4bfacb27ba0b1160434c8a2362135f4dc33fb77463ac55225ad8e981d5f58d8; applied Full 27/27 PASS; deleted=0.",
+      "created_at": "2026-09-13T02:16:00Z",
+      "updated_at": "2026-09-13T02:16:00Z",
+      "gate": "General",
+      "checked_by": "AI",
+      "checked_at": "2026-09-13T02:16:00Z",
+      "resolves_check_ids": [],
+      "blocking": false,
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      }
     }
   ],
   "history": [
@@ -6841,6 +6961,24 @@
       "summary": "GA-B486.255 / GKS-B924でGS-16物理多段式を正式化し、Hit数指定・AGI負債返済・STR加算前成立判定と受入例を確認。適用後Full 27/27 PASS。次はTASK-NIP-20-01。",
       "actor": "AI-from-current-authority",
       "at": "2026-09-13T01:41:20Z"
+    },
+    {
+      "id": "HISTORY-NIP-20-01-20260913",
+      "entity_type": "Task",
+      "entity_id": "TASK-NIP-20-01",
+      "action": "Completed",
+      "summary": "GA-B486.256 / GKS-B925でGS-20 Trigger Domainを共通化し、can→chance→commit、0/1無RNG、共有16回上限、Reactive順、致死割込み位置を確認。適用後Full 27/27 PASS。次はTASK-NIP-21-01。",
+      "actor": "AI-from-current-authority",
+      "at": "2026-09-13T02:20:00Z"
+    },
+    {
+      "id": "HISTORY-NIP-21-01-20260913",
+      "entity_type": "Task",
+      "entity_id": "TASK-NIP-21-01",
+      "action": "Completed",
+      "summary": "GA-B486.257 / GKS-B926でGS-21の対象カテゴリ除外を補正し、Player/Monster共通判断、Search/StateCheck、MIN/MAX同率AI_DECISION、候補1件無RNG、未知semantic Fail Closedを確認。適用後Full 27/27 PASS。次はTASK-NIP-24-01。",
+      "actor": "AI-from-current-authority",
+      "at": "2026-09-13T02:16:00Z"
     }
   ],
   "authority": {
