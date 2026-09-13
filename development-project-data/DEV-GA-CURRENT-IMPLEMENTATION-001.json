@@ -5,7 +5,7 @@
     "name": "修正版34仕様に基づく新規実装計画",
     "status": "Implementing",
     "ai_attention": "Include",
-    "updated_at": "2026-09-13T02:22:27.709Z"
+    "updated_at": "2026-09-13T02:52:12.517Z"
   },
   "project_context": {
     "purpose": "修正版34仕様の全項目を実装し、Studio/Game/Export/Saveで一貫させる。",
@@ -19,16 +19,16 @@
   },
   "current_focus": {
     "architecture_id": "ARC-NIP",
-    "work_box_id": "BOX-NIP-24",
-    "theme": "ストーリーと会話",
-    "goal": "TASK-NIP-24-01「ストーリーと会話：ドメイン処理を実装する」をSOURCE_UPDATEで実装する"
+    "work_box_id": "BOX-NIP-31",
+    "theme": "画面と戦闘演出",
+    "goal": "TASK-NIP-31-01「画面と戦闘演出：ドメイン処理を実装する」をSOURCE_UPDATEで実装する"
   },
   "source_baseline": {
-    "studio_build": "GKS-B926",
-    "game_build": "GA-B486.257",
-    "source_label": "GKS-B926-f4bfacb27ba0 / target source tree SHA256 f4bfacb27ba0b1160434c8a2362135f4dc33fb77463ac55225ad8e981d5f58d8",
+    "studio_build": "GKS-B927",
+    "game_build": "GA-B486.258",
+    "source_label": "GKS-B927 / GA-B486.258 (TASK-NIP-24-01 completed source)",
     "source_role": "current_baseline",
-    "recorded_at": "2026-09-13T02:16:00Z"
+    "recorded_at": "2026-09-13T02:36:00Z"
   },
   "lifecycle": {
     "status": "Active",
@@ -145,6 +145,20 @@
       "result": "Applied",
       "evidence": "shared/ai/ai-program-validator.jsでPlayer条件候補からFormal対象カテゴリ自体を除外。対象カテゴリ内の空runtime_semantic Tagを効果Tagへ誤分類しないようFail Closed化。既存のPlayer/Monster共通Runtime、Search/StateCheck、HP/MP CURRENT/RATIO、Action MIN/MAX同率AI_DECISION、候補1件無RNGを専用fixtureと既存6回帰で確認。Source Quick 12/12、適用後Full 27/27 PASS。artifact_id=GKS-B926-f4bfacb27ba0。削除なし・Game Data変更なし。",
       "recorded_at": "2026-09-13T02:16:00Z"
+    },
+    {
+      "id": "IMPL-NIP-24-01-GKS-B927-001",
+      "studio_build": "GKS-B927",
+      "game_build": "GA-B486.258",
+      "work_box_ids": [
+        "BOX-NIP-24"
+      ],
+      "task_ids": [
+        "TASK-NIP-24-01"
+      ],
+      "result": "Applied",
+      "evidence": "GS-24 Story/Conversation Domainをassets/shared/js/adventure-story-system.jsとgame/assets/js/app-runtime.jsへ実装。Scene Masterの本文・話者・順番・背景/画像/演出等の表示データをQuestRun生成時にSnapshot化し、Run内の既読状態を表示カーソル/Auto/既読Skipと分離。会話詳細はplayback_started_at由来の壁時計Playbackを停止せず、再閲覧/既読更新からReward/Flag/Quest進行Commitへ接続しない。専用外部fixture PASS、既存Story/QuestRun/Playback History回帰PASS、Source Quick 12/12、Source Full 27/27、正確なGKS-B926 / GA-B486.257 baselineへの適用後Full 27/27 PASS。削除なし・Game Data変更なし・選択肢/分岐UI追加なし。",
+      "recorded_at": "2026-09-13T02:36:00Z"
     }
   ],
   "discussions": [],
@@ -2911,7 +2925,7 @@
       "id": "TASK-NIP-24-01",
       "title": "ストーリーと会話：ドメイン処理を実装する",
       "box_id": "BOX-NIP-24",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 37,
       "depends_on": [
         "TASK-NIP-F03",
@@ -2937,7 +2951,7 @@
         "at": ""
       },
       "created_at": "2026-09-11T00:00:00Z",
-      "updated_at": "2026-09-11T00:00:00Z",
+      "updated_at": "2026-09-13T02:36:00Z",
       "decision_policy": "未決値は検証済みの明示入力・試験fixtureで分離し、欠落する本番設定は拒否する。未決境界を除く確定処理を実装できる。",
       "spec_refs": [
         "GS-24"
@@ -6808,6 +6822,52 @@
         "reason": "",
         "mode": ""
       }
+    },
+    {
+      "id": "CHECK-NIP-24-01-GS24-ACCEPTANCE",
+      "title": "GS-24 ストーリーと会話Domain受入",
+      "target_type": "Task",
+      "target_id": "TASK-NIP-24-01",
+      "status": "Passed",
+      "result": "Run作成後のMaster変更でSnapshot不変、会話閲覧/既読更新中も壁時計Playbackが進行、Scene再表示後もReward/Flag/Quest進行Commitは一度だけであることを確認。既読Skipは既読範囲のみを対象とし、未読の自動Skip・選択肢/分岐UIは追加していない。",
+      "evidence": "TASK-NIP-24-01 external fixture + existing adventure story/runtime regression results",
+      "created_at": "2026-09-13T02:36:00Z",
+      "updated_at": "2026-09-13T02:36:00Z",
+      "gate": "General",
+      "checked_by": "AI",
+      "checked_at": "2026-09-13T02:36:00Z",
+      "resolves_check_ids": [],
+      "blocking": false,
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      }
+    },
+    {
+      "id": "CHECK-NIP-24-01-SOURCE-GATE",
+      "title": "TASK-NIP-24-01 SOURCE_UPDATE適用後Gate",
+      "target_type": "Task",
+      "target_id": "TASK-NIP-24-01",
+      "status": "Passed",
+      "result": "正確なGA-B486.257 / GKS-B926 baselineへSOURCE_UPDATEをoverlayし、適用後Full 27/27 PASS。",
+      "evidence": "Source Quick 12/12 PASS; Source Full 27/27 PASS; exact-baseline applied-state Full 27/27 PASS; deleted=0.",
+      "created_at": "2026-09-13T02:36:00Z",
+      "updated_at": "2026-09-13T02:36:00Z",
+      "gate": "General",
+      "checked_by": "AI",
+      "checked_at": "2026-09-13T02:36:00Z",
+      "resolves_check_ids": [],
+      "blocking": false,
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      }
     }
   ],
   "history": [
@@ -6979,6 +7039,15 @@
       "summary": "GA-B486.257 / GKS-B926でGS-21の対象カテゴリ除外を補正し、Player/Monster共通判断、Search/StateCheck、MIN/MAX同率AI_DECISION、候補1件無RNG、未知semantic Fail Closedを確認。適用後Full 27/27 PASS。次はTASK-NIP-24-01。",
       "actor": "AI-from-current-authority",
       "at": "2026-09-13T02:16:00Z"
+    },
+    {
+      "id": "HISTORY-NIP-24-01-20260913",
+      "entity_type": "Task",
+      "entity_id": "TASK-NIP-24-01",
+      "action": "Completed",
+      "summary": "GA-B486.258 / GKS-B927でGS-24のScene Snapshot、既読/表示分離、会話送り/Auto/既読Skip/履歴、壁時計Playback継続、一度だけCommitを実装。適用後Full 27/27 PASS。次の実装フォーカスはTASK-NIP-31-01。",
+      "actor": "AI-from-current-authority",
+      "at": "2026-09-13T02:36:00Z"
     }
   ],
   "authority": {
