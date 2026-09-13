@@ -249,15 +249,21 @@ function questRunStoreBytes(store){
  // localStorage implementations commonly account UTF-16 code units; use the conservative 2-byte estimate.
  return payload.length*2;
 }
+function evictOldestCompletedQuestRun(store){
+ const runs=Array.isArray(store?.quest_runs)?store.quest_runs:[],activeId=String(store?.active_quest_run_id||'');
+ const index=runs.findIndex(run=>String(run?.quest_run_id||'')!==activeId&&run?.results_applied===true);
+ if(index<0)return{removed:false,quest_run_id:'',remaining:runs.length};
+ const [removed]=runs.splice(index,1);
+ return{removed:true,quest_run_id:String(removed?.quest_run_id||''),remaining:runs.length};
+}
 function pruneQuestRunStoreToBudget(store,{budgetBytes=QUEST_RUN_STORAGE_BUDGET_BYTES}={}){
  const budget=Number(budgetBytes);if(!Number.isInteger(budget)||budget<262144)throw new Error('QuestRun storage budget is invalid');
  for(const run of store.quest_runs)stripQuestRunDiagnosticLogs(run);
  let bytes=questRunStoreBytes(store),removed=0;
- while(bytes>budget&&store.quest_runs.length>1){
-  const activeId=String(store.active_quest_run_id||'');
-  const index=store.quest_runs.findIndex(run=>String(run?.quest_run_id||'')!==activeId);
-  if(index<0)break;
-  store.quest_runs.splice(index,1);removed++;bytes=questRunStoreBytes(store);
+ while(bytes>budget){
+  const eviction=evictOldestCompletedQuestRun(store);
+  if(!eviction.removed)break;
+  removed++;bytes=questRunStoreBytes(store);
  }
  return{bytes,budget_bytes:budget,removed,over_budget:bytes>budget};
 }
@@ -277,5 +283,5 @@ function startQuestRunPlayback(save,run,{startedAt=new Date().toISOString(),hist
 function resumeQuestRun(save,nowMs=Date.now()){const run=activeQuestRun(save);return run?{run,playback:playbackState(run,nowMs)}:null;}
 function finishQuestRunPlayback(save,runId){const store=ensureQuestRunStore(save);if(!runId||store.active_quest_run_id===String(runId))store.active_quest_run_id='';return store;}
 function commitStoredQuestRun(save,runId,handlers={},nowMs=Date.now()){const store=ensureQuestRunStore(save),run=store.quest_runs.find(r=>r.quest_run_id===String(runId||store.active_quest_run_id));if(!run)return{applied:false,reason:'quest_run_not_found'};if(!run.results_applied&&!playbackState(run,nowMs).complete)return{applied:false,reason:'playback_incomplete'};const result=commitQuestRun(run,save,handlers);if(result.applied)finishQuestRunPlayback(save,run.quest_run_id);return result;}
-return{QUEST_RUN_STORAGE_BUDGET_BYTES,stripQuestRunDiagnosticLogs,questRunStoreBytes,pruneQuestRunStoreToBudget,PLAYBACK_EVENT_TYPES:[...PLAYBACK_EVENT_TYPES],QUEST_EVENT_PLACEMENT_KINDS:[...QUEST_EVENT_PLACEMENT_KINDS],QUEST_EVENT_FAILURE_POLICIES:[...QUEST_EVENT_FAILURE_POLICIES],QUEST_EVENT_USAGES:[...QUEST_EVENT_USAGES],QUEST_EVENT_TYPES:[...QUEST_EVENT_TYPES],QUEST_EVENT_INTENSITIES:[...QUEST_EVENT_INTENSITIES],QUEST_RUN_HISTORY_LIMIT,ADVENTURE_SETTINGS_CANONICAL_ID,clone,hashSeed,rng,normalizeRewardPayload,mergeRewardPayload,normalizeQuestEventPlacement,normalizeQuestBox,normalizeQuest,normalizeEvent,normalizeQuestStartCost,questStartRequirements,canAffordQuestStartCost,consumeQuestStartCost,questProgressResult,tabletEnemyBudgetBonus,selectAdventureSettingsRow,adventureSettingsParams,normalizeStoneSelection,stoneResourceCost,mergeQuestStartCosts,resolveEnemyBudget,resolveAdventureDifficulty,normalizeEncounterFormation,normalizeEncounterOverride,buildBattleResolverRequest,buildExplorationResolverRequest,chooseWeighted,eventConditionsMet,randomEventCandidates,assignTimeline,assertBattlePlaybackEvents,orderedQuestBoxes,orderedQuestPlacements,snapshotScene,resolveQuestStorySnapshot,normalizeStoryViewState,sceneReadState,markSceneDialogueRead,nextSceneDialogueIndex,sceneDialogueHistory,simulateQuestBoxRuntime,simulateQuest,playbackState,commitQuestRun,validatePlaybackEvents,normalizeQuestRun,ensureQuestRunStore,saveQuestRun,activeQuestRun,questRunHistory,startQuestRunPlayback,resumeQuestRun,finishQuestRunPlayback,commitStoredQuestRun};
+return{QUEST_RUN_STORAGE_BUDGET_BYTES,stripQuestRunDiagnosticLogs,questRunStoreBytes,evictOldestCompletedQuestRun,pruneQuestRunStoreToBudget,PLAYBACK_EVENT_TYPES:[...PLAYBACK_EVENT_TYPES],QUEST_EVENT_PLACEMENT_KINDS:[...QUEST_EVENT_PLACEMENT_KINDS],QUEST_EVENT_FAILURE_POLICIES:[...QUEST_EVENT_FAILURE_POLICIES],QUEST_EVENT_USAGES:[...QUEST_EVENT_USAGES],QUEST_EVENT_TYPES:[...QUEST_EVENT_TYPES],QUEST_EVENT_INTENSITIES:[...QUEST_EVENT_INTENSITIES],QUEST_RUN_HISTORY_LIMIT,ADVENTURE_SETTINGS_CANONICAL_ID,clone,hashSeed,rng,normalizeRewardPayload,mergeRewardPayload,normalizeQuestEventPlacement,normalizeQuestBox,normalizeQuest,normalizeEvent,normalizeQuestStartCost,questStartRequirements,canAffordQuestStartCost,consumeQuestStartCost,questProgressResult,tabletEnemyBudgetBonus,selectAdventureSettingsRow,adventureSettingsParams,normalizeStoneSelection,stoneResourceCost,mergeQuestStartCosts,resolveEnemyBudget,resolveAdventureDifficulty,normalizeEncounterFormation,normalizeEncounterOverride,buildBattleResolverRequest,buildExplorationResolverRequest,chooseWeighted,eventConditionsMet,randomEventCandidates,assignTimeline,assertBattlePlaybackEvents,orderedQuestBoxes,orderedQuestPlacements,snapshotScene,resolveQuestStorySnapshot,normalizeStoryViewState,sceneReadState,markSceneDialogueRead,nextSceneDialogueIndex,sceneDialogueHistory,simulateQuestBoxRuntime,simulateQuest,playbackState,commitQuestRun,validatePlaybackEvents,normalizeQuestRun,ensureQuestRunStore,saveQuestRun,activeQuestRun,questRunHistory,startQuestRunPlayback,resumeQuestRun,finishQuestRunPlayback,commitStoredQuestRun};
 });

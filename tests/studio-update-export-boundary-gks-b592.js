@@ -11,8 +11,8 @@ assert(!policy.rules.update_allowed_classes.includes('game_data'),'Studio direct
 assert.deepStrictEqual(policy.rules.studio_upload_classes,['persistent'],'Studio GitHub upload must be persistent-only');
 assert.deepStrictEqual(policy.rules.package_manifest_classes,['persistent'],'package manifest must remain persistent-only');
 assert(!policy.rules.package_manifest_classes.includes('development_data'),'Development Project data must not be listed in target package_manifest');
-assert.strictEqual(build.game_build,'GA-B486.267');
-assert.strictEqual(build.studio_build,'GKS-B936');
+assert.strictEqual(build.game_build,'GA-B486.268');
+assert.strictEqual(build.studio_build,'GKS-B937');
 for(const marker of [
   "function isStudioDeployGameDataPath(path)",
   "return normalized==='Export'||normalized.startsWith('Export/');",

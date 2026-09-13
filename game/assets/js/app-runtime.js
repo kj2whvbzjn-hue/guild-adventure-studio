@@ -583,6 +583,57 @@ function writeAutoSaveSnapshot(snapshot){
   catch(error){if(mainSwitched){try{if(previous===null)saveBoundaryWrite('remove',SAVE_KEY,null,'autosave_main_rollback');else saveBoundaryWrite('set',SAVE_KEY,previous,'autosave_main_rollback')}catch(rollbackError){console.error('Save rollback failed',rollbackError)}}try{if(previousBackup===null)saveBoundaryWrite('remove',SAVE_BACKUP_KEY,null,'autosave_backup_rollback');else saveBoundaryWrite('set',SAVE_BACKUP_KEY,previousBackup,'autosave_backup_rollback')}catch(backupRollbackError){console.error('Save backup rollback failed',backupRollbackError)}throw error;}
  }finally{saveCommitInProgress=false;}
 }
+function isStorageQuotaExceeded(error){
+ const seen=new Set();let current=error;
+ while(current&&typeof current==='object'&&!seen.has(current)){
+  seen.add(current);const name=String(current.name||''),message=String(current.message||''),code=Number(current.code);
+  if(name==='QuotaExceededError'||name==='NS_ERROR_DOM_QUOTA_REACHED'||code===22||code===1014||/quota.{0,24}(exceeded|reached|full)/i.test(message))return true;
+  current=current.cause;
+ }
+ return false;
+}
+function evictOldestCompletedQuestRunFromSnapshot(snapshot){
+ if(!window.GKAdventureStorySystem||typeof GKAdventureStorySystem.evictOldestCompletedQuestRun!=='function')return{removed:false,quest_run_id:'',remaining:0};
+ const store=GKAdventureStorySystem.ensureQuestRunStore(snapshot);return GKAdventureStorySystem.evictOldestCompletedQuestRun(store);
+}
+function verifiedSavePayload(snapshot){
+ const payload=JSON.stringify(snapshot),stageRecord=buildSaveStageRecord(payload),verifiedPayload=verifySaveStageRecord(stageRecord);
+ if(verifiedPayload!==payload)throw new Error('Save Integrity: staged payload changed before commit.');
+ return verifiedPayload;
+}
+function writeQuotaRecoveryBackup(previousMainRaw){
+ if(previousMainRaw===null)return{stored:false,evicted:0};
+ validateSavePayload(previousMainRaw);
+ let backupSnapshot=JSON.parse(previousMainRaw),evicted=0;
+ saveBoundaryWrite('remove',SAVE_BACKUP_KEY,null,'quota_backup_release');
+ while(true){
+  const payload=verifiedSavePayload(backupSnapshot);
+  try{saveBoundaryWrite('set',SAVE_BACKUP_KEY,payload,'quota_backup_commit');if(localStorage.getItem(SAVE_BACKUP_KEY)!==payload)throw new Error('Save Integrity: quota backup verification failed.');return{stored:true,evicted};}
+  catch(error){if(!isStorageQuotaExceeded(error))throw error;const eviction=evictOldestCompletedQuestRunFromSnapshot(backupSnapshot);if(!eviction.removed){saveBoundaryWrite('remove',SAVE_BACKUP_KEY,null,'quota_backup_unavailable');return{stored:false,evicted};}evicted++;}
+ }
+}
+function writeAutoSaveSnapshotWithQuotaEviction(snapshot){
+ try{return writeAutoSaveSnapshot(snapshot)}catch(error){if(!isStorageQuotaExceeded(error))throw error;}
+ const previousMainRaw=localStorage.getItem(SAVE_KEY),previousBackupRaw=localStorage.getItem(SAVE_BACKUP_KEY),candidate=clone(snapshot);
+ let backupInfo={stored:false,evicted:0},evicted=0;
+ try{
+  backupInfo=writeQuotaRecoveryBackup(previousMainRaw);
+  while(true){
+   const payload=verifiedSavePayload(candidate);
+   try{saveBoundaryWrite('set',SAVE_KEY,payload,'quota_main_commit');const committed=localStorage.getItem(SAVE_KEY);if(committed!==payload)throw new Error('Save Integrity: quota main verification failed.');validateSavePayload(committed);console.warn('Auto Save quota recovery applied',{quest_runs_evicted:evicted,backup_quest_runs_evicted:backupInfo.evicted,backup_stored:backupInfo.stored});return candidate;}
+   catch(error){
+    if(!isStorageQuotaExceeded(error))throw error;
+    const eviction=evictOldestCompletedQuestRunFromSnapshot(candidate);
+    if(!eviction.removed)throw error;
+    evicted++;
+   }
+  }
+ }catch(error){
+  try{if(previousMainRaw===null)saveBoundaryWrite('remove',SAVE_KEY,null,'quota_main_restore');else if(localStorage.getItem(SAVE_KEY)!==previousMainRaw)saveBoundaryWrite('set',SAVE_KEY,previousMainRaw,'quota_main_restore')}catch(restoreError){console.error('Quota recovery main restore failed',restoreError)}
+  try{if(previousBackupRaw===null)saveBoundaryWrite('remove',SAVE_BACKUP_KEY,null,'quota_backup_restore');else saveBoundaryWrite('set',SAVE_BACKUP_KEY,previousBackupRaw,'quota_backup_restore')}catch(restoreError){console.error('Quota recovery backup restore failed',restoreError)}
+  throw error;
+ }
+}
 function preparePersistentSaveSource(source){
  const proposed=clone(source);
  if(window.GKAdventureStorySystem){const store=GKAdventureStorySystem.ensureQuestRunStore(proposed);if(typeof GKAdventureStorySystem.pruneQuestRunStoreToBudget==='function')GKAdventureStorySystem.pruneQuestRunStoreToBudget(store);}
@@ -599,7 +650,7 @@ function currentPersistentTransactionState(){const coordinator=getPersistentSave
 function inspectCurrentAutoSaveSlots(){const Boundary=window.GKRuntimeBoundaryContracts;if(!Boundary?.inspectTwoSlotState)return null;const validateCandidate=raw=>{const root=parseSaveRoot(raw),version=Number(root.saveVersion);if(version===SAVE_VERSION){validateSavePayload(raw);return true}if(!SAVE_MIGRATIONS[version])throw new Error(`Save Migration: Version ${version} から ${SAVE_VERSION} への対応Migrationがありません。`);migrateSaveToCurrent(raw);return true};return Boundary.inspectTwoSlotState({mainKey:SAVE_KEY,backupKey:SAVE_BACKUP_KEY,read:key=>localStorage.getItem(key),validatePayload:validateCandidate})}
 function commitPersistentState(){
  const current=buildAutoSaveSnapshot(preparePersistentSaveSource(data));
- data=writeAutoSaveSnapshot(current);
+ data=writeAutoSaveSnapshotWithQuotaEviction(current);
  return data;
 }
 function autoSave(){
