@@ -12,17 +12,14 @@ function syncPortraitDevelopmentMode(){
 
 function setDeveloperMode(enabled){
  const panel=$('developerPanel'),button=$('developerModeBtn'),skillAssignment=$('skillAssignmentDeveloper');
+ enabled=enabled===true&&localStorage.getItem(DEV_KEY)==='1';
  if(panel){panel.classList.toggle('hidden',!enabled);if(!enabled)panel.open=false}
  if(skillAssignment)skillAssignment.classList.toggle('hidden',!enabled);
- if(button){button.classList.toggle('active',enabled);button.setAttribute('aria-pressed',String(enabled));button.textContent=enabled?'開発者モード ON':'開発者モード'}
+ if(button){button.hidden=!enabled;button.classList.toggle('active',enabled);button.setAttribute('aria-pressed',String(enabled));button.textContent=enabled?'開発者モード ON':'開発者モード'}
  document.body.classList.toggle('dev-enabled',enabled);localStorage.setItem(DEV_KEY,enabled?'1':'0');
  syncPortraitDevelopmentMode();
 }
-$('developerModeBtn').onclick=()=>{
- const enabled=localStorage.getItem(DEV_KEY)==='1';
- if(!enabled&&!confirm('Battle Coreの数値画面を表示します。開発・検証用途でのみ使用してください。'))return;
- setDeveloperMode(!enabled);
-};
+$('developerModeBtn').onclick=()=>{const enabled=localStorage.getItem(DEV_KEY)==='1';if(enabled)setDeveloperMode(false);};
 setDeveloperMode(localStorage.getItem(DEV_KEY)==='1');
 
 addEventListener('resize',syncPortraitDevelopmentMode);

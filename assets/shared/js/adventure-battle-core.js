@@ -25,13 +25,13 @@ function validationEventsToPlaybackEvents(events){
     if(skillId!==null&&String(skillId).trim()!=='')out.push({...base,type:'skill_cast',source_id:e.source_id??null,target_id:e.target_id??null,skill_id:skillId,skill_name:e.skill_name??null});
     break;
    }
-   case'attack':out.push({...base,type:'hit',source_id:e.source_id??null,target_id:e.target_id??null,skill_id:e.skill_id??null});out.push({...base,type:'damage',source_id:e.source_id??null,target_id:e.target_id??null,skill_id:e.skill_id??null,value:Number(e.damage)||0,hp_after:e.hp_after??null});break;
+   case'attack':case'formal_attack':case'dot_damage':out.push({...base,type:'hit',source_id:e.source_id??null,target_id:e.target_id??null,skill_id:e.skill_id??null});out.push({...base,type:'damage',source_id:e.source_id??null,target_id:e.target_id??null,skill_id:e.skill_id??null,value:Number(e.damage)||0,shield_absorbed:Number(e.shield_absorbed)||0,hp_after:e.hp_after??null});break;
    case'basic_attack':{
     const key=actionKey(e);
     if(!committedActionStartKeys.has(key))out.push({...base,type:'action_start',source_id:e.source_id??null,target_id:e.target_id??null,skill_id:null});
     committedActionStartKeys.delete(key);
     out.push({...base,type:'hit',source_id:e.source_id??null,target_id:e.target_id??null,skill_id:null});
-    out.push({...base,type:'damage',source_id:e.source_id??null,target_id:e.target_id??null,skill_id:null,value:Number(e.damage)||0,hp_after:e.hp_after??null});
+    out.push({...base,type:'damage',source_id:e.source_id??null,target_id:e.target_id??null,skill_id:null,value:Number(e.damage)||0,shield_absorbed:Number(e.shield_absorbed)||0,hp_after:e.hp_after??null});
     break;
    }
    case'heal':out.push({...base,type:'heal',source_id:e.source_id??null,target_id:e.target_id??null,skill_id:e.skill_id??null,value:Number(e.applied)||0,hp_after:e.hp_after??null});break;

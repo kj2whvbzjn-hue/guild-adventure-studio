@@ -369,6 +369,13 @@ async function startSceneBattle(){
  if(token===battle.runToken&&battle.running&&(battle.result||battle.pendingResult)){battle.running=false;renderBattle()}
 }
 function restartSceneBattle(){resetBattle();startSceneBattle()}
+function skipSceneBattle(){
+ if(battle.result){renderBattleResult();setPhase('result',{keepBattle:true});return}
+ if(battle.pendingResult)return;
+ pauseBattle();sceneQueue=[];sceneBusy=false;let guard=0;const cap=200000;
+ while(!battle.result&&!battle.pendingResult&&guard<cap){processTicks(100);guard+=100;}
+ renderBattle();ensureSceneUnits(true);completeBattleEnding();
+}
 function pauseBattle(){
  battle.runToken++;
  if(battle.timer)cancelAnimationFrame(battle.timer);
@@ -399,6 +406,6 @@ function startBattle(){
 $('tick1').onclick=()=>advanceTicks(1);$('tick10').onclick=()=>advanceTicks(10);$('tick100').onclick=()=>advanceTicks(100);$('tick1000').onclick=()=>advanceTicks(1000);$('battleAuto').onclick=startBattle;$('battlePause').onclick=pauseBattle;$('battleReset').onclick=resetBattle;$('battleInterval').onchange=()=>{if(battle.running)startBattle()};$('battleStep').onchange=()=>{};
 
 
-$('sceneAuto').onclick=startSceneBattle;$('scenePause').onclick=pauseBattle;$('sceneReset').onclick=restartSceneBattle;
+$('sceneAuto').onclick=startSceneBattle;$('sceneSkip').onclick=skipSceneBattle;$('scenePause').onclick=pauseBattle;$('sceneReset').onclick=restartSceneBattle;
 $('sceneStep').onclick=()=>{if(battle.running)pauseBattle();if(battle.result||battle.pendingResult)return;processUntilNextAction();renderBattle()};
 $('sceneMotion').onchange=ensureSceneUnits;$('sceneLayout').value=localStorage.getItem('ga_scene_layout')||'jp';$('sceneLayout').onchange=()=>{localStorage.setItem('ga_scene_layout',$('sceneLayout').value);sceneSignature='';ensureSceneUnits(true)};addEventListener('resize',()=>{sceneSignature='';ensureSceneUnits(true)});
