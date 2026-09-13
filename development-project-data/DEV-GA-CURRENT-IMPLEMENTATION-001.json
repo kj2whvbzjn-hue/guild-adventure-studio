@@ -5,7 +5,7 @@
     "name": "修正版34仕様に基づく新規実装計画",
     "status": "Implementing",
     "ai_attention": "Include",
-    "updated_at": "2026-09-13T03:33:31.505Z"
+    "updated_at": "2026-09-13T05:56:31.402Z"
   },
   "project_context": {
     "purpose": "修正版34仕様の全項目を実装し、Studio/Game/Export/Saveで一貫させる。",
@@ -19,9 +19,9 @@
   },
   "current_focus": {
     "architecture_id": "ARC-NIP",
-    "work_box_id": "BOX-NIP-04",
-    "theme": "経験値とSP",
-    "goal": "TASK-NIP-04-01「経験値とSP：ドメイン処理を実装する」をSOURCE_UPDATEで実装する"
+    "work_box_id": "BOX-NIP-26",
+    "theme": "報酬とドロップ",
+    "goal": "TASK-NIP-26-01「報酬とドロップ：ドメイン処理を実装する」をSOURCE_UPDATEで実装する"
   },
   "source_baseline": {
     "studio_build": "GKS-B927",
@@ -187,6 +187,34 @@
       "result": "Applied",
       "evidence": "GS-34の習得・選択・Respec Domainを更新。Activeはskills/skillLoadoutIds、Passiveは習得passives/有効選択passiveIdsへ分離し、旧Saveではpassives欠落時にpassiveIdsを習得済みとして互換移行。Active/Passive各5枠、未習得選択拒否、同passiveSeriesId重複拒否を編集時と出撃Snapshot生成時に検証。実消費SPをskillPointSpendへ保持し、現在価格変更後も実消費量を返還、無記録/無料取得は0返還。Active50G/Passive50G/全200G Respecは習得・選択・実消費記録を整合削除し、Level/能力/Job/装備/AI Bindingを変更しない。Skill/Passive操作を既存C05 Save Transactionへ接続し、保存失敗時にGold/SP/習得/選択を公開状態へ部分反映しない。外部専用fixture PASS、Source Quick 12/12、Source Full 27/27、正確なGKS-B928 / GA-B486.259 baselineへの適用後Full 27/27 PASS。artifact_id=GKS-B929-786167941520。削除なし・Game Data変更なし。",
       "recorded_at": "2026-09-13T03:08:49Z"
+    },
+    {
+      "id": "IMPL-NIP-04-01-GKS-B932-001",
+      "studio_build": "GKS-B932",
+      "game_build": "GA-B486.263",
+      "work_box_ids": [
+        "BOX-NIP-04"
+      ],
+      "task_ids": [
+        "TASK-NIP-04-01"
+      ],
+      "result": "Applied",
+      "evidence": "GS-04 Character Experience Domainを追加。総EXP10/受給3人=各3・端数1破棄、死亡者除外/蘇生済み相当の終了時生存者包含、受給0人を検証。テスト用required_exp {Lv1:10,Lv2:20} とEXP35でLv1→3、余剰5、SP+2を確認。実GS-02 CharacterGrowthDomainを接続したfixtureでも7能力成長2回＋SP2を確認。Level49→50では余剰EXPを破棄し、未定義Levelからの進行はREQUIRED_EXP_LEVEL_MISSINGで拒否。ドメインは入力Characterを変更せず帰還用proposalを返すため、永続化は後続27のC05単一取引へ統合可能。04-01では本番EXP表/Save Schema/帰還Serviceを変更せず、04-02/27-01との責務境界を維持。Source Quick 12/12、Source Full 27/27、GKS-B931 exact baseline Applied-State Full 27/27 PASS。artifact_id=GKS-B932-3d558a21af74。削除なし・Game Data変更なし。",
+      "recorded_at": "2026-09-13T05:24:00Z"
+    },
+    {
+      "id": "IMPL-NIP-10-01-GKS-B933-001",
+      "studio_build": "GKS-B933",
+      "game_build": "GA-B486.264",
+      "work_box_ids": [
+        "BOX-NIP-10"
+      ],
+      "task_ids": [
+        "TASK-NIP-10-01"
+      ],
+      "result": "Applied",
+      "evidence": "GS-10の補正集約をShared Formal Contribution Resolverへ統合。相対%は同じ基礎値に対するContributionとして合算し、FLAT_ADD/ADDITIVE_POINT/SUBTRACTIVE_POINTを別演算で集約。補正源順序に非依存、入力/永続基礎値を非破壊。app-runtimeとtag-skill-runtimeを共通Resolverへ接続。専用fixture PASS、Source Full 27/27、GKS-B932 exact baseline Applied-State Full 27/27 PASS。artifact_id=GKS-B933-93b661451076。削除なし・Game Data変更なし。",
+      "recorded_at": "2026-09-13T05:42:00Z"
     }
   ],
   "discussions": [],
@@ -3097,7 +3125,7 @@
       "id": "TASK-NIP-04-01",
       "title": "経験値とSP：ドメイン処理を実装する",
       "box_id": "BOX-NIP-04",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 40,
       "depends_on": [
         "TASK-NIP-F03",
@@ -3123,7 +3151,7 @@
         "at": ""
       },
       "created_at": "2026-09-11T00:00:00Z",
-      "updated_at": "2026-09-11T00:00:00Z",
+      "updated_at": "2026-09-13T05:24:00Z",
       "decision_policy": "未決値は検証済みの明示入力・試験fixtureで分離し、欠落する本番設定は拒否する。未決境界を除く確定処理を実装できる。",
       "spec_refs": [
         "GS-04"
@@ -3139,7 +3167,8 @@
         "GS-04の入力/期待値fixtureと実行結果"
       ],
       "rollback": "変更単位のコミットを戻す。Save形式変更がある場合は旧コードで新形式を開かず、変換前Backupと対応コードを対で復旧する。",
-      "body": "実装手順\n1. 成功終了時に所属かつ生存の受給者集合を固定し、floor(総EXP/人数)を均等配分する。人数0は配分なしとする。\n2. 必要EXPテーブルを入力として複数Level上昇、余剰繰越、Level50での余剰破棄とSP+1を実装する。未定義Levelは進行不可とする。\n3. 仮EXPの計算と永続付与を分け、02の成長結果を含む更新案を帰還の単一取引へ含める。\n\n完了条件\n1. 総EXP10・受給3人は各3、端数1は誰にも加算されない。\n2. 終了時死亡者は除外し、終了時蘇生済み者は含める。受給0人でゼロ除算しない。\n3. テスト専用必要EXP10/20を使い、EXP35で2Level上昇・余剰5・SP+2となる。これは本番EXP表ではない。"
+      "body": "実装手順\n1. 成功終了時に所属かつ生存の受給者集合を固定し、floor(総EXP/人数)を均等配分する。人数0は配分なしとする。\n2. 必要EXPテーブルを入力として複数Level上昇、余剰繰越、Level50での余剰破棄とSP+1を実装する。未定義Levelは進行不可とする。\n3. 仮EXPの計算と永続付与を分け、02の成長結果を含む更新案を帰還の単一取引へ含める。\n\n完了条件\n1. 総EXP10・受給3人は各3、端数1は誰にも加算されない。\n2. 終了時死亡者は除外し、終了時蘇生済み者は含める。受給0人でゼロ除算しない。\n3. テスト専用必要EXP10/20を使い、EXP35で2Level上昇・余剰5・SP+2となる。これは本番EXP表ではない。",
+      "implementation_note": "GKS-B932 / GA-B486.263でGS-04のドメイン処理を実装。Character Experience Domainを追加し、終了時Party所属かつ生存の受給者確定、floor均等配分・端数破棄・受給0人、Level別required_exp入力による複数Level上昇、Level50到達後余剰破棄、未定義Levelからの進行拒否、LevelごとのGS-02成長Resolver結果とSP付与をまとめたGS04_RETURN_PROGRESSION_PROPOSALを生成する。入力Characterは直接変更せず、帰還C05取引へ渡せる更新案として分離。本番EXP表とSaveのexperience field、成功帰還への永続接続は計画どおりTASK-NIP-04-02 / TASK-NIP-27-01で実装し、04-01では先走って導入していない。外部fixture 2件PASS、Source Quick 12/12、Source Full 27/27、正確なGKS-B931 / GA-B486.262 baselineへのApplied-State Full 27/27 PASS。artifact_id=GKS-B932-3d558a21af74。削除0、Game Data変更0。"
     },
     {
       "id": "TASK-NIP-05-02",
@@ -3199,7 +3228,7 @@
       "id": "TASK-NIP-10-01",
       "title": "戦闘能力値と補正：ドメイン処理を実装する",
       "box_id": "BOX-NIP-10",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 42,
       "depends_on": [
         "TASK-NIP-F03",
@@ -3227,7 +3256,7 @@
         "at": ""
       },
       "created_at": "2026-09-11T00:00:00Z",
-      "updated_at": "2026-09-11T00:00:00Z",
+      "updated_at": "2026-09-13T05:42:00Z",
       "decision_policy": "未決値は検証済みの明示入力・試験fixtureで分離し、欠落する本番設定は拒否する。未決境界を除く確定処理を実装できる。",
       "spec_refs": [
         "GS-10"
@@ -3242,7 +3271,8 @@
         "GS-10の入力/期待値fixtureと実行結果"
       ],
       "rollback": "変更単位のコミットを戻す。Save形式変更がある場合は旧コードで新形式を開かず、変換前Backupと対応コードを対で復旧する。",
-      "body": "実装手順\n1. 装備基礎値を先に固定し、MOD・Passive・Buff等を同じ基礎値に対するContributionへ正規化する。\n2. 相対%、加算pp、固定加算を別演算として扱い、補正源の列挙順に依存しない集約を行う。\n3. 攻撃・命中・回避・魔法補正・抵抗等を正式キーで提供し、画面と戦闘で共通の計算を使用する。\n\n完了条件\n1. 基礎100に相対20%と10%を与えると130となり132にならない。\n2. 補正源の入力順を入れ替えて全有効値が一致する。\n3. 能力値MODを外した後に再集計しても永続基礎能力値へ増分が残らない。"
+      "body": "実装手順\n1. 装備基礎値を先に固定し、MOD・Passive・Buff等を同じ基礎値に対するContributionへ正規化する。\n2. 相対%、加算pp、固定加算を別演算として扱い、補正源の列挙順に依存しない集約を行う。\n3. 攻撃・命中・回避・魔法補正・抵抗等を正式キーで提供し、画面と戦闘で共通の計算を使用する。\n\n完了条件\n1. 基礎100に相対20%と10%を与えると130となり132にならない。\n2. 補正源の入力順を入れ替えて全有効値が一致する。\n3. 能力値MODを外した後に再集計しても永続基礎能力値へ増分が残らない。",
+      "implementation_note": "GKS-B933 / GA-B486.264でGS-10戦闘能力値と補正の共通集約Domainを実装。assets/shared/js/formal-contribution-resolver.jsへresolveCombatStatContributionsを追加し、RELATIVE_PERCENTは各補正を同じ保存済みbase_valueへ掛けて和を取り、FLAT_ADD/ADDITIVE_POINT/SUBTRACTIVE_POINTを別演算として集約。補正源の列挙順に依存せず、入力行や永続基礎値を変更しない。game/assets/js/app-runtime.jsの拠点/出撃値計算とgame/assets/js/tag-skill-runtime.jsの戦闘中Direct Modifier解決をShared Resolverへ接続し、既存の単独snippet回帰用には同一式のfail-safeを保持。専用fixtureでbase100 +20% +10% +flat5 +pp3 -pp2 = 136、逆順同値、MOD除去後116、入力非変更を確認。Source Quick 12/12、Source Full 27/27、正確なGKS-B932 / GA-B486.263 baselineへのApplied-State Full 27/27 PASS。artifact_id=GKS-B933-93b661451076。削除0、Game Data変更0。"
     },
     {
       "id": "TASK-NIP-26-01",
