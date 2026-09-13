@@ -148,6 +148,22 @@ function characterBattleValues(character){const equipmentContribution=characterE
 function aptitudeExpected(v){const growth=Number(v);if(!Number.isInteger(growth)||growth<0)throw new Error(`成長値 ${v} が不正です。`);return(growth/10).toFixed(2)}
 function drawCharacterGrowthRandom(context){const Boundary=window.GKRuntimeBoundaryContracts;return Boundary?Boundary.runtimeDraw(Boundary.RNG_PURPOSES.GROWTH,Math.random,context):Math.random()}
 function resolveCharacterLevelUp(character,job,cfg){if(!window.GKCharacterGrowthDomain)throw new Error('Character Growth Domainを読み込めません。');return GKCharacterGrowthDomain.resolveLevelUp({level:character.level,maxLevel:cfg.character.max_level,stats:character.stats,jobId:job.id,growthByStat:job.aptitudes,statKeys:STATS,draw:context=>drawCharacterGrowthRandom({...context,character_id:String(character.id||'')})})}
+function buildCharacterReturnProgressionProposal({characters,distribution,requiredExpByLevel,at=''}={}){
+ if(!window.GKCharacterExperienceDomain)throw new Error('Character Experience Domainを読み込めません。');
+ const cfg=requireFormalRuntimeSettings(),progression=skillProgressionBalance(),stamp=String(at||'');
+ return GKCharacterExperienceDomain.buildReturnProgressionProposal({
+  characters,distribution,requiredExpByLevel,maxLevel:cfg.character.max_level,skillPointsPerLevel:progression.skill_points_per_level,
+  resolveGrowth:({character,fromLevel})=>{
+   const job=jobDefinition(character.job);if(!job)return{ok:false,code:'FORMAL_JOB_MISSING',message:`正式Jobが見つかりません: ${character.job}`};
+   const result=resolveCharacterLevelUp({...character,level:fromLevel},job,cfg);if(!result.ok)return result;
+   const next=JSON.parse(JSON.stringify(character));next.stats={...result.next_stats};next.level=result.to_level;
+   next.growthHistory=Array.isArray(next.growthHistory)?next.growthHistory:[];
+   const gained=STATS.filter(stat=>result.increments[stat]>0).map(stat=>`${stat} +${result.increments[stat]}`);
+   next.growthHistory.push({fromLevel:result.from_level,toLevel:result.to_level,job:result.job_id,growth:{...result.increments},growthRolls:{...result.rolls},gained,skillPointsGained:progression.skill_points_per_level,ruleRevision:GKCharacterGrowthDomain.VERSION,...(stamp?{at:stamp}:{})});
+   return{ok:true,next_character:next,growth_result:result};
+  }
+ });
+}
 function growthRank(value){return String(requireFormalRuntimeSettings().growth.rank_by_aptitude[String(value)]||'')}
 function renderFormalJobControls(){const rows=[...formalJobCatalog.values()];if($('newJob'))$('newJob').innerHTML=rows.length?rows.map(j=>`<option value="${escapeHtml(j.id)}">${escapeHtml(j.name)}</option>`).join(''):'<option value="">正式Jobデータ未設定</option>';if($('changeJob'))$('changeJob').innerHTML=$('newJob')?.innerHTML||'';if($('jobTable'))$('jobTable').innerHTML=rows.length?rows.map(j=>`<tr><td><b>${escapeHtml(j.name)}</b><div class="small">${escapeHtml(j.id)}</div></td>${STATS.map(stat=>`<td>${j.aptitudes[stat]} <span class="small">(期待値 ${aptitudeExpected(j.aptitudes[stat])})</span></td>`).join('')}</tr>`).join(''):'<tr><td colspan="8">StudioのJob Masterを設定しGameデータ配置してください。</td></tr>';const label=$('partyMaxLabel');if(label)label.textContent=partyMaxSize()?`最大${partyMaxSize()}人`:'設定未読込'}
 async function loadFormalGameDefinitions(){
