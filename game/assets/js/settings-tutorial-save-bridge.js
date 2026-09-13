@@ -24,9 +24,11 @@
     if(!isObject(save))throw new Error('Settings / Tutorial Save Bridge: save root object is required.');
     const gameSettings=optionalObject(save,'gameSettings');
     if(gameSettings.present&&globalThis.GKPlayerSettingsDomain)gameSettings.value=globalThis.GKPlayerSettingsDomain.restoreFromSave({gameSettings:gameSettings.value});
+    const tutorialProgress=optionalObject(save,'tutorialProgress');
+    if(tutorialProgress.present&&globalThis.GKTutorialHelpDomain)tutorialProgress.value=globalThis.GKTutorialHelpDomain.restoreFromSave({tutorialProgress:tutorialProgress.value});
     return{
       gameSettings,
-      tutorialProgress:optionalObject(save,'tutorialProgress')
+      tutorialProgress
     };
   }
   function assertCapturedPreserved(expected,after){
