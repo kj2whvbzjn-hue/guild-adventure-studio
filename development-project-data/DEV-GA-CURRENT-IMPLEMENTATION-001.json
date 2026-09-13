@@ -5,7 +5,7 @@
     "name": "修正版34仕様に基づく新規実装計画",
     "status": "Implementing",
     "ai_attention": "Include",
-    "updated_at": "2026-09-13T02:52:12.517Z"
+    "updated_at": "2026-09-13T02:59:54.497Z"
   },
   "project_context": {
     "purpose": "修正版34仕様の全項目を実装し、Studio/Game/Export/Saveで一貫させる。",
@@ -19,9 +19,9 @@
   },
   "current_focus": {
     "architecture_id": "ARC-NIP",
-    "work_box_id": "BOX-NIP-31",
-    "theme": "画面と戦闘演出",
-    "goal": "TASK-NIP-31-01「画面と戦闘演出：ドメイン処理を実装する」をSOURCE_UPDATEで実装する"
+    "work_box_id": "BOX-NIP-34",
+    "theme": "スキル習得・選択・リスペック",
+    "goal": "TASK-NIP-34-01「スキル習得・選択・リスペック：ドメイン処理を実装する」をSOURCE_UPDATEで実装する"
   },
   "source_baseline": {
     "studio_build": "GKS-B927",
@@ -159,6 +159,20 @@
       "result": "Applied",
       "evidence": "GS-24 Story/Conversation Domainをassets/shared/js/adventure-story-system.jsとgame/assets/js/app-runtime.jsへ実装。Scene Masterの本文・話者・順番・背景/画像/演出等の表示データをQuestRun生成時にSnapshot化し、Run内の既読状態を表示カーソル/Auto/既読Skipと分離。会話詳細はplayback_started_at由来の壁時計Playbackを停止せず、再閲覧/既読更新からReward/Flag/Quest進行Commitへ接続しない。専用外部fixture PASS、既存Story/QuestRun/Playback History回帰PASS、Source Quick 12/12、Source Full 27/27、正確なGKS-B926 / GA-B486.257 baselineへの適用後Full 27/27 PASS。削除なし・Game Data変更なし・選択肢/分岐UI追加なし。",
       "recorded_at": "2026-09-13T02:36:00Z"
+    },
+    {
+      "id": "IMPL-NIP-31-01-GKS-B928-001",
+      "studio_build": "GKS-B928",
+      "game_build": "GA-B486.259",
+      "work_box_ids": [
+        "BOX-NIP-31"
+      ],
+      "task_ids": [
+        "TASK-NIP-31-01"
+      ],
+      "result": "Applied",
+      "evidence": "GS-31に対し、QuestRun保存済みBattle Result / playback_eventsの表示専用Playbackへ再生・速度変更・戦闘Skipを実装。速度/Skipは保存イベント列とBattle結果を変更しない。Battle playback eventへshield_absorbedを保持し、Barrier吸収のみでHP damage=0のHitをBARRIER吸収付きで表示。通常プレイヤー導線からDeveloper UI、Pause/1行動送り/再戦を除外し、Standalone結果画面は正式SaveへGold/Item/戦績/Quest進行をCommitしない既存境界を維持。専用fixture PASS、Adventure Playback/Battle/QuestReturn回帰PASS、Source Quick 12/12 PASS、適用後Full 27/27 PASS。artifact_id=GKS-B928-d9ac383174b6。削除なし・Game Data変更なし。",
+      "recorded_at": "2026-09-13T02:52:00Z"
     }
   ],
   "discussions": [],
@@ -2972,7 +2986,7 @@
       "id": "TASK-NIP-31-01",
       "title": "画面と戦闘演出：ドメイン処理を実装する",
       "box_id": "BOX-NIP-31",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 38,
       "depends_on": [
         "TASK-NIP-F03",
@@ -2998,7 +3012,7 @@
         "at": ""
       },
       "created_at": "2026-09-11T00:00:00Z",
-      "updated_at": "2026-09-11T00:00:00Z",
+      "updated_at": "2026-09-13T02:52:00Z",
       "decision_policy": "未決値は検証済みの明示入力・試験fixtureで分離し、欠落する本番設定は拒否する。未決境界を除く確定処理を実装できる。",
       "spec_refs": [
         "GS-31"
@@ -3014,7 +3028,8 @@
         "GS-31の入力/期待値fixtureと実行結果"
       ],
       "rollback": "変更単位のコミットを戻す。Save形式変更がある場合は旧コードで新形式を開かず、変換前Backupと対応コードを対で復旧する。",
-      "body": "実装手順\n1. PC縦画面のギルド/冒険/戦闘/結果導線を整理し、戦闘位置は固定でフォーカス・拡大・揺れを表示効果に限定する。\n2. HP/MP/状態/Barrierを確定状態から描画し、HUDや結果画面からDamageやEXPを更新しない。\n3. 再生・速度・スキップを実装し、必須停止・行動ごとの手送りを入れない。リリース表示では開発用操作を隠す。\n\n完了条件\n1. 同じTimelineを速度変更・スキップしてもBattle結果と帰還対象が変わらない。\n2. Barrier吸収だけのHitでHP減少を誤表示せず、表示のスキップ後も最新状態へ追いつく。\n3. リリース画面に開発コマンドが露出せず、結果画面表示だけでEXPを付与しない。"
+      "body": "実装手順\n1. PC縦画面のギルド/冒険/戦闘/結果導線を整理し、戦闘位置は固定でフォーカス・拡大・揺れを表示効果に限定する。\n2. HP/MP/状態/Barrierを確定状態から描画し、HUDや結果画面からDamageやEXPを更新しない。\n3. 再生・速度・スキップを実装し、必須停止・行動ごとの手送りを入れない。リリース表示では開発用操作を隠す。\n\n完了条件\n1. 同じTimelineを速度変更・スキップしてもBattle結果と帰還対象が変わらない。\n2. Barrier吸収だけのHitでHP減少を誤表示せず、表示のスキップ後も最新状態へ追いつく。\n3. リリース画面に開発コマンドが露出せず、結果画面表示だけでEXPを付与しない。",
+      "completion_note": "GS-31画面/戦闘演出DomainをSOURCE_UPDATEで実装。保存済みBattle playback_eventsのみを再生し、速度変更/Skipは表示カーソルだけを変更。Barrier吸収量を保存イベントへ保持し、HPダメージ0のBarrier-only Hitを誤表示しない。Standalone結果表示は正式SaveへEXP/報酬/Quest進行をCommitしない。通常プレイヤー導線では開発者UIと1行動送り等を非表示。"
     },
     {
       "id": "TASK-NIP-34-01",
