@@ -1,8 +1,8 @@
 const fs=require('fs'),vm=require('vm'),assert=require('assert');
 const build=require('../package-build.json');
 const registry=require('../assets/shared/config/skill-registry.json');
-assert.strictEqual(build.game_build,'GA-B486.266');
-assert.strictEqual(build.studio_build,'GKS-B935');
+assert.strictEqual(build.game_build,'GA-B486.267');
+assert.strictEqual(build.studio_build,'GKS-B936');
 assert.ok(['G03','G04','G05'].includes(registry.authoring.phase));
 assert.deepStrictEqual(registry.authoring.condition.required_fields,['scope','property','operator','value']);
 const ctx={console,module:{exports:{}},globalThis:null};ctx.globalThis=ctx;vm.createContext(ctx);

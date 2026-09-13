@@ -583,17 +583,22 @@ function writeAutoSaveSnapshot(snapshot){
   catch(error){if(mainSwitched){try{if(previous===null)saveBoundaryWrite('remove',SAVE_KEY,null,'autosave_main_rollback');else saveBoundaryWrite('set',SAVE_KEY,previous,'autosave_main_rollback')}catch(rollbackError){console.error('Save rollback failed',rollbackError)}}try{if(previousBackup===null)saveBoundaryWrite('remove',SAVE_BACKUP_KEY,null,'autosave_backup_rollback');else saveBoundaryWrite('set',SAVE_BACKUP_KEY,previousBackup,'autosave_backup_rollback')}catch(backupRollbackError){console.error('Save backup rollback failed',backupRollbackError)}throw error;}
  }finally{saveCommitInProgress=false;}
 }
+function preparePersistentSaveSource(source){
+ const proposed=clone(source);
+ if(window.GKAdventureStorySystem){const store=GKAdventureStorySystem.ensureQuestRunStore(proposed);if(typeof GKAdventureStorySystem.pruneQuestRunStoreToBudget==='function')GKAdventureStorySystem.pruneQuestRunStoreToBudget(store);}
+ return proposed;
+}
 function validatePersistentTransactionState(snapshot){const payload=JSON.stringify(snapshot);validateSavePayload(payload);normalizeLoadedSave(JSON.parse(payload));return{ok:true,save_version:SAVE_VERSION,payload_bytes:new TextEncoder().encode(payload).byteLength}}
 let persistentSaveTransactionCoordinator=null;
 function getPersistentSaveTransactionCoordinator(){
  if(persistentSaveTransactionCoordinator)return persistentSaveTransactionCoordinator;const Boundary=window.GKRuntimeBoundaryContracts;if(!Boundary?.createSerialTransactionCoordinator)throw new Error('Save Transaction coordinator is unavailable.');
- persistentSaveTransactionCoordinator=Boundary.createSerialTransactionCoordinator({readState:()=>data,cloneState:clone,prepareState:proposed=>buildAutoSaveSnapshot(proposed),validateState:validatePersistentTransactionState,commitState:prepared=>writeAutoSaveSnapshot(prepared),publishState:committed=>{data=committed;return data},createTransactionRecord:({transactionId,source,proposed,validationResult,committed})=>Boundary.createSaveTransaction({transactionId,descriptor:currentSaveBoundaryDescriptor(committed),sourceVersion:String(source?.updatedAt||source?.saveVersion||''),proposedState:proposed,validationResult,committedState:committed,recoverablePreviousState:source})});return persistentSaveTransactionCoordinator;
+ persistentSaveTransactionCoordinator=Boundary.createSerialTransactionCoordinator({readState:()=>data,cloneState:clone,prepareState:proposed=>buildAutoSaveSnapshot(preparePersistentSaveSource(proposed)),validateState:validatePersistentTransactionState,commitState:prepared=>writeAutoSaveSnapshot(prepared),publishState:committed=>{data=committed;return data},createTransactionRecord:({transactionId,source,proposed,validationResult,committed})=>Boundary.createSaveTransaction({transactionId,descriptor:currentSaveBoundaryDescriptor(committed),sourceVersion:String(source?.updatedAt||source?.saveVersion||''),proposedState:proposed,validationResult,committedState:committed,recoverablePreviousState:source})});return persistentSaveTransactionCoordinator;
 }
 function runPersistentTransaction(operation,mutate,{afterCommit=null,transactionId=''}={}){return getPersistentSaveTransactionCoordinator().enqueue({operation,transactionId,mutate,afterCommit})}
 function currentPersistentTransactionState(){const coordinator=getPersistentSaveTransactionCoordinator();return{pending:coordinator.pendingCount(),last_transaction:coordinator.lastTransaction()}}
 function inspectCurrentAutoSaveSlots(){const Boundary=window.GKRuntimeBoundaryContracts;if(!Boundary?.inspectTwoSlotState)return null;const validateCandidate=raw=>{const root=parseSaveRoot(raw),version=Number(root.saveVersion);if(version===SAVE_VERSION){validateSavePayload(raw);return true}if(!SAVE_MIGRATIONS[version])throw new Error(`Save Migration: Version ${version} から ${SAVE_VERSION} への対応Migrationがありません。`);migrateSaveToCurrent(raw);return true};return Boundary.inspectTwoSlotState({mainKey:SAVE_KEY,backupKey:SAVE_BACKUP_KEY,read:key=>localStorage.getItem(key),validatePayload:validateCandidate})}
 function commitPersistentState(){
- const current=buildAutoSaveSnapshot(data);
+ const current=buildAutoSaveSnapshot(preparePersistentSaveSource(data));
  data=writeAutoSaveSnapshot(current);
  return data;
 }
