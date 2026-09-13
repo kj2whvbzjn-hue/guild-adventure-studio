@@ -67,5 +67,34 @@
   else if(style==='bow_quiver'){const row=weaponUnique.find(x=>isBow(x.definition));if(row)strikes.push({hand:'MAIN',instance_id:row.instance.instance_id,equipment_id:row.instance.equipment_id});}
   return{ok:true,character_id:characterId,weapon_style:style,slots:clone(slots),unique_equipment_instance_ids:[...new Set(assignments.map(x=>x.instance.instance_id))],strikes,requirements:weaponUnique.map(row=>({instance_id:row.instance.instance_id,equipment_id:row.instance.equipment_id,required:requirementsFor(row.definition)})),bow_action_ready:style==='bow_quiver'};
  }
- return Object.freeze({VERSION:'GS-06-1',SLOT_IDS,WEAPON_SLOTS,WEAPON_STYLES,STAT_KEYS,checkRequirements,resolve,isShield,isBow,isQuiver});
+
+ function resolvePersistedRefState(input){
+  const source=isObject(input)?input:{},character=isObject(source.character)?source.character:null;
+  if(!character)return fail('EQUIPMENT_LOADOUT_INPUT_INVALID','character が必要です。',{path:'character'});
+  const characterId=String(character.id||'').trim(),style=String(character.weaponStyle||source.weapon_style||'single').trim(),refs=isObject(character.equipment)?character.equipment:null;
+  if(!characterId||!refs)return fail('EQUIPMENT_LOADOUT_INPUT_INVALID','character.id / character.equipment が必要です。',{path:!characterId?'character.id':'character.equipment'});
+  const instances=[],slots=Object.fromEntries(SLOT_IDS.map(slot=>[slot,null])),meta=new Map();
+  if(style==='two_hand'){
+   const ref=String(refs.weapon1||refs.weapon2||'').trim();
+   if(ref){
+    const instanceId=`${characterId}:equipment:two_hand`;
+    instances.push({instance_id:instanceId,equipment_id:ref,owner_id:characterId});
+    slots.weapon1=instanceId;slots.weapon2=instanceId;meta.set(instanceId,{source_slots:['weapon1','weapon2'],equipment_id:ref});
+   }
+  }else{
+   for(const slot of SLOT_IDS){const ref=String(refs[slot]||'').trim();if(!ref)continue;const instanceId=`${characterId}:equipment:${slot}`;instances.push({instance_id:instanceId,equipment_id:ref,owner_id:characterId});slots[slot]=instanceId;meta.set(instanceId,{source_slots:[slot],equipment_id:ref});}
+  }
+  const resolved=resolve({character_id:characterId,stats:character.stats,combat_capabilities:source.combat_capabilities||[],equipment_instances:instances,slots,weapon_style:style,two_hand_str_multiplier:source.two_hand_str_multiplier,resolve_equipment:source.resolve_equipment});
+  if(!resolved.ok)return resolved;
+  const records=[],tags=[];
+  for(const instanceId of resolved.unique_equipment_instance_ids){
+   const row=instances.find(x=>x.instance_id===instanceId),definition=row?source.resolve_equipment(row.equipment_id):null,m=meta.get(instanceId)||{source_slots:[]};
+   if(!row||!definition)return fail('EQUIPMENT_DEFINITION_NOT_FOUND','正式Equipment定義が見つかりません。',{instance_id:instanceId,equipment_id:row?.equipment_id||''});
+   const record={instance_id:instanceId,equipment_id:row.equipment_id,slot_ids:[...m.source_slots],required:clone(definition.required||{}),bonuses:clone(definition.bonuses||{}),mod_ids:Array.isArray(definition.mod_ids)?[...definition.mod_ids]:[],tags:Array.isArray(definition.tags)?[...definition.tags]:[]};
+   records.push(record);for(const tag of record.tags){const id=String(tag||'');if(id&&!tags.includes(id))tags.push(id)}
+  }
+  const byInstance=new Map(records.map(row=>[row.instance_id,row]));
+  return{...resolved,equipment_records:records,equipment_tags:tags,strikes:resolved.strikes.map(strike=>({...strike,saved_performance:clone(byInstance.get(strike.instance_id)||null)}))};
+ }
+ return Object.freeze({VERSION:'GS-06-2',SLOT_IDS,WEAPON_SLOTS,WEAPON_STYLES,STAT_KEYS,checkRequirements,resolve,resolvePersistedRefState,isShield,isBow,isQuiver});
 });

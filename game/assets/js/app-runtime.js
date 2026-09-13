@@ -210,7 +210,7 @@ function equipmentIsBowQuiverPair(a,b){return(!!a&&!!b)&&((equipmentIsBow(a)&&eq
 function characterBowQuiverState(character){normalizeCharacterEquipmentState(character);const refs=['weapon1','weapon2'].map(slot=>character.equipment[slot]||null),rows=refs.map(equipmentDefinition),bowIndex=rows.findIndex(equipmentIsBow),quiverIndex=rows.findIndex(equipmentIsQuiver);return{bowSlot:bowIndex>=0?['weapon1','weapon2'][bowIndex]:null,bowRef:bowIndex>=0?refs[bowIndex]:null,bow:bowIndex>=0?rows[bowIndex]:null,quiverSlot:quiverIndex>=0?['weapon1','weapon2'][quiverIndex]:null,quiverRef:quiverIndex>=0?refs[quiverIndex]:null,quiver:quiverIndex>=0?rows[quiverIndex]:null}}
 function bowQuiverActionRequirementReason(character){const s=characterBowQuiverState(character);if(s.bow&&!s.quiver)return'矢筒が装備されていません';if(s.quiver&&!s.bow)return'弓が装備されていません';return''}
 function bowQuiverMissingSlot(character){const s=characterBowQuiverState(character);if(s.bow&&!s.quiver)return s.bowSlot==='weapon1'?'weapon2':'weapon1';if(s.quiver&&!s.bow)return s.quiverSlot==='weapon1'?'weapon2':'weapon1';return null}
-function characterEquipmentTagIds(character){const ids=[];for(const row of characterEquipmentEntries(character)){const e=equipmentDefinition(row.ref);for(const tag of Array.isArray(e?.tags)?e.tags:[]){const id=String(tag||'');if(/^TAG-\d{4}$/.test(id)&&!ids.includes(id))ids.push(id)}}return ids}
+function characterEquipmentTagIds(character){const state=characterEquipmentLoadoutContract(character,{allowEmptyWeapon:true});if(state)return state.equipment_tags.filter(id=>/^TAG-\d{4}$/.test(String(id||'')));const ids=[];for(const row of characterEquipmentEntries(character)){const e=equipmentDefinition(row.ref);for(const tag of Array.isArray(e?.tags)?e.tags:[]){const id=String(tag||'');if(/^TAG-\d{4}$/.test(id)&&!ids.includes(id))ids.push(id)}}return ids}
 function inferCharacterWeaponStyle(character){
  const w1=String(character?.equipment?.weapon1||''),w2=String(character?.equipment?.weapon2||'');
  if(w1&&w2&&w1===w2)return'two_hand';
@@ -218,6 +218,14 @@ function inferCharacterWeaponStyle(character){
  return'single';
 }
 function characterWeaponStyle(character){const explicit=String(character?.weaponStyle||'').trim();return CHARACTER_WEAPON_STYLES.includes(explicit)?explicit:inferCharacterWeaponStyle(character)}
+function characterEquipmentLoadoutContract(character,{allowEmptyWeapon=false}={}){
+ if(!window.GKEquipmentLoadoutDomain?.resolvePersistedRefState)throw new Error('Equipment Loadout Domainを読み込めません。');
+ const style=characterWeaponStyle(character),hasWeapon=!!String(character?.equipment?.weapon1||'')||!!String(character?.equipment?.weapon2||'');
+ const result=GKEquipmentLoadoutDomain.resolvePersistedRefState({character:{...character,weaponStyle:style},combat_capabilities:[...characterCombatCapabilities(character)],two_hand_str_multiplier:weaponStrTwoHandRequirementMultiplier(),resolve_equipment:equipmentDefinition});
+ if(result.ok)return result;
+ if(allowEmptyWeapon&&!hasWeapon&&result.code==='WEAPON_STYLE_LAYOUT_MISMATCH')return null;
+ throw Object.assign(new Error(result.message||result.code||'Equipment Loadout Contractの解決に失敗しました。'),{code:result.code||'EQUIPMENT_LOADOUT_RUNTIME_INVALID',details:result});
+}
 function normalizeCharacterEquipmentState(character){
  if(!character||typeof character!=='object')return character;
  const source=character.equipment&&typeof character.equipment==='object'&&!Array.isArray(character.equipment)?character.equipment:null;
@@ -1106,20 +1114,25 @@ function renderCharacterSkillView(){
 
 function selectedQuest(){const formal=formalAdventureQuests();return formal.find(q=>q.id===data.selectedQuestId)||formal[0]||null}
 function equipmentContributionFromRows(rows){const out={attack:0,hpBonus:0,mpBonus:0,accuracy:0,evasion:0,magicAccuracy:0,magicResistance:0,magicWeaponBonus:0,weaponCriticalRate:0,blockRate:0,blockDamageCutRate:0},blockOwners=[];for(const row of rows){const e=equipmentDefinition(row.ref),b=e?.bonuses;if(!b||equipmentIsQuiver(e))continue;const shield=equipmentIsShield(e),slot=String(e?.slot||'');if(!shield){out.attack+=Number(b.attack)||0;out.accuracy+=Number(b.accuracy)||0;out.magicWeaponBonus+=Number(b.magicWeaponBonus)||0;out.weaponCriticalRate+=Number(b.weaponCriticalRate)||0;if(slot==='weapon')out.magicAccuracy+=Number(b.magicAccuracy)||0}if(['head','armor','gloves','feet'].includes(slot))out.magicResistance+=Number(b.magicResistance)||0;out.hpBonus+=Number(b.hpBonus)||0;out.mpBonus+=Number(b.mpBonus)||0;out.evasion+=Number(b.evasion)||0;if((Number(b.blockRate)||0)>0||(Number(b.blockDamageCutRate)||0)>0)blockOwners.push(b)}if(blockOwners.length>1)throw Object.assign(new Error('Block性能を持つEquipmentを複数装備できません。'),{code:'EQUIPMENT_MULTI_BLOCK_SOURCE_FORBIDDEN'});if(blockOwners.length===1){out.blockRate=Number(blockOwners[0].blockRate)||0;out.blockDamageCutRate=Number(blockOwners[0].blockDamageCutRate)||0}return out}
-function characterEquipmentContribution(c){return equipmentContributionFromRows(characterEquipmentEntries(c))}
+function characterEquipmentContribution(c){const state=characterEquipmentLoadoutContract(c,{allowEmptyWeapon:true});return equipmentContributionFromRows(state?state.equipment_records.map(row=>({ref:row.equipment_id})):characterEquipmentEntries(c))}
 function characterBasicAttackProfiles(character){
- normalizeCharacterEquipmentState(character);const style=characterWeaponStyle(character);
- if(style==='weapon_shield'){
-  const attackSlots=['weapon1','weapon2'].filter(slot=>{const ref=character.equipment[slot];return !!ref&&!equipmentIsShield(equipmentDefinition(ref))});
-  if(attackSlots.length!==1)throw new Error(`${character.name||character.id||'キャラクター'}のweapon_shieldは攻撃武器1本と盾1枚が必要です。`);
-  const slot=attackSlots[0],ref=character.equipment[slot],b=equipmentDefinition(ref)?.bonuses||{};
-  return[{weaponStyle:'weapon_shield',weaponSlot:slot,weaponId:ref,attack:Number(b.attack)||0,accuracy:Number(b.accuracy)||0,weaponCriticalRate:Number(b.weaponCriticalRate)||0}];
+ const state=characterEquipmentLoadoutContract(character,{allowEmptyWeapon:true});
+ if(!state)return[{weaponStyle:'single',weaponSlot:null,weaponId:null,attack:0,accuracy:0,weaponCriticalRate:0}];
+ if(state.weapon_style==='weapon_shield'){
+  const strike=state.strikes[0],b=strike?.saved_performance?.bonuses||{},slot=strike?.saved_performance?.slot_ids?.find(x=>x==='weapon1'||x==='weapon2')||null;
+  return strike?[{weaponStyle:'weapon_shield',weaponSlot:slot,weaponId:strike.equipment_id,weaponInstanceId:strike.instance_id,attack:Number(b.attack)||0,accuracy:Number(b.accuracy)||0,weaponCriticalRate:Number(b.weaponCriticalRate)||0}]:[];
  }
- if(style==='bow_quiver'){const state=characterBowQuiverState(character);if(!state.bow||!state.quiver)throw new Error(`${character.name||character.id||'キャラクター'}のbow_quiver構成が不正です。`);const bb=state.bow.bonuses||{};return[{weaponStyle:'bow_quiver',weaponSlot:state.bowSlot,weaponId:state.bowRef,attack:Number(bb.attack)||0,accuracy:Number(bb.accuracy)||0,weaponCriticalRate:Number(bb.weaponCriticalRate)||0}]};
- if(style!=='dual_wield')return[{weaponStyle:style,weaponSlot:twoHandedWeaponRef(character)?'weapon1':(character.equipment.weapon1?'weapon1':character.equipment.weapon2?'weapon2':null),weaponId:twoHandedWeaponRef(character)||characterPrimaryWeaponBonus(character).ref,...(()=>{const v=characterBattleValues(character);return{attack:v.attack,accuracy:v.accuracy,weaponCriticalRate:v.weaponCriticalRate}})()}];
+ if(state.weapon_style==='bow_quiver'){
+  const strike=state.strikes[0],bb=strike?.saved_performance?.bonuses||{},slot=strike?.saved_performance?.slot_ids?.find(x=>x==='weapon1'||x==='weapon2')||null;
+  return strike?[{weaponStyle:'bow_quiver',weaponSlot:slot,weaponId:strike.equipment_id,weaponInstanceId:strike.instance_id,attack:Number(bb.attack)||0,accuracy:Number(bb.accuracy)||0,weaponCriticalRate:Number(bb.weaponCriticalRate)||0}]:[];
+ }
+ if(state.weapon_style!=='dual_wield'){
+  const strike=state.strikes[0],b=strike?.saved_performance?.bonuses||{},slot=strike?.saved_performance?.slot_ids?.find(x=>x==='weapon1'||x==='weapon2')||null;
+  return strike?[{weaponStyle:state.weapon_style,weaponSlot:slot,weaponId:strike.equipment_id,weaponInstanceId:strike.instance_id,attack:Number(b.attack)||0,accuracy:Number(b.accuracy)||0,weaponCriticalRate:Number(b.weaponCriticalRate)||0}]:[];
+ }
  const profiles=[];
- for(const slot of ['weapon1','weapon2']){const ref=character.equipment[slot];if(!ref)continue;const equipment=equipmentDefinition(ref);if(equipmentIsShield(equipment)||equipmentIsQuiver(equipment))continue;const b=equipment?.bonuses||{};profiles.push({weaponStyle:'dual_wield',weaponSlot:slot,weaponId:ref,attack:Number(b.attack)||0,accuracy:Number(b.accuracy)||0,weaponCriticalRate:Number(b.weaponCriticalRate)||0});}
- return profiles.length?profiles:[{weaponStyle:'single',weaponSlot:null,weaponId:null,attack:0,accuracy:0,weaponCriticalRate:0}];
+ for(const slot of ['weapon1','weapon2']){const strike=state.strikes.find(x=>x.saved_performance?.slot_ids?.includes(slot));if(!strike)continue;const b=strike.saved_performance?.bonuses||{};profiles.push({weaponStyle:'dual_wield',weaponSlot:slot,weaponId:strike.equipment_id,weaponInstanceId:strike.instance_id,attack:Number(b.attack)||0,accuracy:Number(b.accuracy)||0,weaponCriticalRate:Number(b.weaponCriticalRate)||0});}
+ return profiles;
 }
 
 let activeBaseView='home';
