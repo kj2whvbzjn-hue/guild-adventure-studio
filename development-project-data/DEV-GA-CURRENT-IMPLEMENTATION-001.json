@@ -5,7 +5,7 @@
     "name": "修正版34仕様に基づく新規実装計画",
     "status": "Implementing",
     "ai_attention": "Include",
-    "updated_at": "2026-09-14T03:25:03.262Z"
+    "updated_at": "2026-09-14T06:25:35.619Z"
   },
   "project_context": {
     "purpose": "修正版34仕様の全項目を実装し、Studio/Game/Export/Saveで一貫させる。",
@@ -19,9 +19,9 @@
   },
   "current_focus": {
     "architecture_id": "ARC-NIP",
-    "work_box_id": "BOX-NIP-22",
-    "theme": "モンスター生成",
-    "goal": "TASK-NIP-22-01「モンスター生成：ドメイン処理を実装する」をSOURCE_UPDATEで実装する"
+    "work_box_id": "BOX-NIP-12",
+    "theme": "ダメージと防御",
+    "goal": "TASK-NIP-12-01「ダメージと防御：ドメイン処理を実装する」をSOURCE_UPDATEで実装する"
   },
   "source_baseline": {
     "studio_build": "GKS-B927",
@@ -327,6 +327,20 @@
       "result": "Applied",
       "evidence": "GS-14ユーザー明示仕様に最終補正。AI再評価はTick周期ではなく、Action Gaugeが10刻みの境界を跨いだTickで行う。1Tickの増加で複数の10刻み境界を跨いでも、そのTickの再評価は1回だけ。AI再評価そのものではGaugeを消費しない。Gauge消費は成立行動100、実行失敗50のみ。fixtureで0→11、11→22、22→47はいずれも再評価1回相当、47→49は再評価なし、49→60は再評価あり、Tick番号10自体は再評価条件でないことを確認。戦闘開始時のfixedProcessingOrderは同一戦闘中に再抽選しない。Source Quick 12/12、Full 27/27、GKS-B942 exact baseline Applied-State Full 27/27 PASS。削除なし・Game Data変更なし。",
       "recorded_at": "2026-09-14T03:15:00Z"
+    },
+    {
+      "id": "IMPL-NIP-22-01-GKS-B944-001",
+      "studio_build": "GKS-B944",
+      "game_build": "GA-B486.275",
+      "work_box_ids": [
+        "BOX-NIP-22"
+      ],
+      "task_ids": [
+        "TASK-NIP-22-01"
+      ],
+      "result": "Applied",
+      "evidence": "GS-22 Monster Generation Domainを新規実装。7内部ジョブの仮想装備構成を正式化し、M=L×G/10とP=10+(L-1)×G/10を分離。仮想iLvは要求能力値だけからmin(P/Ceff)を取り1〜11へclampし、両手武器のSTR要求係数のみ1/2、途中の小数iLvを保持。武器/防具の連続性能へM/P比を掛け、HP/MP係数50、回避係数4、主武器Critical、盾Block専用式を実装。最終ROUND_HALF_UP、非0性能の最小1、割合は百分率ppで丸める。Formal AIはprogram_id/layout_idのみ保持し、magic_accuracy/magic_resistanceはD09未決境界として出力生成しない。fixtureでL1剣士 M_STR=1.5/P_STR=10、仮想大剣iLv=1.666..., attack6、HP65、MP20、evasion1、Block iLv2.5=23%、非0小値→1/元0→0を確認。B943公開E2E Run 34802751524 PASS（GA-B486.274表示、新規ゲーム→拠点→アルト→木の大剣、console/page error 0）。Source Quick 12/12、Full 27/27、GKS-B943 exact baseline Applied-State Full 27/27 PASS。削除なし・Game Data変更なし。",
+      "recorded_at": "2026-09-14T03:36:30Z"
     }
   ],
   "discussions": [],
@@ -3823,7 +3837,7 @@
       "id": "TASK-NIP-22-01",
       "title": "モンスター生成：ドメイン処理を実装する",
       "box_id": "BOX-NIP-22",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 52,
       "depends_on": [
         "TASK-NIP-F03",
@@ -3851,7 +3865,7 @@
         "at": ""
       },
       "created_at": "2026-09-11T00:00:00Z",
-      "updated_at": "2026-09-11T00:00:00Z",
+      "updated_at": "2026-09-14T03:36:30Z",
       "decision_policy": "未決値は検証済みの明示入力・試験fixtureで分離し、欠落する本番設定は拒否する。未決境界を除く確定処理を実装できる。",
       "spec_refs": [
         "GS-22"
