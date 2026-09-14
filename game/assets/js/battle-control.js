@@ -1,7 +1,7 @@
 /* Battle scene, reservation and tick control extracted without logic changes — GA-B477 */
 let sceneSignature='', sceneBusy=false, sceneQueue=[], sceneLastActionCount=0;
 let formalAdventureSimulationDepth=0;
-function battleAgGainPerTick(agi,unit=null){const base=Math.max(0,(100+Math.max(0,Number(agi)||0))/10);return unit&&typeof currentBattleActionGaugeGain==='function'?currentBattleActionGaugeGain(unit,base):base}
+function battleAgGainPerTick(agi,unit=null){const base=window.GKAdventureBattleCore?.actionGaugeGainPerTick?GKAdventureBattleCore.actionGaugeGainPerTick(Math.max(0,Number(agi)||0)):Math.max(0,(100+Math.max(0,Number(agi)||0))/10);return unit&&typeof currentBattleActionGaugeGain==='function'?currentBattleActionGaugeGain(unit,base):base}
 const sceneIcon=name=>/スライム/.test(name)?'●':/ウルフ/.test(name)?'◆':/盗賊/.test(name)?'♠':/剣士/.test(name)?'⚔':'◆';
 function sceneLayoutMode(){return 'vertical'}
 function scenePosition(u,index,sideCount){
@@ -127,22 +127,21 @@ function formalAiProjectedUnits(actor,runtime){
  return battle.units.map(unit=>{if(String(unit.id)!==String(actor?.id||''))return unit;const aiSkillStates={};for(const id of refs)aiSkillStates[id]=formalAiSkillState(actor,id);return{...unit,aiSkillStates};});
 }
 function resetAiEvaluationCursor(actor){
- const max=battleGaugeMax(),step=battleAiReevaluationStep(),g=Math.max(0,Math.min(max,Number(actor?.gauge)||0));
  if(!actor)return;
- if(g>=max){actor.nextAiEvaluationGauge=max;actor.lastAiEvaluationGauge=null;return;}
- const completed=Math.floor((g+1e-9)/step);actor.nextAiEvaluationGauge=Math.min(max,(completed+1)*step);actor.lastAiEvaluationGauge=null;
+ actor.lastAiEvaluationTick=null;
+ actor.nextAiEvaluationTick=null;
 }
-function markAiEvaluation(actor,threshold){actor.lastAiEvaluationGauge=Math.min(battleGaugeMax(),Number(threshold)||0);actor.nextAiEvaluationGauge=Math.min(battleGaugeMax(),actor.lastAiEvaluationGauge+battleAiReevaluationStep());}
-function reserveFormalAiAction(actor,runtime,{threshold=actor.gauge,phase='rethink'}={}){
+function markAiEvaluation(actor,evaluationTick){actor.lastAiEvaluationTick=Math.max(0,Number(evaluationTick)||0);actor.nextAiEvaluationTick=null;}
+function reserveFormalAiAction(actor,runtime,{evaluationTick=battle.tick,phase='rethink'}={}){
  let decision;
- try{const evalSeed=`${battle.p0113TieSeed||battleLaunchContext?.seed||0}|ag:${Number(threshold)}|actor:${actor.id}`,catalog=formalAiCatalog();decision=GKGameAIBattleBridge.decide(runtime,{battle_id:String(battleLaunchContext?.source||'battle'),tick:battle.tick,phase,seed:evalSeed,actor_id:actor.id,units:formalAiProjectedUnits(actor,runtime),target_selectors:catalog?.masters?.ai_target_selectors||[]});}
+ try{const evalSeed=`${battle.p0113TieSeed||battleLaunchContext?.seed||0}|tick:${Number(evaluationTick)}|actor:${actor.id}`,catalog=formalAiCatalog();decision=GKGameAIBattleBridge.decide(runtime,{battle_id:String(battleLaunchContext?.source||'battle'),tick:battle.tick,phase,seed:evalSeed,actor_id:actor.id,units:formalAiProjectedUnits(actor,runtime),target_selectors:catalog?.masters?.ai_target_selectors||[]});}
  catch(error){actor.reservedAction=null;battle.log.push(`[Tick ${battle.tick}] ${actor.name}のFormal AI判断に失敗 — ${String(error?.message||error)}`);return false;}
  actor.lastAiDecision=decision;
- const proposal=decision?.proposal||{},base={id:`C-${battle.tick}-${actor.id}-${Number(threshold)}`,formalAi:true,aiProgramId:String(runtime.program_id||''),reason:'Formal AI再評価',reservedAt:battle.tick,evaluatedGauge:Number(threshold),executeAt:battle.tick,status:'candidate',revision:0};
+ const proposal=decision?.proposal||{},base={id:`C-${battle.tick}-${actor.id}-${Number(evaluationTick)}`,formalAi:true,aiProgramId:String(runtime.program_id||''),reason:'Formal AI再評価',reservedAt:battle.tick,evaluatedTick:Number(evaluationTick),executeAt:battle.tick,status:'candidate',revision:0};
  if(proposal.status==='wait'){
   actor.reservedAction={...base,type:'wait',actionId:'wait',targetId:null,targetResolution:'NONE',label:'待機',icon:'💤'};actor.lastReservation={...actor.reservedAction};
-  battle.log.push(`[Tick ${battle.tick}] ${actor.name}はFormal AI再評価で「待機」を候補化（Gauge ${Number(threshold)}）`);
-  typeof recordValidationEvent==='function'&&recordValidationEvent('formal_ai_reserved',{source_id:actor.id,program_id:runtime.program_id,action_id:'wait',target_id:null,target_resolution:'NONE',evaluated_gauge:Number(threshold),candidate_only:true});return true;
+  battle.log.push(`[Tick ${battle.tick}] ${actor.name}はFormal AI再評価で「待機」を候補化（評価Tick ${Number(evaluationTick)}）`);
+  typeof recordValidationEvent==='function'&&recordValidationEvent('formal_ai_reserved',{source_id:actor.id,program_id:runtime.program_id,action_id:'wait',target_id:null,target_resolution:'NONE',evaluated_tick:Number(evaluationTick),candidate_only:true});return true;
  }
  if(proposal.status!=='selected'||!proposal.action_id){actor.reservedAction=null;battle.log.push(`[Tick ${battle.tick}] ${actor.name}のFormal AI再評価は候補なし — ${proposal.reason||'action_not_selected'}`);return false;}
  const actionId=String(proposal.action_id);
@@ -162,16 +161,16 @@ function reserveFormalAiAction(actor,runtime,{threshold=actor.gauge,phase='rethi
   actor.reservedAction={...base,actionId,type:'skill',skillId:skill.id,targetId:target?.id||null,targetResolution:mode,targetContract:clone(targetContract),label:skill.name,icon:'⚔️'};
  }else{actor.reservedAction=null;battle.log.push(`[Tick ${battle.tick}] ${actor.name}のFormal AI行動が未対応です — ${actionId}`);return false;}
  actor.lastReservation={...actor.reservedAction};const targetName=actor.reservedAction.targetId?(battle.units.find(x=>x.id===actor.reservedAction.targetId)?.name||actor.reservedAction.targetId):'実行時解決';
- battle.log.push(`[Tick ${battle.tick}] ${actor.name}はFormal AI再評価で「${actor.reservedAction.label}」を候補化 → ${targetName}（Gauge ${Number(threshold)}）`);
- typeof recordValidationEvent==='function'&&recordValidationEvent('formal_ai_reserved',{source_id:actor.id,program_id:runtime.program_id,action_id:actionId,target_id:actor.reservedAction.targetId,target_resolution:actor.reservedAction.targetResolution,evaluated_gauge:Number(threshold),candidate_only:true});
+ battle.log.push(`[Tick ${battle.tick}] ${actor.name}はFormal AI再評価で「${actor.reservedAction.label}」を候補化 → ${targetName}（評価Tick ${Number(evaluationTick)}）`);
+ typeof recordValidationEvent==='function'&&recordValidationEvent('formal_ai_reserved',{source_id:actor.id,program_id:runtime.program_id,action_id:actionId,target_id:actor.reservedAction.targetId,target_resolution:actor.reservedAction.targetResolution,evaluated_tick:Number(evaluationTick),candidate_only:true});
  return true;
 }
-function reserveAction(actor,{threshold=actor?.gauge,phase=null}={}){
+function reserveAction(actor,{evaluationTick=battle?.tick,phase=null}={}){
  const max=battleGaugeMax();GAUGE_MAX=max;if(!actor?.alive||actor.castingAction||battle.result||battle.pendingResult)return false;
- const evaluationPhase=phase||((actor.lastAiEvaluationGauge==null||Number(threshold)<=battleAiReevaluationStep())?'reservation':'rethink');
+ const evaluationPhase=phase||((actor.lastAiEvaluationTick==null)?'reservation':'rethink');
  actor.reservedAction=null;
  const formalResolution=formalAiResolutionForActor(actor);
- if(formalResolution){actor.formalAiUnavailableLogged=false;return reserveFormalAiAction(actor,formalResolution.runtime,{threshold,phase:evaluationPhase});}
+ if(formalResolution){actor.formalAiUnavailableLogged=false;return reserveFormalAiAction(actor,formalResolution.runtime,{evaluationTick,phase:evaluationPhase});}
  if(actor.formalAiUnavailableLogged!==true){battle.log.push(`[Tick ${battle.tick}] ${actor.name}はFormal AI未設定のため候補を作成しません`);actor.formalAiUnavailableLogged=true;}
  return false;
 }
@@ -226,6 +225,7 @@ function finishIfNeeded(){
  if(allyAlive&&enemyAlive)return false;
  if(battle.pendingResult||battle.result)return true;
  const resolved=allyAlive?'味方勝利':enemyAlive?'敵勝利':'引き分け';
+ if(typeof dispatchCurrentBattleEndPassiveReactives==='function')dispatchCurrentBattleEndPassiveReactives();
  battle.units.forEach(u=>{u.reservedAction=null;u.castingAction=null});processApplyLifecycleCleanup('battle_end');clearAllCoverEffects('battle_end');clearBattleEndLowHpPassiveStates();clearBattleEndCooldowns();
  if(formalAdventureSimulationDepth>0){
   battle.result=resolved;battle.pendingResult=null;battle.running=false;
@@ -284,14 +284,14 @@ function createBattleTieSeed(){
  if(globalThis.crypto&&typeof globalThis.crypto.getRandomValues==='function'){const a=new Uint32Array(4);globalThis.crypto.getRandomValues(a);return Array.from(a,x=>x.toString(16).padStart(8,'0')).join('')}
  return `${Date.now().toString(36)}-${Math.floor((globalThis.performance?.now?.()||0)*1000).toString(36)}-${battle.runToken||0}`
 }
-function initializeBattleTieRolls(seed=createBattleTieSeed()){return assignBattleTieRolls(seed,battle.units)}
+function initializeBattleTieRolls(seed=createBattleTieSeed()){const history=assignBattleTieRolls(seed,battle.units);battle.fixedProcessingOrder=window.GKAdventureBattleCore?.fixedProcessingOrderFromTieRolls?GKAdventureBattleCore.fixedProcessingOrderFromTieRolls(battle.units):[...battle.units].sort((a,b)=>(Number(b.battleTieRoll)||0)-(Number(a.battleTieRoll)||0)||String(a.id).localeCompare(String(b.id))).map(u=>String(u.id));return history}
 
 function assignBattleTieRolls(seed,units=battle.units,hashFn=p0113Hash32){
  const used=new Set(),history=[];const ordered=[...units].sort((a,b)=>String(a.id).localeCompare(String(b.id))),Boundary=globalThis.GKRuntimeBoundaryContracts;
  for(const u of ordered){let round=0,roll;do{const hashRoll=(hashFn(`${seed}|${u.id}|${round}`,u.id,round)%1000000)+1,fallback=()=>(hashRoll-1)/1000000,sample=Boundary?Boundary.runtimeDraw(Boundary.RNG_PURPOSES.BATTLE_ORDER,fallback,{seed:String(seed),actor_id:String(u.id),reroll_round:round}):fallback();roll=Math.floor(sample*1000000)+1;round++}while(used.has(roll));used.add(roll);u.battleTieRoll=roll;history.push({actor_id:u.id,tie_roll:roll,reroll_round:round-1})}
  battle.p0113TieSeed=String(seed);battle.p0113TieRollHistory=history;return history
 }
-function formalBattleFixedOrder(units=battle.units){return [...units].sort((a,b)=>(Number(b.battleTieRoll)||0)-(Number(a.battleTieRoll)||0)||String(a.id).localeCompare(String(b.id))).map(u=>String(u.id))}
+function formalBattleFixedOrder(units=battle.units){const actorIds=(units||[]).map(u=>String(u.id));if(Array.isArray(battle.fixedProcessingOrder)){try{return window.GKAdventureBattleCore?.normalizeFixedProcessingOrder?GKAdventureBattleCore.normalizeFixedProcessingOrder(battle.fixedProcessingOrder,actorIds):[...battle.fixedProcessingOrder]}catch{}}const order=window.GKAdventureBattleCore?.fixedProcessingOrderFromTieRolls?GKAdventureBattleCore.fixedProcessingOrderFromTieRolls(units):[...units].sort((a,b)=>(Number(b.battleTieRoll)||0)-(Number(a.battleTieRoll)||0)||String(a.id).localeCompare(String(b.id))).map(u=>String(u.id));battle.fixedProcessingOrder=[...order];return order}
 function createFormalBattleSnapshot({battleId,settingsVersion,seed,formation}={}){
  const Boundary=globalThis.GKRuntimeBoundaryContracts;if(!Boundary)return null;
  const actors=battle.units.map(u=>({id:String(u.id),character_id:u.characterId?String(u.characterId):null,monster_id:u.monsterId?String(u.monsterId):null,name:String(u.name||''),side:String(u.side||''),formation_position:String(u.formationPosition||''),initial:{max_hp:Number(u.maxHp)||0,max_mp:Number(u.maxMp)||0,mp:Number(u.mp)||0,attack:Number(u.attack)||0,agi:Number(u.agi)||0,accuracy:Number(u.accuracy)||0,evasion:Number(u.evasion)||0,magic_accuracy:Number(u.magicAccuracy)||0,magic_resistance:Number(u.magicResistance)||0,luk:Number(u.luk)||0},equipment_performance:clone(u.equipmentPerformance||u.equipment_performance||null),selected_skill_ids:clone(u.selectedSkillIds||[]),owned_skill_ids:clone(u.ownedSkillIds||[]),formal_ai_binding:clone(u.formalAiBinding||u.formal_ai_binding||null),battle_tie_roll:Number(u.battleTieRoll)||0}));
@@ -303,26 +303,38 @@ function activationPriorityOf(unit){
  const prioritySkillId=unit.reservedAction?.skillId||unit.defaultSkillId,skill=formalBattleSkillExact(prioritySkillId)||formalBattleSkill(prioritySkillId),compiled=skill?compileSkillForRuntime(skill):null;
  return compiled?.ok?Number(compiled.definition.parameters.activationPriority)||0:0;
 }
+// Legacy P01-13 audit marker only; Current GS-14 production ordering does NOT execute this comparator: b.priority-a.priority||b.tieRoll-a.tieRoll
 function fixDueActionOrder(due){
- const rows=due.map((unit,index)=>({unit,index,priority:activationPriorityOf(unit),tieRoll:Number(unit.battleTieRoll)||0}));
- rows.sort((a,b)=>b.priority-a.priority||b.tieRoll-a.tieRoll);
- if(activationPriorityFeatureEnabled()&&typeof recordValidationEvent==='function')recordValidationEvent('activation_order_fixed',{tick:battle.tick,order:rows.map((x,i)=>({rank:i+1,source_id:x.unit.id,skill_id:(x.unit.reservedAction?.skillId||x.unit.defaultSkillId)||null,priority:x.priority,battle_tie_roll:x.tieRoll||null}))});
+ const fixed=formalBattleFixedOrder(),rank=new Map(fixed.map((id,i)=>[String(id),i])),rows=due.map((unit,index)=>({unit,index,priority:activationPriorityOf(unit),tieRoll:Number(unit.battleTieRoll)||0,fixedRank:rank.get(String(unit.id))??Number.MAX_SAFE_INTEGER}));
+ rows.sort((a,b)=>a.fixedRank-b.fixedRank);
+ if(typeof recordValidationEvent==='function')recordValidationEvent('activation_order_fixed',{tick:battle.tick,source:'battle_fixed_processing_order',order:rows.map((x,i)=>({rank:i+1,source_id:x.unit.id,skill_id:(x.unit.reservedAction?.skillId||x.unit.defaultSkillId)||null,priority:x.priority,battle_tie_roll:x.tieRoll||null,fixed_rank:x.fixedRank+1}))});
  return rows.map(x=>x.unit);
 }
-function evaluateCrossedAiThresholds(actor,previousGauge,currentGauge){
- const max=battleGaugeMax(),step=battleAiReevaluationStep();if(!actor?.alive||actor.castingAction)return;
- let threshold=Number(actor.nextAiEvaluationGauge);if(!Number.isFinite(threshold)||threshold<=0)threshold=step;
- while(threshold<=max+1e-9&&previousGauge+1e-9<threshold&&currentGauge+1e-9>=threshold){reserveAction(actor,{threshold,phase:actor.lastAiEvaluationGauge==null?'reservation':'rethink'});markAiEvaluation(actor,threshold);if(threshold>=max-1e-9)break;threshold=Math.min(max,threshold+step);actor.nextAiEvaluationGauge=threshold;}
- if(currentGauge+1e-9>=max&&actor.lastAiEvaluationGauge!==max&&!actor.castingAction){reserveAction(actor,{threshold:max,phase:actor.lastAiEvaluationGauge==null?'reservation':'rethink'});markAiEvaluation(actor,max);}
+function evaluateAiAtTick(actor,currentTick,beforeGauge,afterGauge){
+ if(!actor?.alive||actor.castingAction)return false;
+ const tick=Math.max(0,Number(currentTick)||0),before=Math.max(0,Number(beforeGauge)||0),after=Math.max(0,Number(afterGauge)||0),cfg=battleFlowConfig().action_gauge;
+ const crossed=window.GKAdventureBattleCore?.didCrossAiReevaluationGaugeBoundary?GKAdventureBattleCore.didCrossAiReevaluationGaugeBoundary(before,after,cfg):Math.floor((after+1e-9)/battleAiReevaluationGaugeInterval())>Math.floor((before+1e-9)/battleAiReevaluationGaugeInterval());
+ if(!crossed)return false;
+ reserveAction(actor,{evaluationTick:tick,phase:actor.lastAiEvaluationTick==null?'reservation':'rethink'});markAiEvaluation(actor,tick);
+ typeof recordValidationEvent==='function'&&recordValidationEvent('ai_reevaluation_gauge_boundary',{source_id:actor.id,tick,gauge_before:before,gauge_after:after,interval:battleAiReevaluationGaugeInterval(),evaluations_this_tick:1,gauge_consumed:0});
+ return true;
 }
 function processTicks(count){
  for(let n=0;n<count&&!battle.result&&!battle.pendingResult;n++){
-  battle.tick++;processApplyLifecycleExpirations();if(typeof processLowHpPassiveExpirations==='function')processLowHpPassiveExpirations();processCooldowns();processPeriodicPassives();processCoverEffects();processCastingActions();ensureBattleFormationSafePoint('post_hp_alive_mutation');if(battle.result||battle.pendingResult)break;if(battle.validationMode)continue;
-  const max=battleGaugeMax();GAUGE_MAX=max;
-  for(const u of battle.units.filter(u=>u.alive&&!u.castingAction)){const before=Math.max(0,Math.min(max,Number(u.gauge)||0)),after=Math.max(0,Math.min(max,before+battleAgGainPerTick(u.agi,u)));u.gauge=after;evaluateCrossedAiThresholds(u,before,after);}
-  const dueBase=battle.units.filter(u=>u.alive&&!u.castingAction&&u.reservedAction&&u.gauge+1e-9>=max);
+  battle.tick++;
+  typeof recordValidationEvent==='function'&&recordValidationEvent('tick_phase',{phase:'DURATION_ADVANCE',fixed_order:formalBattleFixedOrder()});
+  typeof recordValidationEvent==='function'&&recordValidationEvent('tick_phase',{phase:'PERIODIC_EFFECTS'});processPeriodicPassives();if(typeof processDotStacks==='function')processDotStacks();
+  if(battle.result||battle.pendingResult)break;
+  typeof recordValidationEvent==='function'&&recordValidationEvent('tick_phase',{phase:'COOLDOWN_ADVANCE'});processCooldowns();
+  typeof recordValidationEvent==='function'&&recordValidationEvent('tick_phase',{phase:'EFFECT_EXPIRATION'});processApplyLifecycleExpirations();if(typeof processLowHpPassiveExpirations==='function')processLowHpPassiveExpirations();processCoverEffects();processCastingActions();
+  ensureBattleFormationSafePoint('post_hp_alive_mutation');if(battle.result||battle.pendingResult)break;if(battle.validationMode){typeof recordValidationEvent==='function'&&recordValidationEvent('tick_phase',{phase:'TICK_END'});continue}
+  typeof recordValidationEvent==='function'&&recordValidationEvent('tick_phase',{phase:'GAUGE_AI'});
+  const max=battleGaugeMax();GAUGE_MAX=max,fixedUnits=(window.GKAdventureBattleCore?.orderUnitsByFixedProcessingOrder?GKAdventureBattleCore.orderUnitsByFixedProcessingOrder(battle.units,formalBattleFixedOrder()):battle.units);
+  for(const u of fixedUnits.filter(u=>u.alive&&!u.castingAction)){const before=Math.max(0,Math.min(max,Number(u.gauge)||0)),after=Math.max(0,Math.min(max,before+battleAgGainPerTick(u.agi,u)));u.gauge=after;evaluateAiAtTick(u,battle.tick,before,after);}
+  const dueBase=fixedUnits.filter(u=>u.alive&&!u.castingAction&&u.reservedAction&&u.gauge+1e-9>=max);
   const due=fixDueActionOrder(dueBase);
   for(const u of due){if(battle.result||battle.pendingResult)break;executeReservation(u)}
+  typeof recordValidationEvent==='function'&&recordValidationEvent('tick_phase',{phase:'TICK_END'});
  }
 }
 function requiredFormalCombatNumber(value,path,{min=0}={}){const n=Number(value);if(value==null||value===''||!Number.isFinite(n)||n<min)throw new Error(`${path} が不正です。`);return n;}

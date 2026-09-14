@@ -589,6 +589,11 @@ function dispatchCurrentBattleStartPassiveReactives(){
  for(const unit of battle.units||[]){if(!unit?.alive)continue;queueCurrentBattlePassiveReactive(unit,'battle_start',{actionSourceId:null,targetId:null,skillId:null,hitIndex:0,actionContext:context})}
  return flushCurrentBattlePassiveReactive(context);
 }
+function dispatchCurrentBattleEndPassiveReactives(){
+ const engine=globalThis.GKSTriggerEngine,context=engine?.createActionContext?engine.createActionContext({actionId:`battle_end:${battle?.p0113TieSeed??battle?.tick??0}`}):{actionId:`battle_end:${battle?.tick??0}`,maxActivations:16,activationCount:0,activeKeys:new Set(),history:[],pendingReactive:[],reactiveEventSequence:0,reactiveSequence:0};
+ for(const unit of battle.units||[]){queueCurrentBattlePassiveReactive(unit,'battle_end',{actionSourceId:null,targetId:null,skillId:null,hitIndex:0,actionContext:context})}
+ return flushCurrentBattlePassiveReactive(context);
+}
 function resolveFatalDamageInterrupt(target,{actionSourceId=null,skillId=null,hitIndex=0,projectedHp=null,actionContext=null,damageKind='DAMAGE'}={}){
  const projected=Number(projectedHp);if(!target?.alive||!Number.isFinite(projected)||projected>0)return{triggered:false,projectedHp:projected};
  const engine=globalThis.GKSTriggerEngine,candidates=currentBattlePassiveRuntimeEntries(target).map((row,sequence)=>{const contract=row.runtimeContracts?.triggerContract||null;return{...row,contract,priority:Number.isInteger(Number(contract?.priority))?Number(contract.priority):0,sequence};}).filter(row=>String(row.contract?.type||'').toUpperCase()==='ON_FATAL_DAMAGE'&&String(row.contract?.engineEvent||'')==='fatal_damage'&&String(row.contract?.phase||'').toUpperCase()==='INTERRUPT'&&String(row.contract?.dispatchMode||'').toUpperCase()==='ACTION').sort((a,b)=>b.priority-a.priority||a.sequence-b.sequence);
@@ -741,7 +746,7 @@ function dotStatusText(unit){const stacks=ensureDotStackList(unit);if(!stacks.le
 function resetCombatantOnDeath(target,{reason='death',sourceId=null}={}){
  if(!target)return{ok:false,reason:'対象がありません'};
  const beforeCleared={statuses:Array.isArray(target.statusEffects)?target.statusEffects.length:0,dots:Array.isArray(target.dotStacks)?target.dotStacks.length:0,modifiers:Array.isArray(target.modifierStacks)?target.modifierStacks.length:0,shields:Array.isArray(target.shieldEffects)?target.shieldEffects.length:0};
- target.hp=0;target.alive=false;target.gauge=0;target.reservedAction=null;target.castingAction=null;target.lastAiEvaluationGauge=null;target.nextAiEvaluationGauge=typeof battleAiReevaluationStep==='function'?battleAiReevaluationStep():target.nextAiEvaluationGauge;
+ target.hp=0;target.alive=false;target.gauge=0;target.reservedAction=null;target.castingAction=null;target.lastAiEvaluationTick=null;target.nextAiEvaluationTick=null;
  const lifecycleCleanup=processApplyLifecycleDeathCleanup(target,{reason,sourceId});
  const cleared=lifecycleCleanup?.ok?lifecycleCleanup.cleared:beforeCleared;
  if(!lifecycleCleanup?.ok){target.statusEffects=[];target.dotStacks=[];target.modifierStacks=[];target.shieldEffects=[];typeof recordValidationEvent==='function'&&recordValidationEvent('runtime_apply_lifecycle_death_cleanup_fallback',{target_id:target.id,source_id:sourceId,reason,error:lifecycleCleanup?.reason||'UNKNOWN'})}
@@ -766,7 +771,7 @@ function reviveTarget(actor,target,compiled){
  if(mode==='rate'&&(!Number.isFinite(reviveValue)||reviveValue<=0||reviveValue>1))return{ok:false,reason:'REVIVE_HP_RATEが無効です'};
  const before=target.hp,maxHp=Math.max(1,Math.floor(Number(target.maxHp)||1));
  const after=mode==='rate'?Math.max(1,Math.floor(maxHp*reviveValue)):Math.min(reviveValue,maxHp);
- const clearedOnRevive={statuses:ensureStatusEffects(target).length,modifiers:ensureModifierStackList(target).length};target.statusEffects=[];target.modifierStacks=[];target.hp=after;target.alive=true;typeof evaluateLowHpPassivesAfterHpCommit==='function'&&evaluateLowHpPassivesAfterHpCommit(target,{reason:'REVIVE',sourceId:actor.id,skillId:compiled?.definition?.id||null});target.gauge=0;target.reservedAction=null;target.castingAction=null;target.lastAiEvaluationGauge=null;target.nextAiEvaluationGauge=typeof battleAiReevaluationStep==='function'?battleAiReevaluationStep():target.nextAiEvaluationGauge;
+ const clearedOnRevive={statuses:ensureStatusEffects(target).length,modifiers:ensureModifierStackList(target).length};target.statusEffects=[];target.modifierStacks=[];target.hp=after;target.alive=true;typeof evaluateLowHpPassivesAfterHpCommit==='function'&&evaluateLowHpPassivesAfterHpCommit(target,{reason:'REVIVE',sourceId:actor.id,skillId:compiled?.definition?.id||null});target.gauge=0;target.reservedAction=null;target.castingAction=null;target.lastAiEvaluationTick=null;target.nextAiEvaluationTick=null;
  battle.log.push(`[Tick ${battle.tick}] [TAG][REVIVE] ${actor.name}の${compiled.definition.name} → ${target.name}がHP${after}で復活（${mode==='rate'?`割合${reviveValue}`:`固定${reviveValue}`}）`);
  typeof recordValidationEvent==='function'&&recordValidationEvent('revive',{source_id:actor.id,target_id:target.id,skill_id:compiled.definition.id,hp_before:before,hp_after:after,max_hp:maxHp,mode,revive_value:reviveValue,cleared_statuses:clearedOnRevive.statuses,cleared_modifiers:clearedOnRevive.modifiers});
  return{ok:true,targetId:target.id,hpBefore:before,hpAfter:after,maxHp,reviveMode:mode,reviveValue,gauge:target.gauge};
