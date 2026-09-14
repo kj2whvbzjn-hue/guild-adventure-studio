@@ -5,7 +5,7 @@
     "name": "修正版34仕様に基づく新規実装計画",
     "status": "Implementing",
     "ai_attention": "Include",
-    "updated_at": "2026-09-13T22:17:51.118Z"
+    "updated_at": "2026-09-14T03:25:03.262Z"
   },
   "project_context": {
     "purpose": "修正版34仕様の全項目を実装し、Studio/Game/Export/Saveで一貫させる。",
@@ -19,9 +19,9 @@
   },
   "current_focus": {
     "architecture_id": "ARC-NIP",
-    "work_box_id": "BOX-NIP-14",
-    "theme": "Tickと行動ゲージ",
-    "goal": "TASK-NIP-14-01「Tickと行動ゲージ：ドメイン処理を実装する」をSOURCE_UPDATEで実装する"
+    "work_box_id": "BOX-NIP-22",
+    "theme": "モンスター生成",
+    "goal": "TASK-NIP-22-01「モンスター生成：ドメイン処理を実装する」をSOURCE_UPDATEで実装する"
   },
   "source_baseline": {
     "studio_build": "GKS-B927",
@@ -313,6 +313,20 @@
       "result": "Applied",
       "evidence": "GS-11 Hit/Critical DomainをShared化。武器Crit率×(1+LUK/100)、初期Critical追加Damage50%、物理命中は5%下限なし、魔法命中は抵抗<=0で100%・通常はaccuracy/resistance・上限100%。Hit単位でCriticalを先に抽選し、Critical成立時はHit RNGを消費せずCRITICAL_GUARANTEED_HIT。Formal Attack validationへcritical/hit rollとrng_consumptionを記録。fixtureで5%/LUK10=5.5%、Crit成立Hit RNG 0回、物理0%、魔法30/60=50%、120/60=100%を確認。Source Quick 12/12、Full 27/27、GKS-B941 exact baseline Applied-State Full 27/27 PASS。削除なし・Game Data変更なし。",
       "recorded_at": "2026-09-13T13:58:00Z"
+    },
+    {
+      "id": "IMPL-NIP-14-01-GKS-B943-001",
+      "studio_build": "GKS-B943",
+      "game_build": "GA-B486.274",
+      "work_box_ids": [
+        "BOX-NIP-14"
+      ],
+      "task_ids": [
+        "TASK-NIP-14-01"
+      ],
+      "result": "Applied",
+      "evidence": "GS-14ユーザー明示仕様に最終補正。AI再評価はTick周期ではなく、Action Gaugeが10刻みの境界を跨いだTickで行う。1Tickの増加で複数の10刻み境界を跨いでも、そのTickの再評価は1回だけ。AI再評価そのものではGaugeを消費しない。Gauge消費は成立行動100、実行失敗50のみ。fixtureで0→11、11→22、22→47はいずれも再評価1回相当、47→49は再評価なし、49→60は再評価あり、Tick番号10自体は再評価条件でないことを確認。戦闘開始時のfixedProcessingOrderは同一戦闘中に再抽選しない。Source Quick 12/12、Full 27/27、GKS-B942 exact baseline Applied-State Full 27/27 PASS。削除なし・Game Data変更なし。",
+      "recorded_at": "2026-09-14T03:15:00Z"
     }
   ],
   "discussions": [],
@@ -3762,7 +3776,7 @@
       "id": "TASK-NIP-14-01",
       "title": "Tickと行動ゲージ：ドメイン処理を実装する",
       "box_id": "BOX-NIP-14",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 51,
       "depends_on": [
         "TASK-NIP-F03",
@@ -3772,7 +3786,7 @@
       "implementation_steps": [
         "戦闘開始時に処理順を1回抽選してBattle Snapshotへ格納する。Tick・行動・Hit・再読込・再生ではその配列を再利用し、順序用RNGを呼ばない。",
         "持続時間→周期効果→CD→効果満了→ゲージ/AI→Tick終了の順に状態を進め、開始Triggerは通常AIより前、終了Trigger後に戦闘専用状態を破棄する。",
-        "AG増分(100+AGI)/10、最大100、再評価10、成立100消費、実行失敗50消費を設定参照で実装する。単なるAI評価で50を消費しない。"
+        "AG増分(100+AGI)/10、最大100、AI再評価はAction Gaugeが10刻みの境界を跨いだTickで1回だけ行い、成立100消費、実行失敗50消費を設定参照で実装する。AI再評価そのものではAction Gaugeを消費しない。"
       ],
       "acceptance_examples": [
         "AGI10/50/100の基礎増分は11/15/20。描画速度変更で増分は変わらない。",
@@ -3788,7 +3802,7 @@
         "at": ""
       },
       "created_at": "2026-09-11T00:00:00Z",
-      "updated_at": "2026-09-11T00:00:00Z",
+      "updated_at": "2026-09-14T03:15:00Z",
       "decision_policy": "未決値は検証済みの明示入力・試験fixtureで分離し、欠落する本番設定は拒否する。未決境界を除く確定処理を実装できる。",
       "spec_refs": [
         "GS-14"
@@ -3803,7 +3817,7 @@
         "GS-14の入力/期待値fixtureと実行結果"
       ],
       "rollback": "変更単位のコミットを戻す。Save形式変更がある場合は旧コードで新形式を開かず、変換前Backupと対応コードを対で復旧する。",
-      "body": "実装手順\n1. 戦闘開始時に処理順を1回抽選してBattle Snapshotへ格納する。Tick・行動・Hit・再読込・再生ではその配列を再利用し、順序用RNGを呼ばない。\n2. 持続時間→周期効果→CD→効果満了→ゲージ/AI→Tick終了の順に状態を進め、開始Triggerは通常AIより前、終了Trigger後に戦闘専用状態を破棄する。\n3. AG増分(100+AGI)/10、最大100、再評価10、成立100消費、実行失敗50消費を設定参照で実装する。単なるAI評価で50を消費しない。\n\n完了条件\n1. AGI10/50/100の基礎増分は11/15/20。描画速度変更で増分は変わらない。\n2. 同一戦闘の全Tick・全Hitで初期順序が保持され、順序決定処理は1回のみ。次の別戦闘開始で初めて再決定する。\n3. 戦闘途中Snapshotの復元後も順序用RNG消費0で元と同一の結果列となる。"
+      "body": "実装手順\n1. 戦闘開始時に処理順を1回抽選してBattle Snapshotへ格納する。Tick・行動・Hit・再読込・再生ではその配列を再利用し、順序用RNGを呼ばない。\n2. 持続時間→周期効果→CD→効果満了→ゲージ/AI→Tick終了の順に状態を進め、開始Triggerは通常AIより前、終了Trigger後に戦闘専用状態を破棄する。\n3. AG増分(100+AGI)/10、最大100、AI再評価はAction Gaugeが10刻みの境界を跨いだTickで1回だけ行い、成立100消費、実行失敗50消費を設定参照で実装する。AI再評価そのものではAction Gaugeを消費しない。\n\n完了条件\n1. AGI10/50/100の基礎増分は11/15/20。描画速度変更で増分は変わらない。\n2. 同一戦闘の全Tick・全Hitで初期順序が保持され、順序決定処理は1回のみ。次の別戦闘開始で初めて再決定する。\n3. 戦闘途中Snapshotの復元後も順序用RNG消費0で元と同一の結果列となる。"
     },
     {
       "id": "TASK-NIP-22-01",
